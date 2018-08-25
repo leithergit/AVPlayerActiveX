@@ -1,0 +1,13 @@
+E:\SVN\AVPlayer\SampleCS\bin\Debug\SampleCS.exe
+E:\SVN\AVPlayer\SampleCS\bin\Debug\SampleCS.pdb
+E:\SVN\AVPlayer\SampleCS\bin\Debug\Interop.AVPlayerLib.dll
+E:\SVN\AVPlayer\SampleCS\bin\Debug\AxInterop.AVPlayerLib.dll
+E:\SVN\AVPlayer\SampleCS\obj\Debug\ResolveAssemblyReference.cache
+E:\SVN\AVPlayer\SampleCS\obj\Debug\Interop.AVPlayerLib.dll
+E:\SVN\AVPlayer\SampleCS\obj\Debug\AxInterop.AVPlayerLib.dll
+E:\SVN\AVPlayer\SampleCS\obj\Debug\SampleCS.csproj.ResolveComReference.cache
+E:\SVN\AVPlayer\SampleCS\obj\Debug\SampleCS.Form1.resources
+E:\SVN\AVPlayer\SampleCS\obj\Debug\SampleCS.Properties.Resources.resources
+E:\SVN\AVPlayer\SampleCS\obj\Debug\SampleCS.csproj.GenerateResource.Cache
+E:\SVN\AVPlayer\SampleCS\obj\Debug\SampleCS.exe
+E:\SVN\AVPlayer\SampleCS\obj\Debug\SampleCS.pdb

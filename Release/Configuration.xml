@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="gbk"?>
+<Configuration >
+	<!-- 配置说明，请勿删除 -->
+	<!-- 是否启用图像合并功能,Enable="true"时启用,Enable="false"时关闭-->
+	<CameraPostion Enable ="false"/>
+	<!-- 设置控件日志保存期限,SaveDays="30",则日志保存期限为30天,超过30天的日志将被删除-->
+	<LogManager SaveDays ="30"/>
+	<CameraList>
+		<!-- 配置非安讯士摄像的连接信息,请注意配置信息的大小写-->
+		<!-- IP 为摄像机IP地址，User为摄像机登录帐号,Password为登录密码,Url为拉取视频所用的地址串-->
+		<!-- 松下摄像机的Url:"rtsp://%s:%s@%s/ONVIF/MediaInput?profile=2_def_profile6"-->
+		<!-- 示例:
+		<Camera IP="192.168.2.110" User="admin" Password="admin12345" Url="rtsp://%s:%s@%s/ONVIF/MediaInput?profile=2_def_profile6" />
+			-->	
+	</CameraList>	
+</Configuration>

@@ -1,0 +1,10 @@
+2017-07-17 16:38:46.925 CAVPlayerCtrl::Login Account:admin trying to login to server:192.168.189.136.
+2017-07-17 16:38:50.487 CAVPlayerCtrl::PlayComboStream Windows 000F08A6 Postion(167,616,232,514).
+2017-07-17 16:38:50.497 CAVPlayerCtrl::PlayComboStream Device 3301061000000 (0599D788) is playing on Window 000F08A6.
+2017-07-17 16:38:50.501 CAVPlayerCtrl::PlayComboStream Device 3301061000001 (0ABD2BD8) is playing on Window 000F08A6.
+2017-07-17 16:38:55.003 CAVPlayerCtrl::StopPlay Device 3301061000000 Play handle is freed.
+2017-07-17 16:38:55.003 CAVPlayerCtrl::StopPlay MapConnection size = 1.
+2017-07-17 16:38:55.014 CAVPlayerCtrl::StopPlay Device 3301061000001 Play handle is freed.
+2017-07-17 16:38:55.014 CAVPlayerCtrl::StopPlay MapConnection size = 0.
+2017-07-17 16:38:56.473 CAVPlayerCtrl::~CAVPlayerCtrl 准备结束线程ThreadCheckRecvTime.
+2017-07-17 16:38:56.491 CAVPlayerCtrl::~CAVPlayerCtrl 控件被销毁.

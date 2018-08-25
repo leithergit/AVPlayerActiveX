@@ -1,0 +1,160 @@
+// AVPlayer.idl : type library source for ActiveX Control project.
+
+// This file will be processed by the MIDL compiler tool to
+// produce the type library (AVPlayer.tlb) that will become a resource in
+// AVPlayer.ocx.
+
+#include <olectl.h>
+#include <idispids.h>
+
+[ uuid(ACE87B96-B12B-467F-8703-44CDEFBA54DF), version(1.0),
+  helpfile("AVPlayer.hlp"),
+  helpstring("AVPlayer ActiveX Control module"),
+  control ]
+library AVPlayerLib
+{
+	importlib(STDOLE_TLB);
+
+	//  Primary dispatch interface for CAVPlayerCtrl
+
+	[ uuid(7FA42197-3260-4BBB-99F9-2836E53BB03B),
+	  helpstring("Dispatch interface for AVPlayer Control")]
+	dispinterface _DAVPlayer
+	{
+		properties:
+			[id(6), helpstring("property RecvTimeout")] LONG RecvTimeout;
+			[id(7), helpstring("property ReportInterval")] LONG ReportInterval;
+	methods:
+
+			[id(DISPID_ABOUTBOX)] void AboutBox();
+			[id(1), helpstring("method Login")] LONG Login(BSTR strServerIP, USHORT nServerPort, BSTR strAccount, BSTR strPassword, LONG nUserPtr);
+			[id(2), helpstring("method Logout")] void Logout(void);
+			[id(3), helpstring("method PlayStream")] LONG PlayStream(BSTR strDeviceID, LONG hWnd,LONG nEnalbeHWAccel);
+			[id(4), helpstring("method GetDeviceID")] LONG GetDeviceID(BSTR* strDeviceList, LONG* nDeviceCount);
+			[id(5), helpstring("method StopPlay")] void StopPlay(BSTR strDeviceID,LONG hWnd);
+			[id(8), helpstring("method GetErrorMessage")] LONG GetErrorMessage(LONG nErrorCode, BSTR* strErrorMessage);
+			[id(9), helpstring("method FreeString")] void FreeString(BSTR* strString);
+			[id(10), helpstring("method GetDeviceWindow")] LONG GetDeviceWindow(BSTR strDeviceID, LONG* hWndArray, LONG* nArraySize);
+			[id(11), helpstring("method GetWindowDevice")] LONG GetWindowDevice(LONG hWnd, BSTR* strDeviceID);
+			[id(12), helpstring("method PlayComboStream")] LONG PlayComboStream(BSTR strDevice1, BSTR strDevice2, LONG hWnd, LONG nEnableHWAccel,LONG nArangeMode);
+			[id(13), helpstring("method SetPlayComboBorder")] LONG SetPlayComboBorder(DOUBLE dwSpreadHei);
+			[id(14), helpstring("method SetPlayComboBorderEx")] LONG SetPlayComboBorderEx(BSTR strDevice1, BSTR strDevice2, DOUBLE fSpreadHei);
+			[id(15), helpstring("method SendPtzCommand")] LONG SendPtzCommand(BSTR strDeviceID, LONG nPtzCommand,LONG nPtzValue1,LONG nPtzValue2,LONG nOpType);
+			[id(17), helpstring("method EnalbeCameraPostion")] LONG EnalbeCameraPostion(LONG bEnalbeFlag);
+			[id(18), helpstring("method SetExternDCDraw")] LONG SetExternDCDraw(BSTR szDeviceID, LONG pDCDraw, LONG pUserPtr);
+			[id(19), helpstring("method PlaySrvStream")] LONG PlaySrvStream(BSTR strDeviceID, LONG hWnd, LONG nEnableHWAccel);
+			[id(20), helpstring("EnableOperationAssist")] LONG EnableOperationAssist(BSTR strDevice, LONG nEnable);
+			[id(21), helpstring("LoadOpAssistConfigure")] LONG LoadOpAssistConfigure();
+			[id(23), helpstring("ConfigureScreenMode")] LONG ConfigureScreenMode();
+			[id(24), helpstring("SwitchScreen")] LONG SwitchScreen(LONG nCraneID,LONG nScreenMode,LONG hWnd);
+	};
+
+	//  Event dispatch interface for CAVPlayerCtrl
+
+	[ uuid(789C77B5-9570-491B-9A70-6BC76971B530),
+	  helpstring("Event interface for AVPlayer Control") ]
+	dispinterface _DAVPlayerEvents
+	{
+		properties:
+			//  Event interface has no properties
+
+ 		methods:
+
+			[id(1)] void RecvTimeout(BSTR strDevice, LONG hWnd);
+
+	};
+
+	//  Class information for CAVPlayerCtrl
+
+	[ uuid(7CB0D592-1870-4608-813B-8DBBCD3DAB57),
+	  helpstring("AVPlayer Control"), control ]
+	coclass AVPlayer
+	{
+		[default] dispinterface _DAVPlayer;
+		[default, source] dispinterface _DAVPlayerEvents;
+	};
+	typedef [helpstring("AVPlayer Control PtzCode"),v1_enum]
+	enum PtzCode
+	{
+		Ptz_Center,
+		Ptz_Areazoom,
+		Ptz_ImageWidth,
+		Ptz_ImageHeight,
+		Ptz_Move,
+		Ptz_Pan,
+		Ptz_Tilt,
+		Ptz_Zoom,
+		Ptz_Focus,
+		Ptz_Iris,
+		Ptz_Brightness,
+		Ptz_AutoFocus,
+		Ptz_AutoIris,
+		Ptz_ContinuousPanTiltMove,
+		Ptz_ContinuousFocusMove,
+		Ptz_ContinuousZoomMove,
+		Ptz_ContinuousIrisMove,
+		Ptz_ContinuousBrightnessMove,
+		Ptz_GogoServerPresetNo,
+		Ptz_Speed,
+		Ptz_IrcutFilter,
+		Ptz_BackLight,
+	}PtzCode;
+
+	typedef [helpstring("AVPlayer Control AVStatus"),v1_enum]
+	enum AVStatus
+	{
+		AvError_Succeed = 0,				// 操作成功
+		AvError_base = -1024,				
+		AvError_InvalidParameters			 = AvError_base - 1,		// 参数无效
+		AvError_Invalid_ServerAddress		 = AvError_base - 2,		// 服务器地址不是一个有效的IP地址	
+		AvError_Invliad_ServerPort			 = AvError_base - 3,		// 服务器端口无效
+		AvError_Invalid_AccountOrPassword	 = AvError_base - 4,		// 用户名或密码无效
+		AvError_ConnectServerFailed			 = AvError_base - 5,		// 连接服务器失败
+		AvError_LoginFailed					 = AvError_base - 6,		// 登录服务器失败
+		AvError_NotLogintoServer			 = AvError_base - 7,		// 尚未登录到服务器
+		AvError_InvalidWindow				 = AvError_base - 8,		// 用于播放的窗口句柄指示的不是一个有效的窗口
+		AvError_DeviceNotExist				 = AvError_base - 9,		// 请求的设备不存在
+		AvError_ConnectDeviceFailed			 = AvError_base - 10,		// 连接设备失败
+		AvError_DeviceInPlaying				 = AvError_base - 11,		// 设备正在播放中，请匆复播放
+		AvError_DBException					 = AvError_base - 12,		// 数据库访问异常
+		AvError_DeviceNotInPlaying			 = AvError_base - 13,		// 设备不在播放中
+		AVError_BufferOverflow				 = AvError_base	- 14,		// 缓存溢出,提供的内存空间不足以容纳所请求的数据
+		AvError_WindowNotPlaying			 = AvError_base - 15,		// 窗口尚未播放任何设备	
+		AvError_InvlaidPtzCommand			 = AvError_base - 16,		// 无效的PTZ命令
+		AvError_Invalid_PtzValue			 = AvError_base - 17,		// 无效的PTZ命令值
+		AvError_ExternalError				 = AvError_base - 253,		// 内部错误
+		AvError_InsufficentMemory			 = AvError_base - 254,		// 内存不足
+		AvError_UnknownException			 = AvError_base - 255		// 未知异常 
+	}AVStatus;
+	
+	typedef [helpstring("AVPlayer Control Position"),v1_enum]
+	enum Position
+	{
+		Pos_Left,
+		Pos_Top,
+		Pos_Right,
+		Pos_Bottom
+	}Position;
+
+	typedef [helpstring("AVPlayer Control Ptz_MoveOption"),v1_enum]
+	enum Ptz_MoveOption
+	{
+		Mov_Home,
+		Mov_Up,
+		Mov_Down,
+		Mov_Left,
+		Mov_Right,
+		Mov_Upleft,
+		Mov_UPright,
+		Mov_Downleft,
+		Mov_Downright,
+		Mov_Stop
+	}Ptz_MoveOption;
+
+	typedef [helpstring("AVPlayer Control PtzOption"),v1_enum]
+	enum PtzOption
+	{
+		Opt_Abstract = 1,
+		Opt_Relative = 0
+	}PtzOption;
+};

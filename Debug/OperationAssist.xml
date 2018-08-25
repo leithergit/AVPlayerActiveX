@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="gbk"?>
+<Configuration >
+	<!-- 配置说明，请勿删除 -->
+	<!--  -->
+	<DeviceList>
+	<!-- ID				为设备ID  -->
+	<!-- Orientation	为方位，决定显示辅助解的方向-->
+	<!-- StartX 		起始点X坐标，该坐标为图像坐标-->
+	<!-- Width 			宽度 -->
+	<!-- Height 		高度 -->
+	<!-- ThickVerical	垂直方向厚度 -->
+	<!-- ThickHorizontal 水平方向厚度 -->
+		<Device ID = "3301061000003" Orientation = "0"  StartX = "400" StartY = "300" Width = "200" Height ="150" ThickVerical="10" ThickHorizontal = "12" Color="FF0000" />
+		<Device ID = "3301061000005" Orientation = "1"  StartX = "800" StartY = "300" Width = "200" Height ="150" ThickVerical="10" ThickHorizontal = "12" Color="FF0000"/>
+		<Device ID = "3301061000019" Orientation = "2"  StartX = "400" StartY = "500" Width = "200" Height ="150" ThickVerical="10" ThickHorizontal = "12" Color="FF0000"/>
+		<Device ID = "3301061000030" Orientation = "3"  StartX = "800" StartY = "500" Width = "200" Height ="150" ThickVerical="10" ThickHorizontal = "12" Color="FF0000"/>
+	</DeviceList>	
+</Configuration>
