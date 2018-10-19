@@ -352,6 +352,7 @@ struct _IPCConnection
 	// AS300转发变量
 	bool	m_bIPCStart;
 	long	m_nPlaySession;
+	bool	m_bPlayBack;	// 回放标志，回放时为TRUE
 	long	m_nLoginID;
 	string	m_strDeviceID;
 	list<SimpleStream*> listSimpleStream;
@@ -415,7 +416,10 @@ struct _IPCConnection
 
 		if (m_nPlaySession)
 		{
-			SDK_CUStopVideoRequest(m_nLoginID, (CHAR *)m_strDeviceID.c_str());
+			if (!m_bPlayBack)
+				SDK_CUStopVideoRequest(m_nLoginID, (CHAR *)m_strDeviceID.c_str());
+			else
+				SDK_CUStopPlayback(m_nLoginID, m_nPlaySession);
 			m_nLoginID = -1;
 			m_nPlaySession = -1;
 		}
@@ -654,6 +658,7 @@ protected:
 // Dispatch and event IDs
 public:
 	enum {
+		dispidStartPlayBack = 25L,
 		dispidSwitchScreen = 24L,
 		dispidConfigureScreenMode = 23L,
 		dispidLoadOpAssistConfigure = 21L,
@@ -813,7 +818,7 @@ protected:
 	LONG SetExternDCDraw(LPCTSTR szDeviceID, LONG pDCDraw, LONG pUserPtr);
 public:
 	// AS300 Client SDK
-	static void CALLBACK RealDataCallBack(int nSessionId, char* buf, int len, void* user)
+	static void CALLBACK AS300ReallDataCallBack(int nSessionId, char* buf, int len, void* user)
 	{
 		if (!nSessionId)
 			return;
@@ -825,8 +830,18 @@ public:
 		}
 		else
 		{
-			pThis->OnLiveData(nSessionId, buf, len);
+			pThis->OnAS300LiveData(nSessionId, buf, len);
 		}
+	}
+
+	static bool CALLBACK AS300PlayBackCallBack(int nSessionId, char* buf, int len, void* user)
+	{
+		if (!nSessionId)
+			return false;
+		CAVPlayerCtrl *pThis = (CAVPlayerCtrl *)user;
+		if (nSessionId == -1)
+			return false;
+		return pThis->OnAS300PlayBack(nSessionId, buf, len);
 	}
 	static void CALLBACK DevStatusCallBack(long login_id, char* szDevId, int nStatus, void* user)
 	{
@@ -851,15 +866,68 @@ public:
 
 	void   OnRespondCallback(int nSessionId);	
 	void   OnDevStatus(char* szDevId, int nStatus);
-	void   OnLiveData(LONG nSessionId, char* buf, int nLen);
+	void   OnAS300LiveData(LONG nSessionId, char* buf, int nLen);
+	bool   OnAS300PlayBack(LONG nSessionId, char* buf, int nLen);
+
+	//////////////////////////////////////////////////////////////////////////
+	// OnAS300PlayBackPos
+	// 参数说明：
+	// nSessionId 		回放 / 下载会话ID,
+	// pos		如果是按文件回放该值为已播放文件大小单位kb
+	// 			如果是下载该值为最新frame的timestamp，如果是 - 1表示下载完成
+	// total	如果是按文件回放该值为播放文件总大小单位kb
+	//			如果是下载该值为 - 1
+	// pUser		用户数据
+	//////////////////////////////////////////////////////////////////////////
+	void   OnAS300PlayBackPos(int nSessionID, int nPos, int nTotal)
+	{
+
+	}
 	void   OnAS300Event(long nEventType, char* szId, int nParam1, int nParam2);
+	static void CALLBACK PlayBackPosCallBack(int nSessionID, int nPos, int nTotal, void *pUserData)
+	{
+		if (!nSessionID)
+			return;
+		CAVPlayerCtrl *pThis = (CAVPlayerCtrl *)pUserData;
+		if (nSessionID == -1)
+			return;
+			pThis->OnAS300PlayBackPos(nSessionID, nPos, nTotal);
+	}
+
 	long	m_nLoginID = -1;
 
-protected:
-	LONG PlaySrvStream(LPCTSTR strDeviceID, LONG hWnd, LONG nEnableHWAccel);
+	long   QueryDeviceRecord(LPCTSTR strDeviceID,long nChannel, long nStartTime, long nStopTime, PVSRecord_Info_t  lpRecordArray,long &nRecordCount,long &nBufferSize)
+	{
+		if (!strDeviceID || !nStartTime || !nStopTime)
+			return AvError_InvalidParameters;
+		if (nStartTime <= nStopTime)
+			return AvError_InvalidParameters;
+		char szDeviceID[32] = { 0 };
+
+		sprintf_s((char *)szDeviceID, 32, "%s%02d", _AnsiString(strDeviceID, CP_ACP), nChannel);
+		VSRecord_Info_t RecordArray[1024] = {0};
+		VSQuery_Record_Info_t QueryInfo;
+		QueryInfo.nChannelNo	 = 1;
+		QueryInfo.nSource		 = Record_Source_SS;
+		QueryInfo.nRecordType	 = Record_all;
+		QueryInfo.nStartTime	 = nStartTime;
+		QueryInfo.nEndTime		 = nStopTime;
+		strcpy_s((char *)QueryInfo.szCameraId,MAX_ID_LENGTH, (char *)szDeviceID);
+		nRecordCount = 0;
+		long nResult = SDK_CUQueryRecord(m_nLoginID, QueryInfo, (PVSRecord_Info_t)lpRecordArray, (int &)nRecordCount, nBufferSize, 15000);
+		if (nRecordCount > 0)
+		{
+			return AvError_Succeed;
+		}
+		else
+			return (AvError_AS300_Error + nResult);
+	}
+
+	LONG   PlaySrvStream(LPCTSTR strDeviceID, LONG hWnd, LONG nEnableHWAccel);
+	
 public:
 	afx_msg void OnDestroy();
-protected:
+
 	LONG EnableOperationAssist(LPCTSTR strDevice, LONG nEnable);
 	LONG LoadOpAssistConfigure();
 	bool LoadOPAssistXConfigure();
@@ -906,10 +974,10 @@ protected:
 // 		return 0;
 // 	}
 
-
 public:
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	afx_msg int OnMouseActivate(CWnd* pDesktopWnd, UINT nHitTest, UINT message);
+	LONG StartPlayBack(LPCTSTR strDeviceID,LONG hWnd, LONG nStartTime, LONG nStopTime, LONG nTimeout);
 };
 

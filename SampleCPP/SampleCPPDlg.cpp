@@ -96,6 +96,8 @@ BEGIN_MESSAGE_MAP(CSampleCPPDlg, CDialog)
 	ON_BN_CLICKED(IDC_CHECK_DCDRAW, &CSampleCPPDlg::OnBnClickedCheckDcdraw)
 	ON_BN_CLICKED(IDC_BUTTON_UPDATEAssist, &CSampleCPPDlg::OnBnClickedButtonUpdateassist)
 	ON_CBN_SELENDOK(IDC_COMBO_SWITCH, &CSampleCPPDlg::OnCbnSelendokComboSwitch)
+	ON_WM_SIZE()
+	ON_CBN_SELENDOK(IDC_COMBO_DIV, &CSampleCPPDlg::OnCbnSelendokComboDiv)
 END_MESSAGE_MAP()
 
 struct HotKeyInfo
@@ -146,6 +148,11 @@ BOOL CSampleCPPDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// Set big icon
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 	
+	CRect rtClient;
+	GetDlgItemRect(IDC_STATIC_FRAME, rtClient);
+	m_pVideoFrame = new CVideoFrame;
+	m_pVideoFrame->Create(1024, rtClient, 4, this);
+
 	m_bIsLButtonDown = false;
 	m_AvPlayer.ShowWindow(SW_SHOW);
 	m_pDialogPTZ =new CDialogPTZ();
@@ -169,10 +176,7 @@ BOOL CSampleCPPDlg::OnInitDialog()
 	m_bitmapMago.LoadBitmap(IDB_BITMAP_MAGO);
 	m_bitmapZpmc.LoadBitmap(IDB_BITMAP_ZPMC);
 
-	m_hLeftTopWnd = GetDlgItem(IDC_STATIC_FRAME)->GetSafeHwnd();
-	m_hRightTopWnd = GetDlgItem(IDC_STATIC_FRAME2)->GetSafeHwnd();
-	m_hLeftBottomWnd = GetDlgItem(IDC_STATIC_FRAME3)->GetSafeHwnd();
-	m_hRightBottomWnd = GetDlgItem(IDC_STATIC_FRAME4)->GetSafeHwnd();
+
 
 	::RegisterHotKey(m_hWnd, ID_F12, MOD_ALT | MOD_CONTROL, VK_HOME);
 	m_bmpActived.LoadBitmap( IDB_ACTIVED);
@@ -194,6 +198,23 @@ BOOL CSampleCPPDlg::OnInitDialog()
 	_T("微软雅黑"));
 
 
+	UINT nArrayLeftTop[] = { IDC_IPADDRESS1, IDC_BUTTON_LOGIN, IDC_BUTTON_LOGOUT, IDC_BUTTON_PLAY, IDC_BUTTON_PLAYCOMBO, IDC_BUTTON_STOP,
+		IDC_BUTTON_STARTSWITCH, IDC_BUTTON_STOPSWITCH, IDC_CHECK1, IDC_CHECK2, IDC_CHECK3, IDC_STATIC_CONFIG, IDC_STATIC_CONFIGWND,
+		IDC_STATIC_SWITCHTIME, IDC_EDIT_SWITCHTIME, IDC_STATIC_NEXTT, IDC_EDIT_NEXTSWITCHTIME, IDC_STATIC_SWITCHCOUNT, IDC_EDIT_SWITCHCOUNT,
+		IDC_BUTTON_SHOW, IDC_BUTTON_HIDE, IDC_BUTTON_HIDE, IDC_BUTTON_PTZPannel, IDC_BUTTON_SWITCH, IDC_BUTTON_STOPEXTEND, IDC_BUTTON_STOPEXTEND2,
+		IDC_BUTTON_STOPEXTEND3, IDC_STATIC_SWITCHMODE, IDC_COMBO_SWITCH, IDC_CHECK_DCDRAW, IDC_CHECK_ENABLETRANLATE, IDC_BUTTON_UPDATEAssist };
+	UINT nIDArrayRight[] = { IDC_STATIC_DEV};
+	UINT nIDArrayRightBottom[] = { IDC_LIST_DEVICE };
+	UINT nIDArrayCenter[] = { IDC_STATIC_FRAME };
+
+	RECT rtDialog;
+	GetClientRect(&rtDialog);
+
+	m_WndSizeManager.SetParentWnd(this);
+	m_WndSizeManager.SaveWndPosition(nArrayLeftTop, sizeof(nArrayLeftTop) / sizeof(UINT), (DockType)(DockLeft | DockTop));
+	m_WndSizeManager.SaveWndPosition(nIDArrayCenter, sizeof(nIDArrayCenter) / sizeof(UINT), DockCenter, false);
+	m_WndSizeManager.SaveWndPosition(nIDArrayRight, sizeof(nIDArrayRight) / sizeof(UINT), DockRight);
+	m_WndSizeManager.SaveWndPosition(nIDArrayRightBottom, sizeof(nIDArrayRightBottom) / sizeof(UINT), (DockType)(DockRight | DockBottom));
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -339,7 +360,7 @@ void CSampleCPPDlg::OnBnClickedButtonPlay()
 				return;
 			}
 			m_bFrameused[nFrameIndex] = true;
-			HWND hVideoWnd = GetDlgItem(nFrameID[nFrameIndex])->GetSafeHwnd();
+			HWND hVideoWnd = m_pVideoFrame->GetPanelWnd(nFrameIndex);
 			m_ctlDeviceList.GetItemText(i, 1, szDeviceID, 32);
 			if (IsDlgButtonChecked(IDC_CHECK_ENABLETRANLATE) == BST_CHECKED)
 			{
@@ -764,7 +785,6 @@ void CSampleCPPDlg::OnBnClickedButtonPtzpannel()
 
 	}
 	m_pDialogPTZ->MoveWindow(&rtPTZ);
-	
 	m_pDialogPTZ->ShowWindow(SW_SHOW);
 }
 
@@ -772,6 +792,10 @@ void CSampleCPPDlg::OnDestroy()
 {
 	CDialog::OnDestroy();
 
+	if (m_pVideoFrame)
+	{
+		delete m_pVideoFrame;
+	}
 	delete m_pDialogPTZ;
 }
 
@@ -948,7 +972,7 @@ void __stdcall CSampleCPPDlg::ExternDCDraw(HWND hWnd, HDC hDc, RECT rtDC, void *
 	int nDistanceH = 400;
 	
 	POINT apt[6] = { 0 };
-	if (hWnd == pThis->m_hLeftTopWnd)
+	if (hWnd == pThis->m_pVideoFrame->GetPanelWnd(0))
 	{
 		int nStartX = rtDC.left + nDistanceH;
 		int nStartY = rtDC.top + nDistanceV;
@@ -972,7 +996,7 @@ void __stdcall CSampleCPPDlg::ExternDCDraw(HWND hWnd, HDC hDc, RECT rtDC, void *
 		apt[5].x = nStartX ;
 		apt[5].y = nStartY + nHeightCorner;
 	}
-	else if (hWnd == pThis->m_hRightTopWnd)
+	else if (hWnd == pThis->m_pVideoFrame->GetPanelWnd(1))
 	{
 		int nStartX = rtDC.right - nDistanceH - nWidthCorner;
 		int nStartY = rtDC.top + nDistanceV;
@@ -996,7 +1020,7 @@ void __stdcall CSampleCPPDlg::ExternDCDraw(HWND hWnd, HDC hDc, RECT rtDC, void *
 		apt[5].y = nStartY + nThickCornerV;
 
 	}
-	else if (hWnd == pThis->m_hLeftBottomWnd)
+	else if (hWnd == pThis->m_pVideoFrame->GetPanelWnd(2))
 	{
 		int nStartX = rtDC.left + nDistanceH;
 		int nStartY = rtDC.bottom - nDistanceV - nHeightCorner;
@@ -1019,7 +1043,7 @@ void __stdcall CSampleCPPDlg::ExternDCDraw(HWND hWnd, HDC hDc, RECT rtDC, void *
 		apt[5].x = nStartX ;
 		apt[5].y = nStartY + nHeightCorner;
 	}
-	else if (hWnd == pThis->m_hRightBottomWnd)
+	else if (hWnd == pThis->m_pVideoFrame->GetPanelWnd(3))
 	{
 		int nStartX = rtDC.right - nDistanceH - nWidthCorner;
 		int nStartY = rtDC.bottom - nDistanceV - nHeightCorner;
@@ -1245,4 +1269,91 @@ void CSampleCPPDlg::OnCbnSelendokComboSwitch()
 
 	LONG nMode = (LONG)GetDlgItemInt(IDC_COMBO_SWITCH);
 	m_AvPlayer.SwitchScreen(1, nMode, (LONG)GetDlgItem(IDC_STATIC_VIDEOFRAME)->GetSafeHwnd());
+}
+
+
+void CSampleCPPDlg::OnSize(UINT nType, int cx, int cy)
+{
+	CDialog::OnSize(nType, cx, cy);
+
+	if (GetDlgItem(IDC_BUTTON_PLAY)->GetSafeHwnd())
+	{
+		m_WndSizeManager.OnSize(nType, cx, cy);
+		RECT rt;
+		m_WndSizeManager.GetWndCurrentPostion(IDC_STATIC_FRAME, rt);
+		m_pVideoFrame->MoveWindow(&rt, true);
+	}
+}
+
+#include <windowsx.h>
+void CSampleCPPDlg::OnCbnSelendokComboDiv()
+{
+	int nCurSel = ComboBox_GetCurSel(::GetDlgItem(m_hWnd, IDC_COMBO1));
+	// 1分屏;2分屏;3分屏;4分屏;6分屏;9分屏;12分屏;16分屏;20分屏;25分屏;30分屏;5包1;7包1;9包1;
+	int nWndCount = 1;
+	
+	FrameStyle fs = StyleNormal;
+	switch (nCurSel)
+	{
+	case 0:	// 1分屏
+	default:
+	{
+		nWndCount = 1;
+	}
+	break;
+	case 1:	// 2分屏
+		nWndCount = 2;
+		break;
+	case 2:	// 3分屏
+		nWndCount = 3;
+		fs = Style_2P1;
+		break;
+	case 3:	// 4分屏
+		nWndCount = 4;
+		break;
+	case 4:	// 6分屏
+		nWndCount = 6;
+		break;
+	case 5:	// 9分屏
+		nWndCount = 9;
+		break;
+	case 6:	// 12分屏
+		nWndCount = 12;
+		break;
+	case 7:	// 16分屏
+		nWndCount = 16;
+		break;
+	case 8:	// 20分屏
+		nWndCount = 20;
+		break;
+	case 9:	// 25分屏
+		nWndCount = 25;
+		break;
+	case 10:// 30分屏
+		nWndCount = 30;
+		break;
+	case 11:// 5包1;
+		fs = Style_5P1;
+		break;
+	case 12:// 7包1;
+		fs = Style_7P1;
+		break;
+	case 13:// 9包1;
+		fs = Style_9P1;
+		break;
+	case 14:
+		fs = Style_11P1;
+		break;
+	}
+
+	if (fs == StyleNormal)
+	{
+		if (nWndCount != m_pVideoFrame->GetPanelCount())
+			m_pVideoFrame->AdjustPanels(nWndCount);
+	}
+	else
+	{
+		m_pVideoFrame->AdjustPanels(nWndCount, fs);
+	}
+
 }

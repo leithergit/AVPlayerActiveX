@@ -62,6 +62,14 @@
 #define IDC_COMBO_SWITCH                1042
 #define IDC_STATIC_VIDEOFRAME           1043
 #define IDC_BUTTON1                     1044
+#define IDC_STATIC_SWITCHTIME           1045
+#define IDC_STATIC_NEXTT                1046
+#define IDC_STATIC_SWITCHCOUNT          1047
+#define IDC_STATIC_SWITCHMODE           1048
+#define IDC_STATIC_DEV                  1049
+#define IDC_STATIC_DEVIDE               1050
+#define IDC_COMBO1                      1051
+#define IDC_COMBO_DIV                   1051
 #define IDC_EDIT_CAMERAID               1071
 #define IDC_BUTTON_UP                   1072
 #define IDC_BUTTON_RESET                1073
@@ -82,7 +90,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        143
 #define _APS_NEXT_COMMAND_VALUE         32772
-#define _APS_NEXT_CONTROL_VALUE         1045
+#define _APS_NEXT_CONTROL_VALUE         1052
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

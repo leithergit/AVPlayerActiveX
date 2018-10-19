@@ -61,7 +61,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>C:\Program Files (x86)\Visual Leak Detector\include;..\Include;C:\Program Files (x86)\BugTrap for Win32 &amp; .NET\Win32\BugTrap;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_STD_SMARTPTR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_STD_SMARTPTR;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -114,6 +114,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\Include\Utility.cpp" />
+    <ClCompile Include="..\include\VideoFrame.cpp" />
     <ClCompile Include="avplayerctrl.cpp" />
     <ClCompile Include="DialogPTZ.cpp" />
     <ClCompile Include="DragListCtrl.cpp" />
@@ -127,6 +128,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Include\Utility.h" />
+    <ClInclude Include="..\include\VideoFrame.h" />
+    <ClInclude Include="..\include\WndSizeManager.h" />
     <ClInclude Include="avplayerctrl.h" />
     <ClInclude Include="DialogPTZ.h" />
     <ClInclude Include="DragListCtrl.h" />

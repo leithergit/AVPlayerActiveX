@@ -7,6 +7,8 @@
 #include "DialogPTZ.h"
 #include <vector>
 #include "draglistctrl.h"
+#include "VideoFrame.h"
+#include "WndSizeManager.h"
 using namespace std;
 
 #define ID_BASE		WM_USER + 100
@@ -33,6 +35,8 @@ class CSampleCPPDlg : public CDialog
 {
 // Construction
 public:
+	CVideoFrame *m_pVideoFrame;
+	CWndSizeManger m_WndSizeManager;
 	CSampleCPPDlg(CWnd* pParent = NULL);	// standard constructor
 
 // Dialog Data
@@ -101,8 +105,6 @@ public:
 	CBitmap		m_bitmapMago;
 	CBitmap		m_bitmapZpmc;
 	CFont		m_Font;
-	HWND		m_hLeftTopWnd, m_hRightTopWnd;
-	HWND		m_hLeftBottomWnd, m_hRightBottomWnd;
 	afx_msg void OnBnClickedButtonUpdateassist();
 	bool		m_bHotkeyActived = false;
 	afx_msg LRESULT OnHotkey(WPARAM wParam, LPARAM lParam);
@@ -110,4 +112,6 @@ public:
 	CBitmap		m_bmpUnActived;
 	afx_msg void OnCbnSelendokComboSwitch();
 	bool		m_bFitFrame = false;
+	afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg void OnCbnSelendokComboDiv();
 };

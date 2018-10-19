@@ -47,6 +47,7 @@ library AVPlayerLib
 			[id(21), helpstring("LoadOpAssistConfigure")] LONG LoadOpAssistConfigure();
 			[id(23), helpstring("ConfigureScreenMode")] LONG ConfigureScreenMode();
 			[id(24), helpstring("SwitchScreen")] LONG SwitchScreen(LONG nCraneID,LONG nScreenMode,LONG hWnd);
+			[id(25)] LONG StartPlayBack(BSTR strDeviceID ,LONG hWnd,LONG nStartTime,LONG nStopTime, LONG nTimeout);
 	};
 
 	//  Event dispatch interface for CAVPlayerCtrl
