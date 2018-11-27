@@ -31,5 +31,5 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 public:
-	CAvplayerctrl m_AVPlayer;
+	CAvplayerctrl m_avplayer;
 };

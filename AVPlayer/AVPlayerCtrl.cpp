@@ -37,6 +37,8 @@ END_MESSAGE_MAP()
 
 
 // Dispatch map
+// #define DISP_FUNCTION_ID(theClass, szExternalName, dispid, pfnMember, vtRetVal, vtsParams)\
+// 	{ _T(szExternalName), dispid, vtsParams, vtRetVal, (AFX_PMSG)(void (theClass::*)(void))&pfnMember, (AFX_PMSG)0, 0, afxDispCustom }, 
 
 BEGIN_DISPATCH_MAP(CAVPlayerCtrl, COleControl)
 	DISP_FUNCTION_ID(CAVPlayerCtrl, "AboutBox", DISPID_ABOUTBOX, AboutBox, VT_EMPTY, VTS_NONE)
@@ -47,7 +49,7 @@ BEGIN_DISPATCH_MAP(CAVPlayerCtrl, COleControl)
 	DISP_FUNCTION_ID(CAVPlayerCtrl, "StopPlay", dispidStopPlay, StopPlay, VT_EMPTY, VTS_BSTR VTS_I4)
 	DISP_PROPERTY_EX_ID(CAVPlayerCtrl, "RecvTimeout", dispidRecvTimeout, GetRecvTimeout, SetRecvTimeout, VT_I4)
 	DISP_PROPERTY_EX_ID(CAVPlayerCtrl, "ReportInterval", dispidReportInterval, GetReportInterval, SetReportInterval, VT_I4)
-	DISP_FUNCTION_ID(CAVPlayerCtrl, "GetErrorMessage", dispidGetErrorMessage, GetErrorMessage, VT_I4, VTS_I4 VTS_PBSTR)
+	//DISP_FUNCTION_ID(CAVPlayerCtrl, "GetErrorMessage", dispidGetErrorMessage, GetErrorMessage, VT_I4, VTS_I4 VTS_BSTR VT_I4)
 	DISP_FUNCTION_ID(CAVPlayerCtrl, "FreeString", dispidFreeString, FreeString, VT_EMPTY, VTS_PBSTR)
 	DISP_FUNCTION_ID(CAVPlayerCtrl, "GetDeviceWindow", dispidGetDeviceWindow, GetDeviceWindow, VT_I4, VTS_BSTR VTS_PI4 VTS_PI4)
 	DISP_FUNCTION_ID(CAVPlayerCtrl, "GetWindowDevice", dispidGetWindowDevice, GetWindowDevice, VT_I4, VTS_I4 VTS_PBSTR)
@@ -64,7 +66,13 @@ BEGIN_DISPATCH_MAP(CAVPlayerCtrl, COleControl)
 
 	DISP_FUNCTION_ID(CAVPlayerCtrl, "ConfigureScreenMode", dispidConfigureScreenMode, ConfigureScreenMode, VT_I4, VTS_NONE)
 	DISP_FUNCTION_ID(CAVPlayerCtrl, "SwitchScreen", dispidSwitchScreen, SwitchScreen, VT_I4, VTS_I4 VTS_I4 VTS_I4)
-	DISP_FUNCTION_ID(CAVPlayerCtrl, "StartPlayBack", dispidStartPlayBack, StartPlayBack, VT_I4, VTS_BSTR VTS_I4  VTS_I4 VTS_I4 VTS_I4)
+	DISP_FUNCTION_ID(CAVPlayerCtrl, "PlayBack", dispidPlayBack, PlayBack, VT_I4, VTS_I4 VTS_BSTR VTS_I4 VTS_I4 VTS_I4 VTS_I4)
+	DISP_FUNCTION_ID(CAVPlayerCtrl, "StopPlayBack", dispidStopPlayBack, StopPlayBack, VT_EMPTY, VTS_BSTR)
+	DISP_FUNCTION_ID(CAVPlayerCtrl, "SeekTime", dispidSeekTime, SeekTime, VT_I4, VTS_BSTR VTS_I8)
+	DISP_FUNCTION_ID(CAVPlayerCtrl, "CreateFrameWnd", dispidCreateFrameWnd, CreateFrameWnd, VT_I4, VTS_I4 VTS_I4 VTS_I4 VTS_PI4)
+	DISP_FUNCTION_ID(CAVPlayerCtrl, "AdjustPanels", dispidAdjustPanels, AdjustPanels, VT_I4, VTS_I4 VTS_I4)
+	DISP_FUNCTION_ID(CAVPlayerCtrl, "QueryRecord", dispidQueryRecord, QueryRecord, VT_I4, VTS_BSTR VTS_I4 VTS_I4 VTS_I4 VTS_I4 VTS_PI4)
+	DISP_FUNCTION_ID(CAVPlayerCtrl, "GetErrorMessage", dispidGetErrorMessage, GetErrorMessage, VT_I4, VTS_I4 VTS_BSTR VTS_I4)
 END_DISPATCH_MAP()
 
 
@@ -351,8 +359,10 @@ LONG CAVPlayerCtrl::Login(LPCTSTR strServerIP, USHORT nServerPort, LPCTSTR strAc
 			long nStatus = SDK_CULogin(_AnsiString(strServerIP, CP_ACP), nServerPort, _AnsiString(strAccount, CP_ACP), _AnsiString(strPassword, CP_ACP), &m_nLoginID,0);
 			if (nStatus == 0)
 			{
-				SDK_CUSetRealPlayCallBack(m_nLoginID, AS300ReallDataCallBack, this);
+				SDK_CUSetRealPlayCallBack(m_nLoginID, AS300LiveCallBack, this);
 				SDK_CUSetPlaybackCallBack(m_nLoginID, AS300PlayBackCallBack, this);
+				SDK_CUSetPlaybackPos(m_nLoginID, PlayBackPosCallBack, this);
+				//SDK_CUSetResCallback(m_nLoginID, RespondCallBack, this);
 			}
 			else
 				return AvError_ConnectServerFailed;
@@ -438,6 +448,15 @@ LONG CAVPlayerCtrl::Login(LPCTSTR strServerIP, USHORT nServerPort, LPCTSTR strAc
 						m_nLogSaveDays = _tcstolong((LPCTSTR)xml.GetAttrib(_T("SaveDays")));	
 						if (m_nLogSaveDays < 7)
 							m_nLogSaveDays = 7;
+						xml.OutOfElem();
+					}
+
+					if (xml.FindChildElem(_T("AsyncPlayer")))
+					{
+						xml.IntoElem();
+						m_nYUVFrameCacheSize = _tcstolong((LPCTSTR)xml.GetAttrib(_T("YUVFrameCacheSize")));
+						if (m_nYUVFrameCacheSize <= 25)
+							m_nLogSaveDays = 25;
 						xml.OutOfElem();
 					}
 				}
@@ -931,9 +950,9 @@ LONG CAVPlayerCtrl::PlaySrvStream(LPCTSTR strDeviceID, LONG hWnd, LONG nEnableHW
 
 	if (!strDeviceID || !hWnd)
 		return AvError_InvalidParameters;
-	if (!m_pDBConnector)
+		
+	if (m_nLoginID == -1)
 		return AvError_NotLogintoServer;
-
 	// 从数据库获取相机的IP，端口，帐号，密码
 	try
 	{
@@ -1211,99 +1230,112 @@ void CAVPlayerCtrl::SetReportInterval(LONG newVal)
 	SetModifiedFlag();
 }
 
-LONG CAVPlayerCtrl::GetErrorMessage(LONG nErrorCode, BSTR* strErrorMessage)
+LONG CAVPlayerCtrl::GetErrorMessage(LONG nErrorCode, LPCTSTR strErrorMessage, LONG nBufferSize)
 {
 	AFX_MANAGE_STATE(AfxGetStaticModuleState());
 	
 	CString strErrMsg = L"";
-	switch(nErrorCode)
+	if (nErrorCode == 0)
 	{
-	case	AvError_Succeed:
 		strErrMsg = L"Succeed.";
-		break;				
-	case	AvError_InvalidParameters:
-		strErrMsg = L"Invalid Parameters.";
-		break;
-	case	AvError_Invalid_ServerAddress:
-		strErrMsg = L"Invalid Servere address.";	
-		break;
-	case	AvError_Invliad_ServerPort:
-		strErrMsg = L"Invliad Server port.";	
-		break;
-	case	AvError_Invalid_AccountOrPassword:		
-		strErrMsg = L"Account or password is Invliad.";	
-		break;
-	case	AvError_ConnectServerFailed:		
-		strErrMsg = L"Failed in connect Server.";	
-		break;
-	case	AvError_LoginFailed:
-		strErrMsg = L"Failed in login to the server.";	
-		break;
-	case	AvError_NotLogintoServer:
-		strErrMsg = L"Not login to the Server.";	
-		break;
-	case	AvError_InvalidWindow:
-		strErrMsg = L"The handle of window to play video is invalid.";	
-		break;
-	case	AvError_DeviceNotExist:
-		strErrMsg = L"The sepecified device it not exist.";
-		break;
-	case	AvError_ConnectDeviceFailed:
-		strErrMsg = L"Failed in connect the sepecified device.";	
-		break;
-	case	AvError_DeviceInPlaying	:
-		strErrMsg = L"The sepecified device is being played now,please don't play again.";	
-		break;
-	case	AvError_DBException:
-		strErrMsg = L"An exception occured when access database.";
-		break;
-	case AvError_DeviceNotInPlaying:
-		strErrMsg = L"The device is not in playing.";
-		break;
-	case AVError_BufferOverflow:
-		strErrMsg = L"Buffer over flow." ;// 缓存溢出,提供的内存空间不足以容纳所请求的数据";
-		break;
-	case AvError_WindowNotPlaying:
-		strErrMsg = L"There is no any devices been played on the windows."; //窗口尚未播放任何设备";
-		break;
-	case AvError_InvlaidPtzCommand:
-		strErrMsg = L"Invalid PTZ Command.";
-		break;
-	case AvError_Invalid_PtzValue:
-		strErrMsg = L"Invalid PTZ Value.";
-		break;
-	case AvError_LoadAssitConfigFailed:
-		strErrMsg = L"Failed to load OperationAssist.xml.";
-		break;
-	case AvError_DeivceNotConfigAssist:
-		strErrMsg = L"The Device is not specified in the OperationAssist.xml.";
-		break;
-	case AvError_FailedEnableAssist:
-		strErrMsg = L"Failed in enable Operation Assist.";
-		break;
-	case AvError_Crane_notExist:
-		strErrMsg = L"The specified Crane ID is not exist.";
-		break;
-	case AvError_ScreenMode_notExist:
-		strErrMsg = L"The specified mode ID is not exist.";
-		break;
-	case AvError_ExternalError:
-		strErrMsg = L"External error.";
-		break;
-	case	AvError_InsufficentMemory:
-		strErrMsg = L"Insufficent Memory.";	
-		break;
-	case	AvError_UnknownException:
-		strErrMsg = L"Unknown Exception.";
-		break;
-	default:
-		strErrMsg = L"Can't locate the error code.";
-		break;
 	}
-	BSTR bstrErrorMsg = ::SysAllocString(strErrMsg.GetString());
-	if (bstrErrorMsg == NULL)
-		return AvError_InsufficentMemory;
-	*strErrorMessage = bstrErrorMsg;
+	else if (nErrorCode < 0 && nErrorCode >-1000)
+	{
+		return ipcplay_GetErrorMessageW(nErrorCode, (WCHAR *)strErrorMessage, nBufferSize);
+	}
+	else if (nErrorCode < -1000 && nErrorCode >= -2000)
+	{
+	switch(nErrorCode)
+		{
+		case	AvError_Succeed:
+			strErrMsg = L"Succeed.";
+			break;				
+		case	AvError_InvalidParameters:
+			strErrMsg = L"Invalid Parameters.";
+			break;
+		case	AvError_Invalid_ServerAddress:
+			strErrMsg = L"Invalid Servere address.";	
+			break;
+		case	AvError_Invliad_ServerPort:
+			strErrMsg = L"Invliad Server port.";	
+			break;
+		case	AvError_Invalid_AccountOrPassword:		
+			strErrMsg = L"Account or password is Invliad.";	
+			break;
+		case	AvError_ConnectServerFailed:		
+			strErrMsg = L"Failed in connect Server.";	
+			break;
+		case	AvError_LoginFailed:
+			strErrMsg = L"Failed in login to the server.";	
+			break;
+		case	AvError_NotLogintoServer:
+			strErrMsg = L"Not login to the Server.";	
+			break;
+		case	AvError_InvalidWindow:
+			strErrMsg = L"The handle of window to play video is invalid.";	
+			break;
+		case	AvError_DeviceNotExist:
+			strErrMsg = L"The sepecified device it not exist.";
+			break;
+		case	AvError_ConnectDeviceFailed:
+			strErrMsg = L"Failed in connect the sepecified device.";	
+			break;
+		case	AvError_DeviceInPlaying	:
+			strErrMsg = L"The sepecified device is being played now,please don't play again.";	
+			break;
+		case	AvError_DBException:
+			strErrMsg = L"An exception occured when access database.";
+			break;
+		case AvError_DeviceNotInPlaying:
+			strErrMsg = L"The device is not in playing.";
+			break;
+		case AVError_BufferOverflow:
+			strErrMsg = L"Buffer over flow." ;// 缓存溢出,提供的内存空间不足以容纳所请求的数据";
+			break;
+		case AvError_WindowNotPlaying:
+			strErrMsg = L"There is no any devices been played on the windows."; //窗口尚未播放任何设备";
+			break;
+		case AvError_InvlaidPtzCommand:
+			strErrMsg = L"Invalid PTZ Command.";
+			break;
+		case AvError_Invalid_PtzValue:
+			strErrMsg = L"Invalid PTZ Value.";
+			break;
+		case AvError_LoadAssitConfigFailed:
+			strErrMsg = L"Failed to load OperationAssist.xml.";
+			break;
+		case AvError_DeivceNotConfigAssist:
+			strErrMsg = L"The Device is not specified in the OperationAssist.xml.";
+			break;
+		case AvError_FailedEnableAssist:
+			strErrMsg = L"Failed in enable Operation Assist.";
+			break;
+		case AvError_Crane_notExist:
+			strErrMsg = L"The specified Crane ID is not exist.";
+			break;
+		case AvError_ScreenMode_notExist:
+			strErrMsg = L"The specified mode ID is not exist.";
+			break;
+		case AvError_ExternalError:
+			strErrMsg = L"External error.";
+			break;
+		case	AvError_InsufficentMemory:
+			strErrMsg = L"Insufficent Memory.";	
+			break;
+		case	AvError_UnknownException:
+			strErrMsg = L"Unknown Exception.";
+			break;
+		default:
+			strErrMsg = L"Can't locate the error code.";
+			break;
+		}
+	}
+	else if (nErrorCode < -2000 && nErrorCode > -3000)
+	{
+
+	}
+	
+	wcscpy_s((WCHAR*)strErrorMessage, nBufferSize, (LPCTSTR)strErrMsg);
 
 	return 0;
 }
@@ -1311,11 +1343,12 @@ LONG CAVPlayerCtrl::GetErrorMessage(LONG nErrorCode, BSTR* strErrorMessage)
 void CAVPlayerCtrl::FreeString(BSTR* strString)
 {
 	AFX_MANAGE_STATE(AfxGetStaticModuleState());
-	if (strString)
-	{
-		SysFreeString(*strString);
-		*strString = NULL;
-	}
+// 	if (strString)
+// 	{
+// 		SysFreeString(*strString);
+// 		*strString = NULL;
+// 	}
+	return;
 }
 
 int CAVPlayerCtrl::OnCreate(LPCREATESTRUCT lpCreateStruct)
@@ -1349,7 +1382,7 @@ int CAVPlayerCtrl::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	unsigned int nThreadAddr = 0;
 	m_strAccount = _T("");
 	m_strServerIP = _T("");
-		
+	m_nLoginID = -1;
 
 	ShowWindow(SW_SHOW);
 	
@@ -1819,14 +1852,14 @@ void   CAVPlayerCtrl::OnDevStatus(char* szDevId, int nStatus)
 {
 }
 
-void   CAVPlayerCtrl::OnAS300LiveData(LONG nSessionId, char* buf, int nLen)
+void   CAVPlayerCtrl::OnAS300LiveData(LONG nSessionId, char* pBuffer, int nLen)
 {
 	IPCConnectionPtr pConnection = m_MapSession[nSessionId];
 	if (pConnection)
 	{
 		if (!pConnection->m_bIPCStart && (pConnection->m_nFrameLength + nLen) < pConnection->m_nBufferSize)
 		{
-			memcpy(&pConnection->m_pFrameBuffer[pConnection->m_nFrameLength], buf, nLen);
+			memcpy(&pConnection->m_pFrameBuffer[pConnection->m_nFrameLength], pBuffer, nLen);
 			pConnection->m_nFrameLength += nLen;
 			if (pConnection->m_nFrameLength >= 64)
 			{
@@ -1849,45 +1882,85 @@ void   CAVPlayerCtrl::OnAS300LiveData(LONG nSessionId, char* buf, int nLen)
 			}
 		}
 		if (pConnection->hPlayhandle)
-			ipcplay_InputStream2(pConnection->hPlayhandle , (byte *)buf, nLen);
+			ipcplay_InputStream2(pConnection->hPlayhandle , (byte *)pBuffer, nLen);
 	}
 }
 
-bool   CAVPlayerCtrl::OnAS300PlayBack(LONG nSessionId, char* buf, int nLen)
+bool   CAVPlayerCtrl::OnAS300PlayBack(LONG nSessionId, char* pBuffer, int nLength)
 {
 	IPCConnectionPtr pConnection = m_MapSession[nSessionId];
-	bool bResult = false;
+	int nResult = -1;
+	
 	if (pConnection)
 	{
-		if (!pConnection->m_bIPCStart && (pConnection->m_nFrameLength + nLen) < pConnection->m_nBufferSize)
+		if (!pConnection->pPlayStatus)
+			return false;
+		
+		if (!pConnection->pPlayStatus->pStreamParser)
+			return false;
+		PlayBackStatusPtr pPlayStatus = pConnection->pPlayStatus;
+		DhStreamParser* pParser = pPlayStatus->pStreamParser;
+		if (pParser->InputData((byte *)pBuffer, nLength) == 0)
 		{
-			memcpy(&pConnection->m_pFrameBuffer[pConnection->m_nFrameLength], buf, nLen);
-			pConnection->m_nFrameLength += nLen;
-			if (pConnection->m_nFrameLength >= 64)
+			while (true)
 			{
-				int nWidth = 0, nHeight = 0, nFramerate = 0;
-				int nOffsetStart = 0;
-				int nOffsetMatched = 0;
-				if (Stream_Analyse(&pConnection->m_pFrameBuffer[nOffsetStart], pConnection->m_nFrameLength, &nWidth, &nHeight, &nFramerate, &nOffsetMatched) != -1)
+				DH_FRAME_INFO *pFrame = pParser->GetNextFrame();
+				if (!pFrame)
+					break;
+				else if (!pConnection->m_bIPCStart)
 				{
+
 					IPC_MEDIAINFO MediaHeader;
 					MediaHeader.nVideoCodec = CODEC_H264;
 					MediaHeader.nAudioCodec = CODEC_UNKNOWN;
-					MediaHeader.nVideoWidth = nWidth;
-					MediaHeader.nVideoHeight = nHeight;
-					MediaHeader.nFps = 25;
+					MediaHeader.nVideoWidth = pFrame->nWidth;
+					MediaHeader.nVideoHeight = pFrame->nHeight;
+					MediaHeader.nFps = pFrame->nFrameRate;
 					ipcplay_SetStreamHeader(pConnection->hPlayhandle, (byte *)&MediaHeader, sizeof(IPC_MEDIAINFO));
-					ipcplay_EnableStreamParser(pConnection->hPlayhandle, CODEC_H264);
+					//ipcplay_EnableAsyncRender(pConnection->hPlayhandle);
+					//ipcplay_EnablePlayOneFrame(pConnection->hPlayhandle);
 					ipcplay_Start(pConnection->hPlayhandle);
 					pConnection->m_bIPCStart = true;
+
+				}
+				
+				if (pFrame->nType == DH_FRAME_TYPE_VIDEO)
+				{
+					time_t tTimeStamp = pFrame->nTimeStamp;
+					
+					int nFrameInterval = 40;
+					tTimeStamp *= 1000;
+					if (pFrame->nFrameRate)
+						nFrameInterval = 1000 / pFrame->nFrameRate;
+					else
+						nFrameInterval = 40;
+					
+					if (pFrame->nSubType == DH_FRAME_TYPE_VIDEO_I_FRAME)
+						pPlayStatus->tFrameTimeStamp = tTimeStamp;
+					else
+						pPlayStatus->tFrameTimeStamp += nFrameInterval;
+
+					do
+					{
+						nResult = ipcplay_InputIPCStream(pConnection->hPlayhandle, pFrame->pContent,
+							pFrame->nSubType == DH_FRAME_TYPE_VIDEO_I_FRAME ? IPC_I_FRAME : IPC_P_FRAME,
+							pFrame->nLength,
+							pFrame->nRequence,
+							pPlayStatus->tFrameTimeStamp);
+						if (IPC_Succeed == nResult)
+							break;
+						else if (IPC_Error_FrameCacheIsFulled == nResult)
+						{
+							Sleep(10);
+							continue;
+						}
+					} while (true);
 				}
 			}
 		}
-		if (pConnection->hPlayhandle)
-			if (ipcplay_InputStream2(pConnection->hPlayhandle, (byte *)buf, nLen) == IPC_Succeed)
-				return true;
+
 	}
-	return false;
+	return (IPC_Succeed ==nResult);
 }
 
 void   CAVPlayerCtrl::OnAS300Event(long nEventType, char* szId, int nParam1, int nParam2)
@@ -2103,7 +2176,8 @@ void CAVPlayerCtrl::OnDestroy()
 	EnterCriticalSection(&m_csOperationAssist);
 	m_mapOperationAssist.clear();
 	LeaveCriticalSection(&m_csOperationAssist);
-
+	if (m_nLoginID != -1)
+		SDK_CULogout(m_nLoginID);
 	SDK_CUClear();
 	DeleteCriticalSection(&m_csMapConnection);
 	DeleteCriticalSection(&m_csMapSession);
@@ -2245,6 +2319,7 @@ bool CAVPlayerCtrl::LoadOPAssistXConfigure()
 					EnterCriticalSection(&m_csOperationAssist);
 					m_mapOperationAssist.insert(pair<CString, OperationAssistPtr>(strID, pDevice));
 					LeaveCriticalSection(&m_csOperationAssist);
+					TraceMsgW(_T("%s Load Device %s.\n"), __FUNCTIONW__, strID);
 
 					xml.OutOfElem();
 				}
@@ -2505,15 +2580,13 @@ int CAVPlayerCtrl::OnMouseActivate(CWnd* pDesktopWnd, UINT nHitTest, UINT messag
 	return COleControl::OnMouseActivate(pDesktopWnd, nHitTest, message);
 }
 
-LONG CAVPlayerCtrl::StartPlayBack(LPCTSTR strDeviceID,LONG hWnd, LONG nStartTime,LONG nStopTime, LONG nTimeout)
+LONG CAVPlayerCtrl::PlayBack(LONG hWnd,LPCTSTR strDeviceID, LONG nStartTime,LONG nStopTime,LONG nSeekFrame ,LONG nTimeout)
 {
 	AFX_MANAGE_STATE(AfxGetStaticModuleState());
-
 	TraceFunction();
-
-	if (!strDeviceID || !hWnd ||!nStartTime ||!nStopTime || !nTimeout)
+	if (!strDeviceID || !hWnd || !nStartTime || !nStopTime || !nTimeout || nStartTime >= nStopTime)
 		return AvError_InvalidParameters;
-	if (!m_pDBConnector)
+	if (m_nLoginID == -1)
 		return AvError_NotLogintoServer;
 
 	// PVSRecord_Info_t pRecordInfo = (PVSRecord_Info_t )lRecordInfo;
@@ -2558,7 +2631,7 @@ LONG CAVPlayerCtrl::StartPlayBack(LPCTSTR strDeviceID,LONG hWnd, LONG nStartTime
 		QueryInfo.nEndTime = nStopTime;
 		strcpy_s((char *)QueryInfo.szCameraId, MAX_ID_LENGTH, (char *)szDeviceID);
 		int nRecordCount = 0;
-		long nResult = SDK_CUQueryRecord(m_nLoginID, QueryInfo, pRecordArray, (int &)nRecordCount, nMaxRecordCount, 15000);
+		long nResult = SDK_CUQueryRecord(m_nLoginID, QueryInfo, pRecordArray, (int &)nRecordCount, nMaxRecordCount, 5000);
 		if (nResult< 0)
 			return (AvError_AS300_Error + nResult);
 
@@ -2567,15 +2640,32 @@ LONG CAVPlayerCtrl::StartPlayBack(LPCTSTR strDeviceID,LONG hWnd, LONG nStartTime
 		IPCConnectionPtr pConnection = make_shared<_IPCConnection>();
 		pConnection->pRunlog = m_pRunlog;
 		pConnection->m_hWnd = (HWND)hWnd;
-		pConnection->hPlayhandle = ipcplay_OpenRTStream(pConnection->m_hWnd);
-		pConnection->m_bPlayBack = true;
+// 		pConnection->nSeekFrame = nSeekFrame;
+// 		pConnection->tStartTime = nStartTime;
+// 		pConnection->tStopTime = nStopTime;
 
+		PlayBackStatusPtr pPlayStatus = make_shared<PlayBackStatus>();
+		pPlayStatus->nSeekFrame = nSeekFrame;
+		pPlayStatus->tStartTime = nStartTime;
+		pPlayStatus->tStopTime = nStopTime;
+
+		pConnection->hPlayhandle = ipcplay_OpenRTStream(pConnection->m_hWnd);
+		pConnection->pPlayStatus = pPlayStatus;
+		ipcplay_EnableAsyncRender(pConnection->hPlayhandle,true,50);
+		if (nSeekFrame)
+			ipcplay_EnablePlayOneFrame(pConnection->hPlayhandle);
+	
 		ipcplay_SetD3dShared(pConnection->hPlayhandle,false);
+
+		pRecordArray[0].startTime = nStartTime;
+		if (nStopTime <= pRecordArray[0].endTime)
+			pRecordArray[0].endTime = nStopTime;
 
 		long hPlaySession = SDK_CUPlaybackByFile(m_nLoginID, &pRecordArray[0], nTimeout, "", 0);
 		if (hPlaySession < 0)
 			return (AvError_AS300_Error + hPlaySession);
-
+		pConnection->m_nPlaySession = hPlaySession;
+		pConnection->m_nLoginID = m_nLoginID;
 		EnterCriticalSection(&m_csMapConnection);
 		m_MapConnection.insert(pair<string, IPCConnectionPtr>(szDeviceID, pConnection));
 		LeaveCriticalSection(&m_csMapConnection);
@@ -2607,3 +2697,105 @@ LONG CAVPlayerCtrl::StartPlayBack(LPCTSTR strDeviceID,LONG hWnd, LONG nStartTime
 
 	return 0;
 }
+
+
+void CAVPlayerCtrl::StopPlayBack(LPCTSTR strDeviceID)
+{
+	AFX_MANAGE_STATE(AfxGetStaticModuleState());
+
+	if (!strDeviceID)
+		return ;
+	TCHAR szDeviceID[64] = { 0 };
+	_tcscpy_s(szDeviceID, 64, strDeviceID);
+	_tcscat_s(szDeviceID, 64, _T("01"));
+	StopPlay(szDeviceID, nullptr);
+}
+
+
+LONG CAVPlayerCtrl::SeekTime(LPCTSTR strDeviceID, LONGLONG nTime)
+{
+	AFX_MANAGE_STATE(AfxGetStaticModuleState());
+	if (!strDeviceID || !nTime)
+		return AvError_InvalidParameters;
+
+	TCHAR szDeviceID[32] = { 0 };
+	
+	_tcscpy_s(szDeviceID, 32, strDeviceID);
+	_tcscat_s(szDeviceID, 32, _T("01"));
+	
+	CAutoLock lock(&m_csMapConnection);
+	map<string, IPCConnectionPtr>::iterator itFind = m_MapConnection.find(_AnsiString(szDeviceID,CP_ACP));
+	if (itFind != m_MapConnection.end())
+	{
+		if (!itFind->second->hPlayhandle)
+			return AvError_DeviceNotInPlaying;
+		
+		if (itFind->second->pPlayStatus)
+		{
+			if (itFind->second->pPlayStatus->tStartTime <= nTime && itFind->second->pPlayStatus->tStopTime >= nTime)
+				return ipcplay_AsyncSeekFrame(itFind->second->hPlayhandle, nTime);
+			else
+				return AvError_OutofPlayingRange;
+		}
+		else
+			return AvError_NotSingleFramePlayer;
+	}
+	return 0;
+}
+
+
+LONG CAVPlayerCtrl::CreateFrameWnd(LONG hWnd,LONG nWndCount, LONG nFrameStyle, LONG* pFrameHandle)
+{
+	AFX_MANAGE_STATE(AfxGetStaticModuleState());
+
+	return 0;
+}
+
+
+LONG CAVPlayerCtrl::AdjustPanels(LONG nWndCount, LONG nFrameStyle)
+{
+	AFX_MANAGE_STATE(AfxGetStaticModuleState());
+
+	// TODO: Add your dispatch handler code here
+
+	return 0;
+}
+
+
+LONG CAVPlayerCtrl::QueryRecord(LPCTSTR strDeviceID, LONG nStartTime, LONG nStopTime, LONG pRecordArray, LONG nBufferCount, LONG* pRecordCount)
+{
+	AFX_MANAGE_STATE(AfxGetStaticModuleState());
+
+	if (!strDeviceID || !nStartTime || !nStopTime || nStopTime <= nStartTime || !pRecordArray || !pRecordCount)
+		return AvError_InvalidParameters;
+	if (m_nLoginID == -1)
+		return AvError_NotLogintoServer;
+	
+
+	if (nStartTime >= nStopTime)
+		return AvError_InvalidParameters;
+	char szDeviceID[32] = { 0 };
+
+	strcpy_s((char *)szDeviceID, 32, _AnsiString(strDeviceID, CP_ACP));
+	strcat_s((char *)szDeviceID, 32, "01");
+	VSQuery_Record_Info_t QueryInfo;
+	QueryInfo.nChannelNo = 1;
+	QueryInfo.nSource = Record_Source_SS;
+	QueryInfo.nRecordType = Record_all;
+	QueryInfo.nStartTime = nStartTime;
+	QueryInfo.nEndTime = nStopTime;
+	strcpy_s((char *)QueryInfo.szCameraId, MAX_ID_LENGTH, (char *)szDeviceID);
+	int nRecordCount = 0;
+	long nResult = SDK_CUQueryRecord(m_nLoginID, QueryInfo, (PVSRecord_Info_t)pRecordArray, (int &)nRecordCount, nBufferCount, 15000);
+	if (nRecordCount > 0)
+	{
+		*pRecordCount = nRecordCount;
+		return AvError_Succeed;
+	}
+	else
+		return (AvError_AS300_Error + nResult);
+
+	return 0;
+}
+
+

@@ -249,11 +249,51 @@ public:
 		InvokeHelper(0x17, DISPATCH_METHOD, VT_I4, (void*)&result, NULL);
 		return result;
 	}
-	long SwitchScreen(long nCraneID, long nScreenMode)
+	long SwitchScreen(long nCraneID, long nScreenMode, long hWnd)
+	{
+		long result;
+		static BYTE parms[] = VTS_I4 VTS_I4 VTS_I4 ;
+		InvokeHelper(0x18, DISPATCH_METHOD, VT_I4, (void*)&result, parms, nCraneID, nScreenMode, hWnd);
+		return result;
+	}
+	long PlayBack(long hWnd, LPCTSTR strDeviceID, long nStartTime, long nStopTime, long nSeekTime, long nTimeout)
+	{
+		long result;
+		static BYTE parms[] = VTS_I4 VTS_BSTR VTS_I4 VTS_I4 VTS_I4 VTS_I4 ;
+		InvokeHelper(0x19, DISPATCH_METHOD, VT_I4, (void*)&result, parms, hWnd, strDeviceID, nStartTime, nStopTime, nSeekTime, nTimeout);
+		return result;
+	}
+	void StopPlayBack(LPCTSTR strDeviceID)
+	{
+		static BYTE parms[] = VTS_BSTR ;
+		InvokeHelper(0x1a, DISPATCH_METHOD, VT_EMPTY, NULL, parms, strDeviceID);
+	}
+	long SeekTime(LPCTSTR strDeviceID, __int64 nTime)
+	{
+		long result;
+		static BYTE parms[] = VTS_BSTR VTS_I8 ;
+		InvokeHelper(0x1b, DISPATCH_METHOD, VT_I4, (void*)&result, parms, strDeviceID, nTime);
+		return result;
+	}
+	long CreateFrameWnd(long hWnd, long nWndCount, long nFrameStyle, long * pFrameHandle)
+	{
+		long result;
+		static BYTE parms[] = VTS_I4 VTS_I4 VTS_I4 VTS_PI4 ;
+		InvokeHelper(0x1c, DISPATCH_METHOD, VT_I4, (void*)&result, parms, hWnd, nWndCount, nFrameStyle, pFrameHandle);
+		return result;
+	}
+	long AdjustPanels(long nWndCount, long nFrameStyle)
 	{
 		long result;
 		static BYTE parms[] = VTS_I4 VTS_I4 ;
-		InvokeHelper(0x18, DISPATCH_METHOD, VT_I4, (void*)&result, parms, nCraneID, nScreenMode);
+		InvokeHelper(0x1d, DISPATCH_METHOD, VT_I4, (void*)&result, parms, nWndCount, nFrameStyle);
+		return result;
+	}
+	long QueryRecord(LPCTSTR szDeviceID, long nStartTime, long nStopTime, long pRecordArray, long nBufferCount, long * nRecordCount)
+	{
+		long result;
+		static BYTE parms[] = VTS_BSTR VTS_I4 VTS_I4 VTS_I4 VTS_I4 VTS_PI4 ;
+		InvokeHelper(0x1e, DISPATCH_METHOD, VT_I4, (void*)&result, parms, szDeviceID, nStartTime, nStopTime, pRecordArray, nBufferCount, nRecordCount);
 		return result;
 	}
 

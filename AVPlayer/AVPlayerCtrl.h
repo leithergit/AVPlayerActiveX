@@ -24,6 +24,7 @@
 #include <list>
 #include <map>
 #include "VideoFrame.h"
+#include "DhStreamParser.h"
 
 
 using namespace  std;
@@ -33,7 +34,7 @@ using namespace  std;
 enum AVStatus
 {
 	AvError_Succeed = 0,				// 操作成功
-	AvError_base = -1024,				
+	AvError_base = -1000,				
 	AvError_InvalidParameters			 = AvError_base - 1,		// 参数无效
 	AvError_Invalid_ServerAddress		 = AvError_base - 2,		// 服务器地址不是一个有效的IP地址	
 	AvError_Invliad_ServerPort			 = AvError_base - 3,		// 服务器端口无效
@@ -56,10 +57,12 @@ enum AVStatus
 	AvError_FailedEnableAssist			 = AvError_base - 20,		// 启用辅助设置失败
 	AvError_Crane_notExist				 = AvError_base - 21,		// 吊机设备不存在
 	AvError_ScreenMode_notExist			 = AvError_base - 22,		// 指定的模式不存在
+	AvError_NotSingleFramePlayer		 = AvError_base - 23,		// 不是一单帧播放器
+	AvError_OutofPlayingRange			 = AvError_base - 24,		// 指定的时间点超出播放器的时间范围
 	AvError_ExternalError				 = AvError_base - 253,		// 内部错误
 	AvError_InsufficentMemory			 = AvError_base - 254,		// 内存不足
 	AvError_UnknownException			 = AvError_base - 255,		// 未知异常 
-	AvError_AS300_Error = -2048
+	AvError_AS300_Error = -2000
 };
 
 enum Position
@@ -197,7 +200,27 @@ enum Orientation
 	RightBottom,
 };
 
+struct PlayBackStatus
+{
+	long	nSeekFrame;
+	time_t  tStartTime;
+	time_t  tStopTime;
+	time_t	tFrameTimeStamp;
 
+	DhStreamParser* pStreamParser;
+	PlayBackStatus()
+	{
+		ZeroMemory(this, sizeof(PlayBackStatus));
+		pStreamParser = new DhStreamParser();
+	}
+	~PlayBackStatus()
+	{
+		delete pStreamParser;
+		pStreamParser = nullptr;
+	}
+};
+
+typedef shared_ptr<PlayBackStatus> PlayBackStatusPtr;
 struct OperationAssist
 {
 	Orientation nOrientation;
@@ -351,9 +374,11 @@ struct _IPCConnection
 	HANDLE	hThread;
 	// AS300转发变量
 	bool	m_bIPCStart;
-	long	m_nPlaySession;
+	long	m_nPlaySession;	// 回放和转发播放的session
 	bool	m_bPlayBack;	// 回放标志，回放时为TRUE
 	long	m_nLoginID;
+
+	PlayBackStatusPtr	pPlayStatus;
 	string	m_strDeviceID;
 	list<SimpleStream*> listSimpleStream;
 	//map<long,long>mapWnd;
@@ -365,6 +390,7 @@ struct _IPCConnection
 		nRecvTimeout	 = 15000;
 		nReConnectInterval = 15000;
 		dfReConnectTime	 = 0.0f;
+		m_nLoginID = -1;
 	}
 
 	int SetExternDCDraw(void *pCallBack, void *pUserPtr)
@@ -416,7 +442,8 @@ struct _IPCConnection
 
 		if (m_nPlaySession)
 		{
-			if (!m_bPlayBack)
+			assert(m_nLoginID != -1);
+			if (!pPlayStatus)
 				SDK_CUStopVideoRequest(m_nLoginID, (CHAR *)m_strDeviceID.c_str());
 			else
 				SDK_CUStopPlayback(m_nLoginID, m_nPlaySession);
@@ -431,9 +458,14 @@ struct _IPCConnection
 		if (m_pFrameBuffer)
 		{
 			delete[]m_pFrameBuffer;
+			m_pFrameBuffer = nullptr;
 		}
 		if (m_pSimpleStream)
+		{
 			delete m_pSimpleStream;
+			m_pSimpleStream = nullptr;
+		}
+			
 		for (list<SimpleStream*>::iterator it = listSimpleStream.begin();it != listSimpleStream.end();)
 		{
 			delete (*it);
@@ -613,7 +645,8 @@ public:
 	map<CString,CameraUrlPtr> m_mapCameraUrl;
 	CRITICAL_SECTION m_csOperationAssist;
 	map<CString, OperationAssistPtr> m_mapOperationAssist;
-	INT		m_nLogSaveDays;
+	INT		m_nLogSaveDays = 30;
+	INT		m_nYUVFrameCacheSize = 50;
 	
 	void LogManager()
 	{
@@ -658,7 +691,12 @@ protected:
 // Dispatch and event IDs
 public:
 	enum {
-		dispidStartPlayBack = 25L,
+		dispidQueryRecord = 30L,
+		dispidAdjustPanels = 29L,
+		dispidCreateFrameWnd = 28L,
+		dispidSeekTime = 27L,
+		dispidStopPlayBack = 26L,
+		dispidPlayBack = 25L,
 		dispidSwitchScreen = 24L,
 		dispidConfigureScreenMode = 23L,
 		dispidLoadOpAssistConfigure = 21L,
@@ -776,7 +814,6 @@ protected:
 	void SetRecvTimeout(LONG newVal);
 	LONG GetReportInterval(void);
 	void SetReportInterval(LONG newVal);
-	LONG GetErrorMessage(LONG nErrorCode, BSTR* strErrorMessage);
 	void FreeString(BSTR* strString);
 
 public:
@@ -818,7 +855,7 @@ protected:
 	LONG SetExternDCDraw(LPCTSTR szDeviceID, LONG pDCDraw, LONG pUserPtr);
 public:
 	// AS300 Client SDK
-	static void CALLBACK AS300ReallDataCallBack(int nSessionId, char* buf, int len, void* user)
+	static void CALLBACK AS300LiveCallBack(int nSessionId, char* buf, int len, void* user)
 	{
 		if (!nSessionId)
 			return;
@@ -850,7 +887,7 @@ public:
 	}
 	static void CALLBACK RespondCallBack(uint32 nSequence, long res, VSParamInfo *paramInfo, void* pUser)//响应结果回调
 	{
-
+		
 	}
 
 	static void CALLBACK EventInfoCallback(long login_id, long nEventType, char* szId, int nParam1, int nParam2, void* user)
@@ -862,7 +899,7 @@ public:
 		}
 	}
 
-	static int CALLBACK RecordQueryCallBack(int nQueryId, int nCount, void* pUser, long res);//响应结果回调
+	//static int CALLBACK RecordQueryCallBack(int nQueryId, int nCount, void* pUser, long res);//响应结果回调
 
 	void   OnRespondCallback(int nSessionId);	
 	void   OnDevStatus(char* szDevId, int nStatus);
@@ -881,7 +918,18 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	void   OnAS300PlayBackPos(int nSessionID, int nPos, int nTotal)
 	{
-
+		//TraceMsgA("%s nSessionID = %d\tnPos = %d\tnTotal = %d.\n", __FUNCTION__, nSessionID, nPos, nTotal);
+		if (nPos == -1)
+		{
+			TCHAR szDeviceID[32] = { 0 };
+			EnterCriticalSection(&m_csMapSession);
+			auto itFind = m_MapSession.find((long)nSessionID);
+			if (itFind != m_MapSession.end())
+				_tcscpy_s(szDeviceID,32,_UnicodeString(itFind->second->m_strDeviceID.c_str(),CP_ACP));
+			LeaveCriticalSection(&m_csMapSession);
+			if (_tcslen(szDeviceID))
+				StopPlayBack(szDeviceID);
+		}
 	}
 	void   OnAS300Event(long nEventType, char* szId, int nParam1, int nParam2);
 	static void CALLBACK PlayBackPosCallBack(int nSessionID, int nPos, int nTotal, void *pUserData)
@@ -896,7 +944,7 @@ public:
 
 	long	m_nLoginID = -1;
 
-	long   QueryDeviceRecord(LPCTSTR strDeviceID,long nChannel, long nStartTime, long nStopTime, PVSRecord_Info_t  lpRecordArray,long &nRecordCount,long &nBufferSize)
+	long   _QueryDeviceRecord(LPCTSTR strDeviceID,long nChannel, long nStartTime, long nStopTime, PVSRecord_Info_t  lpRecordArray,long &nRecordCount,long &nBufferSize)
 	{
 		if (!strDeviceID || !nStartTime || !nStopTime)
 			return AvError_InvalidParameters;
@@ -978,6 +1026,14 @@ public:
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	afx_msg int OnMouseActivate(CWnd* pDesktopWnd, UINT nHitTest, UINT message);
-	LONG StartPlayBack(LPCTSTR strDeviceID,LONG hWnd, LONG nStartTime, LONG nStopTime, LONG nTimeout);
+	LONG PlayBack(LONG hWnd, LPCTSTR strDeviceID,LONG nStartTime, LONG nStopTime,LONG nSeekFrame, LONG nTimeout);
+	void StopPlayBack(LPCTSTR strDeviceID);
+	// 移动到指定位置后，重新播放
+	LONG SeekTime(LPCTSTR strDeviceID, LONGLONG nTime);
+protected:
+	LONG CreateFrameWnd(LONG hWnd,LONG nWndCount, LONG nFrameStyle, LONG* pFrameHandle);
+	LONG AdjustPanels(LONG nWndCount, LONG nFrameStyle);
+	LONG QueryRecord(LPCTSTR szDeviceID, LONG nStartTime, LONG nStopTime, LONG pRecordArray,LONG nBufferCount, LONG* nRecordCount);
+	LONG GetErrorMessage(LONG nErrorCode, LPCTSTR strErrorMessage, LONG nBufferSize);
 };
 

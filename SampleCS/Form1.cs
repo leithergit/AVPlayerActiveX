@@ -90,7 +90,7 @@ namespace SampleCS
                 //textBox_ServerIP.Text = "172.27.18.101";
                 //textBox_ServerIP.Text = "192.168.10.128";
                 // 获取数据读取超时值，单位为毫秒
-                textbox_RecvTimeout.Text = axAVPlayer1.RecvTimeout.ToString();
+              textbox_RecvTimeout.Text = axAVPlayer1.RecvTimeout.ToString();
             // 获取报告超时间隔值，单位为毫秒，即每隔一段时间发送一次超报告
             textbox_ReportInterval.Text = axAVPlayer1.ReportInterval.ToString();
             ExternDCDrawEvent = new ExternDCDrawDelegate(ExternDCDraw);
@@ -118,7 +118,7 @@ namespace SampleCS
                     axAVPlayer1.FreeString(ref strErrorMsg);
                     return;
                 }
-                
+
                 string[] IDList = strDeviceIDList.Split(';');
                 int nIndex = 0;
                 listView_CameraID.BeginUpdate();
@@ -132,7 +132,7 @@ namespace SampleCS
                 }
                 // strDeviceIDList是控件内部申请的内存，需要使用FreeString手动释放
                 axAVPlayer1.FreeString(ref strDeviceIDList);
-            
+
                 listView_CameraID.EndUpdate();
                 button_Login.Enabled = false;
                 button_Logout.Enabled = true;
@@ -143,7 +143,7 @@ namespace SampleCS
                 checkBox2.Enabled = true;
                 checkBox3.Enabled = true;
 
-            }
+            } 
         }
 
         private void button_Logout_Click(object sender, EventArgs e)
@@ -260,15 +260,15 @@ namespace SampleCS
         
         private void button_Stop_Click(object sender, EventArgs e)
         {
-//             int nCount = listView_CameraID.CheckedItems.Count;
-//             for (int i = 0; i < nCount; i++)
-//             {
-//                 string strDeviceID = listView_CameraID.CheckedItems[i].SubItems[1].Text;
-//                 // 终止所有窗口的播放
-//                 // StopPlay的第二个参数为窗口句柄，关闭在指定窗口显示的视频
-//                 // 若该参数为0，则关闭所有窗口的句柄
-//                 axAVPlayer1.StopPlay(strDeviceID,0);
-//             }
+            int nCount = listView_CameraID.CheckedItems.Count;
+            for (int i = 0; i < nCount; i++)
+            {
+                string strDeviceID = listView_CameraID.CheckedItems[i].SubItems[1].Text;
+                // 终止所有窗口的播放
+                // StopPlay的第二个参数为窗口句柄，关闭在指定窗口显示的视频
+                // 若该参数为0，则关闭所有窗口的句柄
+                axAVPlayer1.StopPlay(strDeviceID,0);
+            }
             foreach(var dev in m_PlayList)
             {
                 axAVPlayer1.StopPlay(dev.strDevice,0);
@@ -498,7 +498,7 @@ namespace SampleCS
                 }
             }
         }
-
+        /*
         private void axAVPlayer1_RecvTimeoutEvent(object sender, AxAVPlayerLib._DAVPlayerEvents_RecvTimeoutEvent e)
         {
             // 设备e.strDevice接收数据超时，可能断线, 此时可以把窗口刷黑
@@ -519,7 +519,7 @@ namespace SampleCS
             textBox_msg.Text += " 可能已经掉线.\r\n";
             axAVPlayer1.FreeString(ref e.strDevice);
         }
-
+        */
         private void checkBox4_CheckedChanged(object sender, EventArgs e)
         {
             if (checkBox4.Checked == true)
@@ -718,11 +718,7 @@ namespace SampleCS
                     axAVPlayer1.EnableOperationAssist(dev.strDevice, 1);
         }
 
-        private void axAVPlayer1_RecvTimeoutEvent_1(object sender, AxAVPlayerLib._DAVPlayerEvents_RecvTimeoutEvent e)
-        {
-
-        }
-
+ 
         private void SwitchScreen_Click(object sender, EventArgs e)
         {
             if (!m_bFitFrame)
@@ -743,8 +739,18 @@ namespace SampleCS
             } 
             int nMode = Convert.ToInt32(comboBox_mode.SelectedItem.ToString());
             int nCrane = 1;         // 配置文件只配置了1和2号Crane
-            axAVPlayer1.SwitchScreen(nCrane, nMode);
+            //axAVPlayer1.SwitchScreen(nCrane, nMode);
             m_bFitFrame = true;     
+
+        }
+
+        private void QueryRecord_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void PlayRecord_Click(object sender, EventArgs e)
+        {
 
         }
     };

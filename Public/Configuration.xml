@@ -12,6 +12,5 @@
 		<!-- Ê¾Àý:
 		<Camera IP="192.168.2.110" User="admin" Password="admin12345" Url="rtsp://%s:%s@%s/ONVIF/MediaInput?profile=2_def_profile6" />
 			-->	
-		<Camera IP="192.168.2.110" User="admin" Password="admin12345" Url="rtsp://%s:%s@%s/ONVIF/MediaInput?profile=2_def_profile6" />
 	</CameraList>	
 </Configuration>

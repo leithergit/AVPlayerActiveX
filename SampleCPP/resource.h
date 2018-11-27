@@ -26,6 +26,7 @@
 #define IDC_BUTTON_STOP                 1006
 #define IDC_LIST_DEVICE                 1007
 #define IDC_STATIC_FRAME2               1008
+#define IDC_LIST_RECORD                 1008
 #define IDC_STATIC_FRAME3               1009
 #define IDC_STATIC_FRAME4               1010
 #define IDC_BUTTON_STARTSWITCH          1011
@@ -46,6 +47,9 @@
 #define IDC_BUTTON_PLAY2                1025
 #define IDC_BUTTON_PLAYCOMBO            1025
 #define IDC_BUTTON_PTZPannel            1026
+#define IDC_BUTTON_QUERYRECORD          1027
+#define IDC_BUTTON_SHOW3                1028
+#define IDC_BUTTON_PLAYRECORD           1028
 #define IDC_EDIT_PTZVALUE1              1029
 #define IDC_EDIT_PTZVALUE2              1030
 #define IDC_EDIT_PTZVALUE3              1031
@@ -70,6 +74,12 @@
 #define IDC_STATIC_DEVIDE               1050
 #define IDC_COMBO1                      1051
 #define IDC_COMBO_DIV                   1051
+#define IDC_DATEPICKER                  1052
+#define IDC_TIMEPICKER1                 1053
+#define IDC_TIMEPICKER2                 1054
+#define IDC_STATIC_Server               1055
+#define IDC_CHECK4                      1056
+#define IDC_CHECK_SEEKFRAME             1056
 #define IDC_EDIT_CAMERAID               1071
 #define IDC_BUTTON_UP                   1072
 #define IDC_BUTTON_RESET                1073
@@ -90,7 +100,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        143
 #define _APS_NEXT_COMMAND_VALUE         32772
-#define _APS_NEXT_CONTROL_VALUE         1052
+#define _APS_NEXT_CONTROL_VALUE         1057
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

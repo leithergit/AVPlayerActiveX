@@ -5,6 +5,7 @@
 	<CameraPostion Enable ="false"/>
 	<!-- 设置控件日志保存期限,SaveDays="30",则日志保存期限为30天,超过30天的日志将被删除-->
 	<LogManager SaveDays ="30"/>
+	<AsyncPlayer YUVFrameCacheSize ="50"/>
 	<CameraList>
 		<!-- 配置非安讯士摄像的连接信息,请注意配置信息的大小写-->
 		<!-- IP 为摄像机IP地址，User为摄像机登录帐号,Password为登录密码,Url为拉取视频所用的地址串-->

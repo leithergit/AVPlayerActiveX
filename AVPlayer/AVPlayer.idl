@@ -32,7 +32,7 @@ library AVPlayerLib
 			[id(3), helpstring("method PlayStream")] LONG PlayStream(BSTR strDeviceID, LONG hWnd,LONG nEnalbeHWAccel);
 			[id(4), helpstring("method GetDeviceID")] LONG GetDeviceID(BSTR* strDeviceList, LONG* nDeviceCount);
 			[id(5), helpstring("method StopPlay")] void StopPlay(BSTR strDeviceID,LONG hWnd);
-			[id(8), helpstring("method GetErrorMessage")] LONG GetErrorMessage(LONG nErrorCode, BSTR* strErrorMessage);
+			[id(8), helpstring("GetErrorMessage")] LONG GetErrorMessage(LONG nErrorCode, BSTR strErrorMessage, LONG nBufferSize);
 			[id(9), helpstring("method FreeString")] void FreeString(BSTR* strString);
 			[id(10), helpstring("method GetDeviceWindow")] LONG GetDeviceWindow(BSTR strDeviceID, LONG* hWndArray, LONG* nArraySize);
 			[id(11), helpstring("method GetWindowDevice")] LONG GetWindowDevice(LONG hWnd, BSTR* strDeviceID);
@@ -43,11 +43,17 @@ library AVPlayerLib
 			[id(17), helpstring("method EnalbeCameraPostion")] LONG EnalbeCameraPostion(LONG bEnalbeFlag);
 			[id(18), helpstring("method SetExternDCDraw")] LONG SetExternDCDraw(BSTR szDeviceID, LONG pDCDraw, LONG pUserPtr);
 			[id(19), helpstring("method PlaySrvStream")] LONG PlaySrvStream(BSTR strDeviceID, LONG hWnd, LONG nEnableHWAccel);
-			[id(20), helpstring("EnableOperationAssist")] LONG EnableOperationAssist(BSTR strDevice, LONG nEnable);
-			[id(21), helpstring("LoadOpAssistConfigure")] LONG LoadOpAssistConfigure();
-			[id(23), helpstring("ConfigureScreenMode")] LONG ConfigureScreenMode();
-			[id(24), helpstring("SwitchScreen")] LONG SwitchScreen(LONG nCraneID,LONG nScreenMode,LONG hWnd);
-			[id(25)] LONG StartPlayBack(BSTR strDeviceID ,LONG hWnd,LONG nStartTime,LONG nStopTime, LONG nTimeout);
+			[id(20), helpstring("method EnableOperationAssist")] LONG EnableOperationAssist(BSTR strDevice, LONG nEnable);
+			[id(21), helpstring("method LoadOpAssistConfigure")] LONG LoadOpAssistConfigure();
+			[id(23), helpstring("method ConfigureScreenMode")] LONG ConfigureScreenMode();
+			[id(24), helpstring("method SwitchScreen")] LONG SwitchScreen(LONG nCraneID,LONG nScreenMode,LONG hWnd);
+			[id(25), helpstring("method PlayBack")] LONG PlayBack(LONG hWnd,BSTR strDeviceID,  LONG nStartTime, LONG nStopTime,LONG nSeekTime, LONG nTimeout);
+			[id(26), helpstring("method StopPlayBack")] void StopPlayBack(BSTR strDeviceID);
+			[id(27), helpstring("method SeekTime")] LONG SeekTime(BSTR strDeviceID, LONGLONG nTime);
+			[id(28), helpstring("method CreateFrameWnd")] LONG CreateFrameWnd(LONG hWnd,LONG nWndCount, LONG nFrameStyle, LONG* pFrameHandle);
+			[id(29), helpstring("method AdjustPanels")] LONG AdjustPanels(LONG nWndCount, LONG nFrameStyle);
+			[id(30), helpstring("method QueryRecord")] LONG QueryRecord(BSTR szDeviceID, LONG nStartTime, LONG nStopTime, LONG pRecordArray, LONG nBufferCount, LONG* nRecordCount);
+			
 	};
 
 	//  Event dispatch interface for CAVPlayerCtrl
