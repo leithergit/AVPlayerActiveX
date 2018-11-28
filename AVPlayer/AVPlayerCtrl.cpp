@@ -1316,6 +1316,9 @@ LONG CAVPlayerCtrl::GetErrorMessage(LONG nErrorCode, LPCTSTR strErrorMessage, LO
 		case AvError_ScreenMode_notExist:
 			strErrMsg = L"The specified mode ID is not exist.";
 			break;
+		case AvError_OutofPlayingRange:
+			strErrMsg = L"Out of Player Timer Ranage";
+			break;
 		case AvError_ExternalError:
 			strErrMsg = L"External error.";
 			break;
