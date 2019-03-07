@@ -1,6 +1,0 @@
-2017-07-17 14:54:26.599 CAVPlayerCtrl::Login Account:admin trying to login to server:192.168.0.240.
-2017-07-17 14:54:29.807 CAVPlayerCtrl::PlayComboStream Windows 00010C0A Postion(219,668,284,566).
-2017-07-17 14:54:29.915 CAVPlayerCtrl::PlayComboStream Device 3301061000001 (095A0A40) is playing on Window 00010C0A.
-2017-07-17 14:54:29.967 CAVPlayerCtrl::PlayComboStream Device 3301061000010 (095A3E70) is playing on Window 00010C0A.
-2017-07-17 14:54:32.650 CAVPlayerCtrl::~CAVPlayerCtrl 准备结束线程ThreadCheckRecvTime.
-2017-07-17 14:54:32.691 CAVPlayerCtrl::~CAVPlayerCtrl 控件被销毁.

@@ -8,6 +8,7 @@
 #include "TimeUtility.h"
 #include "Utility.h"
 #include <MMSystem.h>
+#include <Markup.h>
 
 #pragma comment(lib,"winmm.lib")
 #ifdef _DEBUG
@@ -59,6 +60,9 @@ void CSampleCPPDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_AVPLAYERCTRL1, m_AvPlayer);
+	DDX_Control(pDX, IDC_DATEPICKER, m_Date);
+	DDX_Control(pDX, IDC_TIMEPICKER1, m_StartTime);
+	DDX_Control(pDX, IDC_TIMEPICKER2, m_StopTime);
 }
 
 BEGIN_MESSAGE_MAP(CSampleCPPDlg, CDialog)
@@ -96,6 +100,11 @@ BEGIN_MESSAGE_MAP(CSampleCPPDlg, CDialog)
 	ON_BN_CLICKED(IDC_CHECK_DCDRAW, &CSampleCPPDlg::OnBnClickedCheckDcdraw)
 	ON_BN_CLICKED(IDC_BUTTON_UPDATEAssist, &CSampleCPPDlg::OnBnClickedButtonUpdateassist)
 	ON_CBN_SELENDOK(IDC_COMBO_SWITCH, &CSampleCPPDlg::OnCbnSelendokComboSwitch)
+	ON_WM_SIZE()
+	ON_CBN_SELENDOK(IDC_COMBO_DIV, &CSampleCPPDlg::OnCbnSelendokComboDiv)
+	ON_BN_CLICKED(IDC_BUTTON_QUERYRECORD, &CSampleCPPDlg::OnBnClickedButtonQueryrecord)
+	ON_BN_CLICKED(IDC_BUTTON_PLAYRECORD, &CSampleCPPDlg::OnBnClickedButtonPlayrecord)
+	ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
 struct HotKeyInfo
@@ -116,6 +125,7 @@ static HotKeyInfo HotKeyArray[] =
 };
 
 // CSampleCPPDlg message handlers
+
 
 BOOL CSampleCPPDlg::OnInitDialog()
 {
@@ -145,7 +155,13 @@ BOOL CSampleCPPDlg::OnInitDialog()
 	//  when the application's main window is not a dialog
 	SetIcon(m_hIcon, TRUE);			// Set big icon
 	SetIcon(m_hIcon, FALSE);		// Set small icon
+	m_pRunlog = new CRunlog(_T("Sample"));
 	
+	CRect rtClient;
+	GetDlgItemRect(IDC_STATIC_FRAME, rtClient);
+	m_pVideoFrame = new CVideoFrame;
+	m_pVideoFrame->Create(1024, rtClient, 4, this);
+
 	m_bIsLButtonDown = false;
 	m_AvPlayer.ShowWindow(SW_SHOW);
 	m_pDialogPTZ =new CDialogPTZ();
@@ -155,11 +171,26 @@ BOOL CSampleCPPDlg::OnInitDialog()
 
 	m_ctlDeviceList.SetExtendedStyle(m_ctlDeviceList.GetExtendedStyle() | LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER|LVS_EX_CHECKBOXES);
 
+	
 	int nCols = 0;
 	m_ctlDeviceList.InsertColumn(nCols++, _T("NO."), LVCFMT_LEFT, 60);
 	m_ctlDeviceList.InsertColumn(nCols++, _T("Device ID"), LVCFMT_LEFT, 100);
-	SetDlgItemText(IDC_IPADDRESS1,_T("192.168.2.99"));
-	//SetDlgItemText(IDC_IPADDRESS1,_T("192.168.1.128"));
+	
+	m_listRecord.SubclassDlgItem(IDC_LIST_RECORD, this);
+	DWORD dwExtendedStyle = m_listRecord.GetExtendedStyle();
+	dwExtendedStyle |= LVS_EX_FULLROWSELECT | LVS_EX_CHECKBOXES;
+	int nIndex = 0;
+	m_listRecord.SetExtendedStyle(dwExtendedStyle);
+
+	m_listRecord.InsertColumn(nIndex++, _T("No."), LVCFMT_LEFT, 30);
+	m_listRecord.InsertColumn(nIndex++, _T("Start"), LVCFMT_LEFT, 80);
+	m_listRecord.InsertColumn(nIndex++, _T("Stop"), LVCFMT_LEFT, 80);
+	//m_listRecord.InsertColumn(nIndex++, _T("Type"), LVCFMT_LEFT, 30);
+	//SetDlgItemText(IDC_IPADDRESS1,_T("192.168.2.99"));
+	//SetDlgItemText(IDC_IPADDRESS1, _T("10.0.0.100"));
+	//SetDlgItemText(IDC_IPADDRESS1, _T("192.168.254.129"));
+	//SetDlgItemText(IDC_IPADDRESS1, _T("192.168.1.104"));
+	//SetDlgItemText(IDC_IPADDRESS1,_T("10.28.254.98"));
 	m_nNextDevNo = 0;
 	SetDlgItemText(IDC_EDIT_SWITCHTIME,_T("30"));
 	SetDlgItemText(IDC_EDIT_NEXTSWITCHTIME,_T("30"));
@@ -169,10 +200,8 @@ BOOL CSampleCPPDlg::OnInitDialog()
 	m_bitmapMago.LoadBitmap(IDB_BITMAP_MAGO);
 	m_bitmapZpmc.LoadBitmap(IDB_BITMAP_ZPMC);
 
-	m_hLeftTopWnd = GetDlgItem(IDC_STATIC_FRAME)->GetSafeHwnd();
-	m_hRightTopWnd = GetDlgItem(IDC_STATIC_FRAME2)->GetSafeHwnd();
-	m_hLeftBottomWnd = GetDlgItem(IDC_STATIC_FRAME3)->GetSafeHwnd();
-	m_hRightBottomWnd = GetDlgItem(IDC_STATIC_FRAME4)->GetSafeHwnd();
+	UpdateServer();
+
 
 	::RegisterHotKey(m_hWnd, ID_F12, MOD_ALT | MOD_CONTROL, VK_HOME);
 	m_bmpActived.LoadBitmap( IDB_ACTIVED);
@@ -193,7 +222,35 @@ BOOL CSampleCPPDlg::OnInitDialog()
 	DEFAULT_PITCH | FF_SWISS, // nPitchAndFamily 
 	_T("微软雅黑"));
 
+	CTime cur_time = CTime::GetCurrentTime();
+	CTime bTime = CTime(cur_time.GetYear(), cur_time.GetMonth(), cur_time.GetDay(), 0, 0, 0);
+	CTime eTime = CTime(cur_time.GetYear(), cur_time.GetMonth(), cur_time.GetDay(), 23, 59, 59);
+	CTime begdateTime;
 
+	begdateTime = CTime(bTime.GetYear(), bTime.GetMonth(), bTime.GetDay(), 0, 0, 0);
+	m_Date.SetTime(&begdateTime);
+	m_StartTime.SetTime(&bTime);
+	m_StopTime.SetTime(&eTime);
+
+	UINT nArrayLeftTop[] = { IDC_STATIC_Server,IDC_IPADDRESS1, IDC_BUTTON_LOGIN, IDC_BUTTON_LOGOUT, IDC_BUTTON_PLAY, IDC_BUTTON_PLAYCOMBO, IDC_BUTTON_STOP,
+		IDC_BUTTON_STARTSWITCH, IDC_BUTTON_STOPSWITCH, IDC_CHECK1, IDC_CHECK2, IDC_CHECK3, IDC_STATIC_CONFIG, IDC_STATIC_CONFIGWND,
+		IDC_STATIC_SWITCHTIME, IDC_EDIT_SWITCHTIME, IDC_STATIC_NEXTT, IDC_EDIT_NEXTSWITCHTIME, IDC_STATIC_SWITCHCOUNT, IDC_EDIT_SWITCHCOUNT,
+		IDC_BUTTON_SHOW, IDC_BUTTON_HIDE, IDC_BUTTON_HIDE, IDC_BUTTON_PTZPannel, IDC_BUTTON_SWITCH, IDC_BUTTON_STOPEXTEND, IDC_BUTTON_STOPEXTEND2,
+		IDC_BUTTON_STOPEXTEND3, IDC_STATIC_SWITCHMODE, IDC_COMBO_SWITCH, IDC_CHECK_DCDRAW, IDC_CHECK_ENABLETRANLATE, IDC_BUTTON_UPDATEAssist };
+	UINT nIDArrayRight[] = { IDC_STATIC_DEV };
+	UINT nIDArrayRightTopBottom[] = {  IDC_LIST_DEVICE };
+	UINT nIDArrayRightBottom[] = { IDC_LIST_RECORD, IDC_DATEPICKER, IDC_TIMEPICKER1, IDC_TIMEPICKER2, IDC_BUTTON_QUERYRECORD, IDC_BUTTON_PLAYRECORD, IDC_CHECK_SEEKFRAME };
+	UINT nIDArrayCenter[] = { IDC_STATIC_FRAME };
+
+	RECT rtDialog;
+	GetClientRect(&rtDialog);
+
+	m_WndSizeManager.SetParentWnd(this);
+	m_WndSizeManager.SaveWndPosition(nArrayLeftTop, sizeof(nArrayLeftTop) / sizeof(UINT), (DockType)(DockLeft ));
+	m_WndSizeManager.SaveWndPosition(nIDArrayCenter, sizeof(nIDArrayCenter) / sizeof(UINT), DockCenter, false);
+	m_WndSizeManager.SaveWndPosition(nIDArrayRight, sizeof(nIDArrayRight) / sizeof(UINT), DockRight);
+	m_WndSizeManager.SaveWndPosition(nIDArrayRightBottom, sizeof(nIDArrayRightBottom) / sizeof(UINT), (DockType)(DockRight | DockBottom));
+	m_WndSizeManager.SaveWndPosition(nIDArrayRightTopBottom, sizeof(nIDArrayRightTopBottom) / sizeof(UINT), (DockType)(DockRight |DockTop| DockBottom));
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -256,11 +313,13 @@ void CSampleCPPDlg::OnBnClickedButtonLogin()
 	int nErrorCode = m_AvPlayer.Login(strServerIP,9000,_T("admin"),_T("123456"),0);
 	if (nErrorCode == 0)
 	{// 登录成功
+		m_pRunlog->Runlog(_T("登录成功.\n"));
 		BSTR strDevice;
 		LONG nDeviceCount = 0;
 		m_AvPlayer.GetDeviceID(&strDevice,&nDeviceCount);
 		if (nDeviceCount <= 0)
 		{
+			m_pRunlog->Runlog(_T("没有在线的设备.\n"));
 			AfxMessageBox(_T("没有在线的设备."),MB_ICONSTOP);
 			return ;
 		}
@@ -298,10 +357,12 @@ void CSampleCPPDlg::OnBnClickedButtonLogin()
 	}
 	else
 	{
-		BSTR strMessage;
-		m_AvPlayer.GetErrorMessage(nErrorCode,&strMessage);
+		TCHAR strMessage[1024];
+		_stprintf_s(strMessage, _T("Failed in login server,error code:%d."), nErrorCode);
+		//m_AvPlayer.GetErrorMessage(nErrorCode,strMessage,1024);
+		//m_pRunlog->Runlog(_T("登录失败 ErrorCode = %d,Message = %s.\n"), nErrorCode, strMessage);
 		AfxMessageBox(strMessage);
-		m_AvPlayer.FreeString(&strMessage);
+		//m_AvPlayer.FreeString(&strMessage);
 	}
 }
 
@@ -320,7 +381,6 @@ void CSampleCPPDlg::OnBnClickedButtonLogout()
 void CSampleCPPDlg::OnBnClickedButtonPlay()
 {
 	int nCount = m_ctlDeviceList.GetItemCount();
-	UINT nFrameID[] = {IDC_STATIC_FRAME,IDC_STATIC_FRAME2,IDC_STATIC_FRAME3,IDC_STATIC_FRAME4};
 	TCHAR szDeviceID[32] = {0};
 	for (int i = 0;i < nCount;i ++)
 	{
@@ -339,7 +399,7 @@ void CSampleCPPDlg::OnBnClickedButtonPlay()
 				return;
 			}
 			m_bFrameused[nFrameIndex] = true;
-			HWND hVideoWnd = GetDlgItem(nFrameID[nFrameIndex])->GetSafeHwnd();
+			HWND hVideoWnd = m_pVideoFrame->GetPanelWnd(nFrameIndex);
 			m_ctlDeviceList.GetItemText(i, 1, szDeviceID, 32);
 			if (IsDlgButtonChecked(IDC_CHECK_ENABLETRANLATE) == BST_CHECKED)
 			{
@@ -390,8 +450,12 @@ void CSampleCPPDlg::OnBnClickedButtonStartswitch()
 {
 	m_nNextDevNo = 0;
 	m_nTimerToSwitch = GetDlgItemInt(IDC_EDIT_SWITCHTIME);
-	SetDlgItemText(IDC_EDIT_SWITCHTIME,_T("30"));
-	SetDlgItemText(IDC_EDIT_NEXTSWITCHTIME,_T("30"));
+	if (!m_nTimerToSwitch)
+	{
+		SetDlgItemText(IDC_EDIT_SWITCHTIME, _T("15"));
+		SetDlgItemText(IDC_EDIT_NEXTSWITCHTIME, _T("15"));
+	}
+		
 	SetDlgItemText(IDC_EDIT_SWITCHCOUNT,_T("0"));
 	m_nSwitchCount = 0;
 
@@ -442,8 +506,10 @@ void CSampleCPPDlg::OnTimer(UINT_PTR nIDEvent)
 LRESULT CSampleCPPDlg::OnSwitch(WPARAM wParam, LPARAM lParam)
 {
 	// 先停止当前正在播放的视频
+	int nLastSize = 0;
 	if (m_vecDevicePlaying.size() > 0)
 	{
+		nLastSize = m_vecDevicePlaying.size();
 		for (vector<wstring>::iterator it = m_vecDevicePlaying.begin();
 			it != m_vecDevicePlaying.end();)
 		{
@@ -451,16 +517,14 @@ LRESULT CSampleCPPDlg::OnSwitch(WPARAM wParam, LPARAM lParam)
 			it = m_vecDevicePlaying.erase(it);
 		}
 	}
-	//KillTimer(ID_TIMER);
-	UINT nFrameID[] = {IDC_STATIC_FRAME,IDC_STATIC_FRAME2,IDC_STATIC_FRAME3,IDC_STATIC_FRAME4};
 	int nCount = m_ctlDeviceList.GetItemCount();
 	
-	if (m_nNextDevNo < (nCount -1))
+	if (m_nNextDevNo <= (nCount -1))
 	{
 		TCHAR szDeviceID[32] = {0};
-		while(m_vecDevicePlaying.size() < 4)
+		while (m_vecDevicePlaying.size() < nLastSize)
 		{
-			HWND hVideoWnd = GetDlgItem(nFrameID[m_vecDevicePlaying.size()])->GetSafeHwnd();
+			HWND hVideoWnd = m_pVideoFrame->GetPanelWnd(m_vecDevicePlaying.size());
 			m_ctlDeviceList.GetItemText(m_nNextDevNo,1,szDeviceID,32);
 			if (m_AvPlayer.PlayStream(szDeviceID,(long)hVideoWnd,0) ==0)
 			{
@@ -764,15 +828,65 @@ void CSampleCPPDlg::OnBnClickedButtonPtzpannel()
 
 	}
 	m_pDialogPTZ->MoveWindow(&rtPTZ);
-	
 	m_pDialogPTZ->ShowWindow(SW_SHOW);
+}
+
+bool CSampleCPPDlg::UpdateServer()
+{
+	CMarkup xml;
+	TCHAR szAppPath[1024];
+	GetAppPath(szAppPath, 1024);
+	_tcscat_s(szAppPath, _T("\\Sample.xml"));
+	if (xml.Load(szAppPath))
+	{
+		if (xml.FindElem(_T("Server")))
+		{
+			xml.IntoElem();
+			if (xml.FindElem(_T("Host")))
+			{
+				CString strHost = xml.GetAttrib(_T("IP"));
+				SetDlgItemText(IDC_IPADDRESS1, strHost);
+			}
+			xml.OutOfElem();
+		}
+		return true;
+	}
+	else
+		return false;
+
 }
 
 void CSampleCPPDlg::OnDestroy()
 {
 	CDialog::OnDestroy();
+	CMarkup xml;
+	TCHAR szAppPath[1024];
+	GetAppPath(szAppPath, 1024);
+	_tcscat_s(szAppPath, _T("\\Sample.xml"));
+	TCHAR *szDoc = _T("<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n");
+	xml.SetDoc(szDoc);
 
+
+	xml.AddElem(_T("Server"));
+	xml.IntoElem();	// Configuration	
+
+	TCHAR szServer[64] = { 0 };
+	GetDlgItemText(IDC_IPADDRESS1, szServer, 64);
+	xml.AddElem(_T("Host"));
+	xml.AddAttrib(_T("IP"), szServer);
+
+	xml.OutOfElem();// Configuration
+	xml.Save(szAppPath);
+
+	
+	if (m_pVideoFrame)
+	{
+		delete m_pVideoFrame;
+	}
 	delete m_pDialogPTZ;
+
+	if (m_pRunlog)
+		delete m_pRunlog;
 }
 
 void CSampleCPPDlg::OnLButtonDown(UINT nFlags, CPoint point)
@@ -948,12 +1062,11 @@ void __stdcall CSampleCPPDlg::ExternDCDraw(HWND hWnd, HDC hDc, RECT rtDC, void *
 	int nDistanceH = 400;
 	
 	POINT apt[6] = { 0 };
-	if (hWnd == pThis->m_hLeftTopWnd)
+	if (hWnd == pThis->m_pVideoFrame->GetPanelWnd(0))
 	{
 		int nStartX = rtDC.left + nDistanceH;
 		int nStartY = rtDC.top + nDistanceV;
-		CRect;
-
+		
 		apt[0].x = nStartX;
 		apt[0].y = nStartY;
 		
@@ -972,7 +1085,7 @@ void __stdcall CSampleCPPDlg::ExternDCDraw(HWND hWnd, HDC hDc, RECT rtDC, void *
 		apt[5].x = nStartX ;
 		apt[5].y = nStartY + nHeightCorner;
 	}
-	else if (hWnd == pThis->m_hRightTopWnd)
+	else if (hWnd == pThis->m_pVideoFrame->GetPanelWnd(1))
 	{
 		int nStartX = rtDC.right - nDistanceH - nWidthCorner;
 		int nStartY = rtDC.top + nDistanceV;
@@ -996,7 +1109,7 @@ void __stdcall CSampleCPPDlg::ExternDCDraw(HWND hWnd, HDC hDc, RECT rtDC, void *
 		apt[5].y = nStartY + nThickCornerV;
 
 	}
-	else if (hWnd == pThis->m_hLeftBottomWnd)
+	else if (hWnd == pThis->m_pVideoFrame->GetPanelWnd(2))
 	{
 		int nStartX = rtDC.left + nDistanceH;
 		int nStartY = rtDC.bottom - nDistanceV - nHeightCorner;
@@ -1019,7 +1132,7 @@ void __stdcall CSampleCPPDlg::ExternDCDraw(HWND hWnd, HDC hDc, RECT rtDC, void *
 		apt[5].x = nStartX ;
 		apt[5].y = nStartY + nHeightCorner;
 	}
-	else if (hWnd == pThis->m_hRightBottomWnd)
+	else if (hWnd == pThis->m_pVideoFrame->GetPanelWnd(3))
 	{
 		int nStartX = rtDC.right - nDistanceH - nWidthCorner;
 		int nStartY = rtDC.bottom - nDistanceV - nHeightCorner;
@@ -1245,4 +1358,228 @@ void CSampleCPPDlg::OnCbnSelendokComboSwitch()
 
 	LONG nMode = (LONG)GetDlgItemInt(IDC_COMBO_SWITCH);
 	m_AvPlayer.SwitchScreen(1, nMode, (LONG)GetDlgItem(IDC_STATIC_VIDEOFRAME)->GetSafeHwnd());
+}
+
+
+void CSampleCPPDlg::OnSize(UINT nType, int cx, int cy)
+{
+	CDialog::OnSize(nType, cx, cy);
+
+	if (GetDlgItem(IDC_BUTTON_PLAY)->GetSafeHwnd())
+	{
+		m_WndSizeManager.OnSize(nType, cx, cy);
+		RECT rt;
+		m_WndSizeManager.GetWndCurrentPostion(IDC_STATIC_FRAME, rt);
+		m_pVideoFrame->MoveWindow(&rt, true);
+	}
+}
+
+#include <windowsx.h>
+void CSampleCPPDlg::OnCbnSelendokComboDiv()
+{
+	int nCurSel = ComboBox_GetCurSel(::GetDlgItem(m_hWnd, IDC_COMBO1));
+	// 1分屏;2分屏;3分屏;4分屏;6分屏;9分屏;12分屏;16分屏;20分屏;25分屏;30分屏;5包1;7包1;9包1;
+	int nWndCount = 1;
+	
+	FrameStyle fs = StyleNormal;
+	switch (nCurSel)
+	{
+	case 0:	// 1分屏
+	default:
+	{
+		nWndCount = 1;
+	}
+	break;
+	case 1:	// 2分屏
+		nWndCount = 2;
+		break;
+	case 2:	// 3分屏
+		nWndCount = 3;
+		fs = Style_2P1;
+		break;
+	case 3:	// 4分屏
+		nWndCount = 4;
+		break;
+	case 4:	// 6分屏
+		nWndCount = 6;
+		break;
+	case 5:	// 9分屏
+		nWndCount = 9;
+		break;
+	case 6:	// 12分屏
+		nWndCount = 12;
+		break;
+	case 7:	// 16分屏
+		nWndCount = 16;
+		break;
+	case 8:	// 20分屏
+		nWndCount = 20;
+		break;
+	case 9:	// 25分屏
+		nWndCount = 25;
+		break;
+	case 10:// 30分屏
+		nWndCount = 30;
+		break;
+	case 11:// 5包1;
+		fs = Style_5P1;
+		break;
+	case 12:// 7包1;
+		fs = Style_7P1;
+		break;
+	case 13:// 9包1;
+		fs = Style_9P1;
+		break;
+	case 14:
+		fs = Style_11P1;
+		break;
+	}
+
+	if (fs == StyleNormal)
+	{
+		if (nWndCount != m_pVideoFrame->GetPanelCount())
+			m_pVideoFrame->AdjustPanels(nWndCount);
+	}
+	else
+	{
+		m_pVideoFrame->AdjustPanels(nWndCount, fs);
+	}
+
+}
+
+
+void CSampleCPPDlg::OnBnClickedButtonQueryrecord()
+{
+	int nCount = m_ctlDeviceList.GetItemCount();
+	TCHAR szDeviceID[32] = { 0 };
+	for (int i = 0; i < nCount; i++)
+	{
+		if (m_ctlDeviceList.GetCheck(i) )
+		{
+			m_ctlDeviceList.GetItemText(i, 1, szDeviceID, 32);
+			break;
+		}
+	}
+	COleDateTime dateTime, StartTime, StopTime;
+	m_Date.GetTime(dateTime);
+	m_StartTime.GetTime(StartTime);
+	m_StopTime.GetTime(StopTime);
+	CTime timeStart(dateTime.GetYear(), dateTime.GetMonth(), dateTime.GetDay(), StartTime.GetHour(), StartTime.GetMinute(), StartTime.GetSecond());
+	CTime timeStop(dateTime.GetYear(), dateTime.GetMonth(), dateTime.GetDay(), StopTime.GetHour(), StopTime.GetMinute(), StopTime.GetSecond());
+	Record_Info RecordArray[24 * 4] = { 0 };	// 假设目前服务器设置每小有四段录像，一天有96段
+	LONG nRecordCount = 0;
+
+	m_listRecord.DeleteAllItems();
+	if (m_AvPlayer.QueryRecord(szDeviceID, timeStart.GetTime(), timeStop.GetTime(), (long)RecordArray, 96, &nRecordCount) == 0)
+	{
+		for (int i = 0; i < nRecordCount; i++)
+		{
+			Record_Info *pRec = new Record_Info;
+			memcpy(pRec, &RecordArray[i], sizeof(Record_Info));
+			CTime becRec = pRec->startTime;
+			CTime endRec = pRec->endTime;
+			CString strTimeBeg;
+			strTimeBeg.Format(_T("%02d:%02d:%02d"), becRec.GetHour(), becRec.GetMinute(), becRec.GetSecond());
+			CString strTimeEnd;
+			strTimeEnd.Format(_T("%02d:%02d:%02d"), endRec.GetHour(), endRec.GetMinute(), endRec.GetSecond());
+			CString strType;
+			strType.Format(_T("%d"), pRec->recordType);
+			CString strNum;
+			strNum.Format(_T("%d"), i);
+			m_listRecord.InsertItem(i, strNum);
+			//	m_listRecord.InsertItem(i,strTimeBeg);
+			m_listRecord.SetItemText(i, 1, strTimeBeg);
+			m_listRecord.SetItemText(i, 2, strTimeEnd);
+			m_listRecord.SetItemData(i, (DWORD)pRec);
+		}
+	}
+}
+
+
+void CSampleCPPDlg::OnBnClickedButtonPlayrecord()
+{
+	int nCount = m_ctlDeviceList.GetItemCount();
+	HWND hVideoWnd = nullptr;
+	TCHAR szDeviceID[32] = { 0 };
+	for (int i = 0; i < nCount; i++)
+	{
+		if (m_ctlDeviceList.GetCheck(i) && m_vecDevicePlaying.size() < 4)
+		{
+			hVideoWnd = m_pVideoFrame->GetPanelWnd(m_pVideoFrame->GetCurPanel());
+			m_ctlDeviceList.GetItemText(i, 1, szDeviceID, 32);
+			break;
+
+		}
+	}
+	CString strButtonText;
+	if (!m_bPlayRecord)
+	{
+		
+		if (!hVideoWnd)
+		{
+			AfxMessageBox(_T("Please Select a Window to Play."));
+			return;
+		}
+		int nRecordCount = m_listRecord.GetItemCount();
+		int nItemPlay = -1;
+		for (int i = 0; i < nRecordCount; i++)
+		{
+			if (m_listRecord.GetCheck(i))
+			{
+				nItemPlay = i;
+				break;
+			}
+		}
+		if (nItemPlay < 0)
+		{
+			AfxMessageBox(_T("Please Select a Record to Play."));
+			return;
+		}
+		Record_Info *pRec = (Record_Info *)m_listRecord.GetItemData(nItemPlay);
+		
+		LONG nSeekFrame = 0;
+		if (IsDlgButtonChecked(IDC_CHECK_SEEKFRAME) == BST_CHECKED)
+			nSeekFrame = 1;
+		//pRec->startTime = pRec->endTime - 30;
+		if (m_AvPlayer.PlayBack((long)hVideoWnd, szDeviceID, pRec->startTime , pRec->endTime, nSeekFrame, 5000) == 0)
+		{
+
+			HWND hWndArray[16] = { 0 };
+			long nArraySize = 16;
+			int nErrorCode = m_AvPlayer.GetDeviceWindow(szDeviceID, (long *)hWndArray, &nArraySize);
+			m_vecDevicePlaying.push_back(szDeviceID);
+			m_strCurPlayBackDevice = szDeviceID;
+		}
+		// 通过定时器来调整单帧播放的位置
+		if (nSeekFrame)
+		{
+			m_tSeekOffset = pRec->startTime; // 使用起始时间作为第一个播放点，每个100毫秒调整一次，每调整一次，时间增加200毫秒
+			m_tSeekOffset *= 1000;			 // 时间放大1000倍
+			//m_nTimeEvent = timeSetEvent(100, 1, (LPTIMECALLBACK)MMTIMECALLBACK, (DWORD_PTR)this, TIME_PERIODIC | TIME_CALLBACK_FUNCTION);
+			m_bThreadSeekRun = true;
+			m_hThreadSeek = (HANDLE)_beginthreadex(nullptr, 0, ThreadSeek, this, 0, 0);
+		}
+
+		m_bPlayRecord = true;
+		strButtonText = _T("&Stop Play");
+	}
+	else
+	{
+		strButtonText = _T("&Play Record"); 
+		m_AvPlayer.StopPlayBack(szDeviceID);
+		m_bPlayRecord = false;
+	}
+	SetDlgItemText(IDC_BUTTON_PLAYRECORD, strButtonText);
+
+
+}
+
+
+void CSampleCPPDlg::OnClose()
+{
+	m_bThreadSeekRun = false;
+	
+	WaitForSingleObject(m_hThreadSeek, INFINITE);
+
+	CDialog::OnClose();
 }

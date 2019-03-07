@@ -323,11 +323,10 @@ typedef struct VSRecord_Info
 	unsigned char	source;							//来源类型：1未知，2设备，3中心，7核心节点，8区域节点，9接入节点
 	unsigned char	recordType;						//录像类型。1全部，2报警录像，3移动侦测，4手动录像，5卡号录像，6定时录像,VSEnumRecordType
 	bool			bDownloadByTime;				//是否按时间下载
-	uint32			startTime;							//起始时间
-	uint32			endTime;							//结束时间
-	char			name[MAX_RECORD_NAME_LEN];			//录像名字（不同厂家对文件的标识不同）
+	uint32			startTime;						//起始时间
+	uint32			endTime;						//结束时间
+	char			name[MAX_RECORD_NAME_LEN];		//录像名字（不同厂家对文件的标识不同）
 	uint32			length;							//文件长度
-
 	//下面是中心录像所需要的信息
 	uint32			planId;							//录像计划ID
 	uint32			ssId;							//存储服务ID
