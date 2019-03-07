@@ -10,9 +10,14 @@
 	<!-- Height 		高度 -->
 	<!-- ThickVerical	垂直方向厚度 -->
 	<!-- ThickHorizontal 水平方向厚度 -->
-		<Device ID = "3301061000001" Orientation = "0"  StartX = "100" StartY = "100" Width = "200" Height ="150" ThickVerical="10" ThickHorizontal = "12" Color="FF0000" />
-		<Device ID = "3301061000002" Orientation = "1"  StartX = "100" StartY = "100" Width = "200" Height ="150" ThickVerical="10" ThickHorizontal = "12" Color="FF0000"/>
-		<Device ID = "3301061000003" Orientation = "2"  StartX = "100" StartY = "100" Width = "200" Height ="150" ThickVerical="10" ThickHorizontal = "12" Color="FF0000"/>
-		<Device ID = "3301061000004" Orientation = "3"  StartX = "100" StartY = "100" Width = "200" Height ="150" ThickVerical="10" ThickHorizontal = "12" Color="FF0000"/>
+		<Device ID = "3301061000001"  >
+			<Assist Orientation = "0"  StartX = "100" StartY = "100" Width = "200" Height ="150" ThickVerical="10" ThickHorizontal = "12" Color="FF0000" />
+			<Assist Orientation = "1"  StartX = "1000" StartY = "100" Width = "200" Height ="150" ThickVerical="10" ThickHorizontal = "12" Color="FF0000" />
+			<Assist Orientation = "2"  StartX = "100" StartY = "600" Width = "200" Height ="150" ThickVerical="10" ThickHorizontal = "12" Color="FF0000" />
+			<Assist Orientation = "3"  StartX = "1000" StartY = "600" Width = "200" Height ="150" ThickVerical="10" ThickHorizontal = "12" Color="FF0000" />
+		</Device>
+		<Device ID = "3301061000002"/>
+		<Device ID = "3301061000003" />
+		<Device ID = "3301061000004" />
 	</DeviceList>	
 </Configuration>

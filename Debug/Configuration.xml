@@ -15,7 +15,7 @@
 		<Camera IP="192.168.1.3" User="admin" Password="admin" Url="rtsp://%s:%s@%s:554/ch01" />
 		<Camera IP="192.168.1.4" User="admin" Password="admin" Url="rtsp://%s:%s@%s:554/ch01" />
 		<Camera IP="192.168.1.5" User="admin" Password="admin" Url="rtsp://%s:%s@%s:554/ch01" />
-		<Camera IP="192.168.1.6" User="admin" Password="admin" Url="rtsp://%s:%s@%s:554/ch01" />
-		<Camera IP="192.168.1.7" User="admin" Password="admin" Url="rtsp://%s:%s@%s:554/ch01" />
+		<Camera IP="192.168.254.2" User="" Password="" Url="rtsp://192.168.43.78:8554/channel0" />
+		<Camera IP="192.168.43.78" User="" Password="" Url="rtsp://192.168.43.78:8554/channel1" />
 	</CameraList>	
 </Configuration>

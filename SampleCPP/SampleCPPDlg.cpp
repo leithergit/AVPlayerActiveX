@@ -8,6 +8,7 @@
 #include "TimeUtility.h"
 #include "Utility.h"
 #include <MMSystem.h>
+#include <Markup.h>
 
 #pragma comment(lib,"winmm.lib")
 #ifdef _DEBUG
@@ -125,6 +126,7 @@ static HotKeyInfo HotKeyArray[] =
 
 // CSampleCPPDlg message handlers
 
+
 BOOL CSampleCPPDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
@@ -153,6 +155,7 @@ BOOL CSampleCPPDlg::OnInitDialog()
 	//  when the application's main window is not a dialog
 	SetIcon(m_hIcon, TRUE);			// Set big icon
 	SetIcon(m_hIcon, FALSE);		// Set small icon
+	m_pRunlog = new CRunlog(_T("Sample"));
 	
 	CRect rtClient;
 	GetDlgItemRect(IDC_STATIC_FRAME, rtClient);
@@ -186,8 +189,8 @@ BOOL CSampleCPPDlg::OnInitDialog()
 	//SetDlgItemText(IDC_IPADDRESS1,_T("192.168.2.99"));
 	//SetDlgItemText(IDC_IPADDRESS1, _T("10.0.0.100"));
 	//SetDlgItemText(IDC_IPADDRESS1, _T("192.168.254.129"));
-	SetDlgItemText(IDC_IPADDRESS1, _T("192.168.1.104"));
-	//SetDlgItemText(IDC_IPADDRESS1,_T("192.168.1.128"));
+	//SetDlgItemText(IDC_IPADDRESS1, _T("192.168.1.104"));
+	//SetDlgItemText(IDC_IPADDRESS1,_T("10.28.254.98"));
 	m_nNextDevNo = 0;
 	SetDlgItemText(IDC_EDIT_SWITCHTIME,_T("30"));
 	SetDlgItemText(IDC_EDIT_NEXTSWITCHTIME,_T("30"));
@@ -197,6 +200,7 @@ BOOL CSampleCPPDlg::OnInitDialog()
 	m_bitmapMago.LoadBitmap(IDB_BITMAP_MAGO);
 	m_bitmapZpmc.LoadBitmap(IDB_BITMAP_ZPMC);
 
+	UpdateServer();
 
 
 	::RegisterHotKey(m_hWnd, ID_F12, MOD_ALT | MOD_CONTROL, VK_HOME);
@@ -309,11 +313,13 @@ void CSampleCPPDlg::OnBnClickedButtonLogin()
 	int nErrorCode = m_AvPlayer.Login(strServerIP,9000,_T("admin"),_T("123456"),0);
 	if (nErrorCode == 0)
 	{// 登录成功
+		m_pRunlog->Runlog(_T("登录成功.\n"));
 		BSTR strDevice;
 		LONG nDeviceCount = 0;
 		m_AvPlayer.GetDeviceID(&strDevice,&nDeviceCount);
 		if (nDeviceCount <= 0)
 		{
+			m_pRunlog->Runlog(_T("没有在线的设备.\n"));
 			AfxMessageBox(_T("没有在线的设备."),MB_ICONSTOP);
 			return ;
 		}
@@ -352,7 +358,9 @@ void CSampleCPPDlg::OnBnClickedButtonLogin()
 	else
 	{
 		TCHAR strMessage[1024];
-		m_AvPlayer.GetErrorMessage(nErrorCode,strMessage,1024);
+		_stprintf_s(strMessage, _T("Failed in login server,error code:%d."), nErrorCode);
+		//m_AvPlayer.GetErrorMessage(nErrorCode,strMessage,1024);
+		//m_pRunlog->Runlog(_T("登录失败 ErrorCode = %d,Message = %s.\n"), nErrorCode, strMessage);
 		AfxMessageBox(strMessage);
 		//m_AvPlayer.FreeString(&strMessage);
 	}
@@ -442,8 +450,12 @@ void CSampleCPPDlg::OnBnClickedButtonStartswitch()
 {
 	m_nNextDevNo = 0;
 	m_nTimerToSwitch = GetDlgItemInt(IDC_EDIT_SWITCHTIME);
-	SetDlgItemText(IDC_EDIT_SWITCHTIME,_T("30"));
-	SetDlgItemText(IDC_EDIT_NEXTSWITCHTIME,_T("30"));
+	if (!m_nTimerToSwitch)
+	{
+		SetDlgItemText(IDC_EDIT_SWITCHTIME, _T("15"));
+		SetDlgItemText(IDC_EDIT_NEXTSWITCHTIME, _T("15"));
+	}
+		
 	SetDlgItemText(IDC_EDIT_SWITCHCOUNT,_T("0"));
 	m_nSwitchCount = 0;
 
@@ -494,8 +506,10 @@ void CSampleCPPDlg::OnTimer(UINT_PTR nIDEvent)
 LRESULT CSampleCPPDlg::OnSwitch(WPARAM wParam, LPARAM lParam)
 {
 	// 先停止当前正在播放的视频
+	int nLastSize = 0;
 	if (m_vecDevicePlaying.size() > 0)
 	{
+		nLastSize = m_vecDevicePlaying.size();
 		for (vector<wstring>::iterator it = m_vecDevicePlaying.begin();
 			it != m_vecDevicePlaying.end();)
 		{
@@ -503,16 +517,14 @@ LRESULT CSampleCPPDlg::OnSwitch(WPARAM wParam, LPARAM lParam)
 			it = m_vecDevicePlaying.erase(it);
 		}
 	}
-	//KillTimer(ID_TIMER);
-	UINT nFrameID[] = {IDC_STATIC_FRAME,IDC_STATIC_FRAME2,IDC_STATIC_FRAME3,IDC_STATIC_FRAME4};
 	int nCount = m_ctlDeviceList.GetItemCount();
 	
-	if (m_nNextDevNo < (nCount -1))
+	if (m_nNextDevNo <= (nCount -1))
 	{
 		TCHAR szDeviceID[32] = {0};
-		while(m_vecDevicePlaying.size() < 4)
+		while (m_vecDevicePlaying.size() < nLastSize)
 		{
-			HWND hVideoWnd = GetDlgItem(nFrameID[m_vecDevicePlaying.size()])->GetSafeHwnd();
+			HWND hVideoWnd = m_pVideoFrame->GetPanelWnd(m_vecDevicePlaying.size());
 			m_ctlDeviceList.GetItemText(m_nNextDevNo,1,szDeviceID,32);
 			if (m_AvPlayer.PlayStream(szDeviceID,(long)hVideoWnd,0) ==0)
 			{
@@ -819,9 +831,52 @@ void CSampleCPPDlg::OnBnClickedButtonPtzpannel()
 	m_pDialogPTZ->ShowWindow(SW_SHOW);
 }
 
+bool CSampleCPPDlg::UpdateServer()
+{
+	CMarkup xml;
+	TCHAR szAppPath[1024];
+	GetAppPath(szAppPath, 1024);
+	_tcscat_s(szAppPath, _T("\\Sample.xml"));
+	if (xml.Load(szAppPath))
+	{
+		if (xml.FindElem(_T("Server")))
+		{
+			xml.IntoElem();
+			if (xml.FindElem(_T("Host")))
+			{
+				CString strHost = xml.GetAttrib(_T("IP"));
+				SetDlgItemText(IDC_IPADDRESS1, strHost);
+			}
+			xml.OutOfElem();
+		}
+		return true;
+	}
+	else
+		return false;
+
+}
+
 void CSampleCPPDlg::OnDestroy()
 {
 	CDialog::OnDestroy();
+	CMarkup xml;
+	TCHAR szAppPath[1024];
+	GetAppPath(szAppPath, 1024);
+	_tcscat_s(szAppPath, _T("\\Sample.xml"));
+	TCHAR *szDoc = _T("<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n");
+	xml.SetDoc(szDoc);
+
+
+	xml.AddElem(_T("Server"));
+	xml.IntoElem();	// Configuration	
+
+	TCHAR szServer[64] = { 0 };
+	GetDlgItemText(IDC_IPADDRESS1, szServer, 64);
+	xml.AddElem(_T("Host"));
+	xml.AddAttrib(_T("IP"), szServer);
+
+	xml.OutOfElem();// Configuration
+	xml.Save(szAppPath);
 
 	
 	if (m_pVideoFrame)
@@ -829,6 +884,9 @@ void CSampleCPPDlg::OnDestroy()
 		delete m_pVideoFrame;
 	}
 	delete m_pDialogPTZ;
+
+	if (m_pRunlog)
+		delete m_pRunlog;
 }
 
 void CSampleCPPDlg::OnLButtonDown(UINT nFlags, CPoint point)

@@ -57,8 +57,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,1,9
- PRODUCTVERSION 1,0,1,9
+ FILEVERSION 1,0,2,2
+ PRODUCTVERSION 1,0,2,2
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -73,15 +73,15 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "Comments", "Release @2018.11.28"
+            VALUE "Comments", "Release @2019.03.04"
             VALUE "CompanyName", "上海迈高网络技术有限公司"
             VALUE "FileDescription", "视频播放控件"
-            VALUE "FileVersion", "1.0.1.9"
+            VALUE "FileVersion", "1.0.2.2"
             VALUE "InternalName", "AVPlayer.ocx"
             VALUE "LegalCopyright", "上海迈高网络技术有限公司版权所有 (C)"
             VALUE "OriginalFilename", "AVPlayer.ocx"
             VALUE "ProductName", "视频播放控件"
-            VALUE "ProductVersion", "1.0.1.9"
+            VALUE "ProductVersion", "1.0.2.2"
         END
     END
     BLOCK "VarFileInfo"

@@ -11,6 +11,7 @@
 #include "WndSizeManager.h"
 #include "afxdtctl.h"
 #include "TimeUtility.h"
+#include "Runlog.h"
 using namespace std;
 
 #define ID_BASE		WM_USER + 100
@@ -65,6 +66,7 @@ public:
 	CVideoFrame *m_pVideoFrame;
 	CWndSizeManger m_WndSizeManager;
 	CSampleCPPDlg(CWnd* pParent = NULL);	// standard constructor
+	CRunlog*	m_pRunlog;
 
 // Dialog Data
 	enum { IDD = IDD_SAMPLECPP_DIALOG };
@@ -79,6 +81,7 @@ protected:
 
 	// Generated message map functions
 	virtual BOOL OnInitDialog();
+	bool UpdateServer();
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();

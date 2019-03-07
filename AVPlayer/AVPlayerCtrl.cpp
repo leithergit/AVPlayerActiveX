@@ -17,6 +17,12 @@
 
 #define ID_TIMER_DELETEFILE 1024
 extern CAVPlayerApp theApp;
+#ifdef _DEBUG
+volatile LONG _IPCConnection::nRefCount = 0;
+#endif
+
+CCriticalSectionProxy  CAVPlayerCtrl::m_csMapDecoderPool;
+map<string, ItemStatusList> CAVPlayerCtrl::m_mapDecoderPool;
 
 IMPLEMENT_DYNCREATE(CAVPlayerCtrl, COleControl)
 
@@ -348,12 +354,16 @@ LONG CAVPlayerCtrl::Login(LPCTSTR strServerIP, USHORT nServerPort, LPCTSTR strAc
 	if (m_pRunlog)
 		m_pRunlog->Runlog(_T("%s Account:%s trying to login to server:%s.\n"),__FUNCTIONW__,strAccount,strServerIP);
 	
+	EnterCriticalSection(&m_csDBConnector);
 	if (m_pDBConnector)
 	{
+		LeaveCriticalSection(&m_csDBConnector);
 		return S_OK;
 	}
 	else
 	{
+		// 暂停数据库访问，先解锁
+		LeaveCriticalSection(&m_csDBConnector);
 		try
 		{
 			long nStatus = SDK_CULogin(_AnsiString(strServerIP, CP_ACP), nServerPort, _AnsiString(strAccount, CP_ACP), _AnsiString(strPassword, CP_ACP), &m_nLoginID,0);
@@ -365,13 +375,22 @@ LONG CAVPlayerCtrl::Login(LPCTSTR strServerIP, USHORT nServerPort, LPCTSTR strAc
 				//SDK_CUSetResCallback(m_nLoginID, RespondCallBack, this);
 			}
 			else
+			{
+				if (m_pRunlog)
+					m_pRunlog->Runlog(_T("%s Account:%s login to server:%s failed.\n"), __FUNCTIONW__, strAccount, strServerIP);
 				return AvError_ConnectServerFailed;
+			}
+				
 			m_strAccount = strAccount;
 			m_strServerIP = strServerIP;
+			// 连接数据库，重新上锁
+			CAutoLock dblock(&m_csDBConnector);
 			m_pDBConnector = shared_ptr<CMySQLConnector>( new CMySQLConnector());
 			if (!m_pDBConnector->Connect(_AnsiString(strServerIP, CP_ACP), "root", "password", "vms", 3406))
 			{
 				m_pDBConnector = nullptr;
+				if (m_pRunlog)
+					m_pRunlog->Runlog(_T("%s Failed to connect database.\n"), __FUNCTIONW__);
 				return AvError_ConnectServerFailed;
 			}	
 			CMyResult res = m_pDBConnector->Query("select count(*) as result from `users` where `loginname`='%s' and `loginpass`='%s'", _AnsiString(strAccount,CP_ACP), _AnsiString(strPassword,CP_ACP));
@@ -382,6 +401,8 @@ LONG CAVPlayerCtrl::Login(LPCTSTR strServerIP, USHORT nServerPort, LPCTSTR strAc
 					m_pRunlog->Runlog(_T("%s Invalid account or password,login failed.\n"),__FUNCTIONW__);
 				return 	AvError_LoginFailed;
 			}
+			// 数据库访问完成，解锁
+			dblock.Unlock();
 			LoadScreenMode();
 			LoadOPAssistXConfigure();
 			TCHAR szPath[MAX_PATH] = { 0 };
@@ -462,6 +483,8 @@ LONG CAVPlayerCtrl::Login(LPCTSTR strServerIP, USHORT nServerPort, LPCTSTR strAc
 				}
 				if (bEnable)
 				{// 只有启用位置选项后,才查询数据库
+					//	访问数据库，重新加锁
+					dblock.Lock();
 					res = m_pDBConnector->Query("select DISTINCT cameraID from screencut_position");
 					if (res.RowCount() < 1)
 					{
@@ -518,6 +541,7 @@ LONG CAVPlayerCtrl::Login(LPCTSTR strServerIP, USHORT nServerPort, LPCTSTR strAc
 			if (m_pRunlog) 
 				m_pRunlog->Runlog(_T("%s A DB Exception occured:\n\t%s.\n"),__FUNCTIONW__,e.whatW());
 			// 发生异常后编译器会自动回收对象所占内存，因此对象指针可置空
+			CAutoLock lock(&m_csDBConnector);
 			m_pDBConnector.reset();
 			return AvError_DBException;
 		}
@@ -525,6 +549,7 @@ LONG CAVPlayerCtrl::Login(LPCTSTR strServerIP, USHORT nServerPort, LPCTSTR strAc
 		{
 			if (m_pRunlog) 
 				m_pRunlog->Runlog(_T("%s A Unknown Exception occured:\n\t%s.\n"),__FUNCTIONW__,_UnicodeString(e.what(),CP_ACP));
+			CAutoLock lock(&m_csDBConnector);
 			m_pDBConnector.reset();
 			return AvError_UnknownException;
 		}
@@ -540,6 +565,7 @@ void CAVPlayerCtrl::Logout(void)
 
 	try
 	{
+		CAutoLock dblock(&m_csDBConnector);
 		if (m_pDBConnector)
 			m_pDBConnector.reset();
 		if (m_pRunlog)
@@ -569,98 +595,67 @@ void CAVPlayerCtrl::Logout(void)
 }
 
 
-#define _RTP_Header		0	
-#define _NALU			1
-#define _FrameData		2
-#define _FPSOffset		5
-#define _WidthOffset	6
-#define _HeightOffset	7
+void   CAVPlayerCtrl::OnAS300PlayBackPos(int nSessionID, int nPos, int nTotal)
+{
+	//TraceMsgA("%s nSessionID = %d\tnPos = %d\tnTotal = %d.\n", __FUNCTION__, nSessionID, nPos, nTotal);
+	if (nPos == -1)
+	{
+		TCHAR szDeviceID[32] = { 0 };
+		EnterCriticalSection(&m_csMapSession);
+		auto itFind = m_MapSession.find((long)nSessionID);
+		if (itFind != m_MapSession.end())
+			_tcscpy_s(szDeviceID, 32, _UnicodeString(itFind->second->m_strDeviceID, CP_ACP));
+		LeaveCriticalSection(&m_csMapSession);
+		if (_tcslen(szDeviceID))
+			StopPlayBack(szDeviceID);
+	}
+}
+
+UINT CAVPlayerCtrl::ThreadCheckRecvTimeRun()
+{
+	double dfTFirst = GetExactTime();
+	while (m_bThreadCheckRecvTimeRun)
+	{
+		if (TimeSpanEx(dfTFirst) >= 0.200f)
+		{
+			CAutoLock lock(&m_csMapConnection);
+			for (map<string, IPCConnectionPtr>::iterator it = m_MapConnection.begin();
+				it != m_MapConnection.end();
+				it++)
+			{
+				IPCConnectionPtr pConnection = it->second;
+				// 上一次的活动时间与当前的时间差超过m_nRecvTimeOut
+				if ((TimeSpanEx(pConnection->dfLastActiveTime) * 1000) > m_nRecvTimeout &&
+					// 若尚未报告断线或者离上线报告时间超过
+					(pConnection->dfReConnectTime == 0.0f || (TimeSpanEx(pConnection->dfReConnectTime) * 1000) > m_nReConnectInterval))
+				{
+					if (m_pRunlog)
+						m_pRunlog->Runlog(_T("%s 设备 %s(IP:%s)掉线,尝试重连!\n"), __FUNCTIONW__, _UnicodeString(it->first.c_str(), CP_ACP), _UnicodeString(pConnection->szIP, CP_ACP));
+
+					if (pConnection->Reconnect() == AvError_Succeed)
+					{
+						if (m_pRunlog)
+							m_pRunlog->Runlog(_T("%s 设备 %s(IP:%s)重连成功!\n"), __FUNCTIONW__, _UnicodeString(it->first.c_str(), CP_ACP), _UnicodeString(pConnection->szIP, CP_ACP));
+						pConnection->dfReConnectTime = GetExactTime();
+					}
+					else
+					{
+						if (m_pRunlog)
+							m_pRunlog->Runlog(_T("%s 设备 %s(IP:%s)重连失败,%d秒后重试!\n"), __FUNCTIONW__, _UnicodeString(it->first.c_str(), CP_ACP), _UnicodeString(pConnection->szIP, CP_ACP), m_nReConnectInterval);
+					}
+				}
+			}
+			dfTFirst = GetExactTime();
+		}
+		Sleep(20);
+	}
+	return 0;
+}
 
 void RtspDataCallBack(long lHandle, char *pBuffer, int nParam, int nUser)
 {
 	_IPCConnection *pThis = (_IPCConnection *)nUser;
-	_RTSPParam *pRTSPParam = (_RTSPParam *)nParam;
-	int nBufferLen = pRTSPParam->nLength;
-	int nNalType = pRTSPParam->nNalType;
-	pThis->dfLastActiveTime = GetExactTime();
-	switch (pRTSPParam->nDataType)
-	{
-	case _RTP_Header:
-		{
-			if (!pThis->m_bFillHeader)
-			{
-				pThis->m_nWidth = (byte)pBuffer[_WidthOffset] * 8;
-				pThis->m_nHeight = (byte)pBuffer[_HeightOffset] * 8;
-				pThis->m_nFPS = pBuffer[_FPSOffset];
-				if (pThis->m_nWidth >= 8 && pThis->m_nHeight > 8)
-				{
-					IPC_MEDIAINFO MediaHeader;
-					MediaHeader.nVideoCodec = CODEC_H264;
-					MediaHeader.nAudioCodec = CODEC_G711A;
-					MediaHeader.nVideoWidth = pThis->m_nWidth;
-					MediaHeader.nVideoHeight = pThis->m_nHeight;
-					MediaHeader.nFps = pThis->m_nFPS;
-
-					ipcplay_SetStreamHeader(pThis->hPlayhandle, (byte *)&MediaHeader, sizeof(MediaHeader));
-					ipcplay_SetMaxFrameSize(pThis->hPlayhandle, 1024 * 1024);
-
-					pThis->m_bFillHeader = true;
-					pThis->m_nFrameLength = 0;
-					memcpy(pThis->m_pFrameBuffer, pBuffer, nBufferLen);
-					pThis->m_nFrameLength = nBufferLen;
-					TraceMsgA("%s\tRecv a RTP Header.\n", __FUNCTIONW__);
-				}
-			}
-			else
-			{
-				memcpy(pThis->m_pFrameBuffer, pBuffer, nBufferLen);
-				pThis->m_nFrameLength = nBufferLen;
-			}
-		}
-		break;
-	case _NALU:
-		{
-			if (pThis->m_bFillHeader)
-			{
-				memcpy(&pThis->m_pFrameBuffer[pThis->m_nFrameLength], pBuffer, nBufferLen);
-				pThis->m_nFrameLength += nBufferLen;
-			}
-		}
-		break;
-	case _FrameData:
-		{
-			if (!pThis->m_bFillHeader)
-				break;
-			if (pThis->m_nBufferSize < pThis->m_nFrameLength + nBufferLen)
-			{
-				int nNewBufferSize = pThis->m_nBufferSize;
-				while (nNewBufferSize < (pThis->m_nFrameLength + nBufferLen))
-					nNewBufferSize *= 2;
-				byte *pTemp = new byte[nNewBufferSize];
-				if (pTemp == NULL)
-					return;
-				memcpy(pTemp, pThis->m_pFrameBuffer, pThis->m_nFrameLength);
-				delete[]pThis->m_pFrameBuffer;
-				pThis->m_pFrameBuffer = pTemp;
-				pThis->m_nBufferSize = nNewBufferSize;
-			}
-
-			memcpy(&pThis->m_pFrameBuffer[pThis->m_nFrameLength], pBuffer, nBufferLen);
-			pThis->m_nFrameLength += nBufferLen;
-			int nFrameType = IPC_P_FRAME;
-			if (nNalType == 7 ||
-				nNalType == 5)
-				nFrameType = IPC_I_FRAME;
-
-			//ipcplay_InputIPCStream(pThis->hPlayhandle, pThis->m_pFrameBuffer, nFrameType, pThis->m_nFrameLength, 0);
-			ipcplay_InputStream2(pThis->hPlayhandle, pThis->m_pFrameBuffer, pThis->m_nFrameLength);
-			pThis->m_nFrameLength = 0;
-
-		}
-		break;
-	default:
-		break;
-	}
+	pThis->OnCalBack(pBuffer, nParam);
 }
 
 // LRESULT CAVPlayerCtrl::SubClassProc(HWND hWnd, UINT nMessage, WPARAM wParam, LPARAM lParam)
@@ -694,9 +689,11 @@ LONG CAVPlayerCtrl::PlayStream(LPCTSTR strDeviceID, LONG hWnd,LONG nEnalbeHWAcce
 
 	if (!strDeviceID || !hWnd)
 		return AvError_InvalidParameters;
+	CAutoLock dblock(&m_csDBConnector);
 	if (!m_pDBConnector)
 		return AvError_NotLogintoServer;
 
+	dblock.Unlock();
 	// 从数据库获取相机的IP，端口，帐号，密码
 	try
 	{
@@ -717,12 +714,17 @@ LONG CAVPlayerCtrl::PlayStream(LPCTSTR strDeviceID, LONG hWnd,LONG nEnalbeHWAcce
 		::GetWindowRect((HWND)hWnd,&rt);
 		if (m_pRunlog)
 			m_pRunlog->Runlog(_T("%s Windows %08X Postion(%d,%d,%d,%d).\n"),__FUNCTIONW__,hWnd,rt.left,rt.right,rt.top,rt.bottom);
-		CAutoLock lock(&m_csMapConnection);
+		CAutoLock ConnectionLock(&m_csMapConnection);
 		map<string, IPCConnectionPtr>::iterator itFind = m_MapConnection.find(szDeviceID);
 		if (itFind != m_MapConnection.end())
 		{
 			IPC_PLAYHANDLE &hPlayer = itFind->second->hPlayhandle;			
-			ipcplay_AddWindow(hPlayer,(HWND)hWnd);	
+			if (ipcplay_AddWindow(hPlayer, (HWND)hWnd) != IPC_Succeed)
+			{
+				if (m_pRunlog)
+					m_pRunlog->Runlog(_T("%s ipcplayhandle (%8x) can't add a window any more,hWnd (%08X)add failed..\n"), __FUNCTIONW__,hPlayer,hWnd);
+				return IPC_Error_RenderWndOverflow;
+			}
 			int nWndCount = 16;
 			HWND hArray[16] = {0};
 			int nStatus = ipcplay_GetRenderWindows(hPlayer,hArray,nWndCount);
@@ -733,8 +735,9 @@ LONG CAVPlayerCtrl::PlayStream(LPCTSTR strDeviceID, LONG hWnd,LONG nEnalbeHWAcce
 			}
 			return AvError_Succeed;
 		}
-		lock.Unlock();
+		ConnectionLock.Unlock();
 
+		dblock.Lock();
 		CMyResult res = m_pDBConnector->Query("SELECT `ipaddress`,`port`,`loginname`,`loginpasswd` FROM `devices` where `deviceid` = '%s'", _AnsiString(strDeviceID,CP_ACP));
 		if (res.RowCount() < 1)
 		{
@@ -746,15 +749,17 @@ LONG CAVPlayerCtrl::PlayStream(LPCTSTR strDeviceID, LONG hWnd,LONG nEnalbeHWAcce
 		WORD nPort	 = res["port"];
 		char *szUser = res["loginname"];
 		char *szPass = res["loginpasswd"];
+		// 不再访问数据库，手动解锁
+		dblock.Unlock();
 		
 		IPCConnectionPtr pConnection = shared_ptr<_IPCConnection>(new _IPCConnection());
 		pConnection->pRunlog = m_pRunlog;
 		pConnection->m_hWnd = (HWND)hWnd;
-		pConnection->hPlayhandle = ipcplay_OpenStream(pConnection->m_hWnd, NULL, 0);
-		
-		ipcplay_SetD3dShared(pConnection->hPlayhandle, (bool)nEnalbeHWAccel);
-		ipcplay_Start(pConnection->hPlayhandle, false, true, (bool)nEnalbeHWAccel);
-		ipcplay_EnableStreamParser(pConnection->hPlayhandle, CODEC_H264);
+// 		pConnection->hPlayhandle = ipcplay_OpenStream(pConnection->m_hWnd, NULL, 0);
+// 		
+// 		ipcplay_SetD3dShared(pConnection->hPlayhandle, (bool)nEnalbeHWAccel);
+// 		ipcplay_Start(pConnection->hPlayhandle, false, true, (bool)nEnalbeHWAccel);
+// 		ipcplay_EnableStreamParser(pConnection->hPlayhandle, CODEC_H264);
 		if (m_pRunlog)
 			m_pRunlog->Runlog(_T("%s Device %s (%08X) is playing on Window %08X.\n"),__FUNCTIONW__,strDeviceID,(long)pConnection->hPlayhandle,hWnd);
 		
@@ -801,8 +806,10 @@ LONG CAVPlayerCtrl::PlayComboStream(LPCTSTR szDevice1, LPCTSTR szDevice2, LONG h
 		!szDevice2|| 
 		!hWnd)
 		return AvError_InvalidParameters;
+	CAutoLock dblock(&m_csDBConnector);
 	if (!m_pDBConnector)
 		return AvError_NotLogintoServer;
+	dblock.Unlock();
 	if (nArrangeMode != 0 && nArrangeMode != 1)
 		return AvError_InvalidParameters;
 
@@ -852,6 +859,7 @@ LONG CAVPlayerCtrl::PlayComboStream(LPCTSTR szDevice1, LPCTSTR szDevice2, LONG h
 		if (m_pRunlog)
 			m_pRunlog->Runlog(_T("%s Windows %08X Postion(%d,%d,%d,%d).\n"),__FUNCTIONW__,hWnd,rtWindow.left,rtWindow.right,rtWindow.top,rtWindow.bottom);
 		
+		dblock.Lock();
 		CMyResult res = m_pDBConnector->Query("SELECT `ipaddress`,`port`,`loginname`,`loginpasswd` FROM `devices` where `deviceid` = '%s' or `deviceid` = '%s'", _AnsiString(szDeviceArray[0],CP_ACP),_AnsiString(szDeviceArray[1],CP_ACP));
 		if (res.RowCount() < 2)
 		{
@@ -1034,6 +1042,7 @@ LONG CAVPlayerCtrl::GetDeviceID(BSTR* pstrDeviceList, LONG* nDeviceCount)
 {
 	AFX_MANAGE_STATE(AfxGetStaticModuleState());
 
+	CAutoLock dblock(&m_csDBConnector);
 	if (!m_pDBConnector)
 		return AvError_NotLogintoServer;
 	try
@@ -1158,6 +1167,9 @@ void CAVPlayerCtrl::StopPlay(LPCTSTR strDeviceID,LONG hWnd)
 		}
 		else
 		{
+			{
+				
+			}
 			ipcplay_RemoveWindow(hPlayer,(HWND)hWnd);
 			::InvalidateRect((HWND)hWnd,NULL,true);	
 			int nWndCount = 16;
@@ -1360,6 +1372,7 @@ int CAVPlayerCtrl::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;
 
 	OnActivateInPlace(TRUE, NULL);
+	InitializeCriticalSection(&m_csDBConnector);
 	InitializeCriticalSection(&m_csMapConnection);
 	InitializeCriticalSection(&m_csMapSession);
 	InitializeCriticalSection(&m_csOperationAssist);
@@ -1606,6 +1619,9 @@ LONG CAVPlayerCtrl::SendPtzCommand(LPCTSTR strDeviceID, LONG nPtzCommand,LONG nP
 		return AvError_InvalidParameters;
 	if (nPtzCommand < 0 || nPtzCommand > Ptz_BackLight)
 		return AvError_InvlaidPtzCommand;
+	CAutoLock dblock(&m_csDBConnector);
+	if (!m_pDBConnector)
+		return AvError_NotLogintoServer;;
 	CMyResult res = m_pDBConnector->Query("SELECT `ipaddress`,`port`,`loginname`,`loginpasswd` FROM `devices` where `deviceid` = '%s'", _AnsiString(strDeviceID,CP_ACP));
 	if (res.RowCount() < 1)
 	{
@@ -1838,6 +1854,7 @@ LONG CAVPlayerCtrl::SetExternDCDraw(LPCTSTR szDeviceID, LONG pDCDraw, LONG pUser
 	TraceMsgW(_T("%s Device = %s\tpDCDraw = %08X.\n"), __FUNCTION__, szDeviceID, pDCDraw);
 	if (!szDeviceID)
 		return AvError_InvalidParameters;
+	CAutoLock dblock(&m_csDBConnector);
 	if (!m_pDBConnector)
 		return AvError_NotLogintoServer;
 	string strDeviceID = _AnsiString(szDeviceID, CP_ACP);
@@ -2167,7 +2184,7 @@ void   CAVPlayerCtrl::OnAS300Event(long nEventType, char* szId, int nParam1, int
 void CAVPlayerCtrl::OnDestroy()
 {
 	COleControl::OnDestroy();
-
+	
 	EnterCriticalSection(&m_csMapConnection);
 	m_MapConnection.clear();
 	LeaveCriticalSection(&m_csMapConnection);
@@ -2182,9 +2199,29 @@ void CAVPlayerCtrl::OnDestroy()
 	if (m_nLoginID != -1)
 		SDK_CULogout(m_nLoginID);
 	SDK_CUClear();
+	EnterCriticalSection(m_csMapDecoderPool.Get());
+	for (map<string, ItemStatusList>::iterator itList = m_mapDecoderPool.begin();
+		itList != m_mapDecoderPool.end();)
+	{
+		ItemStatusList &HandleList = itList->second;
+		for (ItemStatusList::iterator it = HandleList.begin();
+			it != HandleList.end();)
+		{
+			ipcplay_Close((*it)->pItemValue);
+			it = HandleList.erase(it);
+		}
+		itList = m_mapDecoderPool.erase(itList);
+	}
+	LeaveCriticalSection(m_csMapDecoderPool.Get());
+	DeleteCriticalSection(&m_csDBConnector);
 	DeleteCriticalSection(&m_csMapConnection);
 	DeleteCriticalSection(&m_csMapSession);
 	DeleteCriticalSection(&m_csOperationAssist);
+	
+#ifdef _DEBUG
+	TraceMsgA("%s _IPCConnection::nRefCount = %d.\n", _IPCConnection::nRefCount);
+#endif
+
 	if (m_pRunlog)
 		m_pRunlog->Runlog(_T("%s The Control is destroyed.\n"), __FUNCTIONW__);
 }
@@ -2222,25 +2259,32 @@ LONG CAVPlayerCtrl::EnableOperationAssist(LPCTSTR strDeviceID, LONG nEnable)
 		}
 		return AvError_DeivceNotConfigAssist;
 	}
-	OperationAssistPtr pOpAssist = itFind2->second;
+	OperationAssistArray pOpAssist = itFind2->second;
 	if (nEnable)
 	{
 		long hPolygon = 0;
-		hPolygon = ipcplay_AddPolygon(hPlayer, pOpAssist->ptArray, pOpAssist->nCount, pOpAssist->nVertexIndex, pOpAssist->nColor);
-		if (hPolygon  == 0)
+		for (auto it = pOpAssist.begin(); it != pOpAssist.end(); it++)
 		{
-			if (m_pRunlog)
-				m_pRunlog->Runlog(_T("%s call 'ipcplay_AddPolygon' failed for device %s.\n"), __FUNCTIONW__, strDeviceID);
-			return AvError_FailedEnableAssist;
+			hPolygon = ipcplay_AddPolygon(hPlayer, (*it)->ptArray, (*it)->nCount, (*it)->nVertexIndex, (*it)->nColor);
+			if (hPolygon == 0)
+			{
+				if (m_pRunlog)
+					m_pRunlog->Runlog(_T("%s call 'ipcplay_AddPolygon' failed for device %s.\n"), __FUNCTIONW__, strDeviceID);
+				return AvError_FailedEnableAssist;
+			}
+			(*it)->hPolygon = hPolygon;
 		}
-		pOpAssist->hPolygon = hPolygon;
+		
 	}
 	else
 	{
-		if (pOpAssist->hPolygon)
+		for (auto it = pOpAssist.begin(); it != pOpAssist.end(); it++)
 		{
-			ipcplay_RemovePolygon(hPlayer, pOpAssist->hPolygon);
-			pOpAssist->hPolygon = 0;
+			if ((*it)->hPolygon)
+			{
+				ipcplay_RemovePolygon(hPlayer, (*it)->hPolygon);
+				(*it)->hPolygon = 0;
+			}
 		}
 	}
 	
@@ -2308,20 +2352,39 @@ bool CAVPlayerCtrl::LoadOPAssistXConfigure()
 				while (xml.FindChildElem(_T("Device")))
 				{
 					xml.IntoElem();
-					OperationAssistPtr pDevice = make_shared<OperationAssist>();
+					
 					CString strID = xml.GetAttrib(_T("ID"));
-					pDevice->nOrientation		 = (Orientation)_tcstolong((LPCTSTR)xml.GetAttrib(_T("Orientation")));
-					pDevice->nStartX			 = _tcstolong((LPCTSTR)xml.GetAttrib(_T("StartX")));
-					pDevice->nStartY			 = _tcstolong((LPCTSTR)xml.GetAttrib(_T("StartY")));
-					pDevice->nWidth				 = _tcstolong((LPCTSTR)xml.GetAttrib(_T("Width")));
-					pDevice->nHeight			 = _tcstolong((LPCTSTR)xml.GetAttrib(_T("Height")));
-					pDevice->nThickVerical		 = _tcstolong((LPCTSTR)xml.GetAttrib(_T("ThickVerical")));
-					pDevice->nThickHorizontal	 = _tcstolong((LPCTSTR)xml.GetAttrib(_T("ThickHorizontal")));
-					pDevice->nColor				 = _tcstolong((LPCTSTR)xml.GetAttrib(_T("Color")),16);
-					pDevice->BuildPolygon();
-					EnterCriticalSection(&m_csOperationAssist);
-					m_mapOperationAssist.insert(pair<CString, OperationAssistPtr>(strID, pDevice));
-					LeaveCriticalSection(&m_csOperationAssist);
+					while (xml.FindChildElem(_T("Assist")))
+					{
+						xml.IntoElem();
+						OperationAssistPtr pOAX = make_shared<OperationAssist>();
+						pOAX->nOrientation		 = (Orientation)_tcstolong((LPCTSTR)xml.GetAttrib(_T("Orientation")));
+						pOAX->nStartX			 = _tcstolong((LPCTSTR)xml.GetAttrib(_T("StartX")));
+						pOAX->nStartY			 = _tcstolong((LPCTSTR)xml.GetAttrib(_T("StartY")));
+						pOAX->nWidth				 = _tcstolong((LPCTSTR)xml.GetAttrib(_T("Width")));
+						pOAX->nHeight			 = _tcstolong((LPCTSTR)xml.GetAttrib(_T("Height")));
+						pOAX->nThickVerical		 = _tcstolong((LPCTSTR)xml.GetAttrib(_T("ThickVerical")));
+						pOAX->nThickHorizontal	 = _tcstolong((LPCTSTR)xml.GetAttrib(_T("ThickHorizontal")));
+						pOAX->nColor				 = _tcstolong((LPCTSTR)xml.GetAttrib(_T("Color")),16);
+						pOAX->BuildPolygon();
+						xml.OutOfElem();
+						EnterCriticalSection(&m_csOperationAssist);
+						auto itFind = m_mapOperationAssist.find(strID);
+						if (itFind == m_mapOperationAssist.end())
+						{
+							OperationAssistArray opArray;
+							opArray.push_back(pOAX);
+							m_mapOperationAssist.insert(pair<CString, OperationAssistArray>(strID, opArray));
+						}
+						else
+						{
+							itFind->second.push_back(pOAX);
+						}
+						//m_mapOperationAssist.insert(pair<CString, OperationAssistPtr>(strID, pOAX));
+						LeaveCriticalSection(&m_csOperationAssist);
+
+					}
+					
 					TraceMsgW(_T("%s Load Device %s.\n"), __FUNCTIONW__, strID);
 
 					xml.OutOfElem();
