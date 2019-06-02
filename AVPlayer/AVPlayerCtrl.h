@@ -10,13 +10,13 @@
 #include "TimeUtility.h"
 #include "AutoLock.h"
 #include "SimpleWnd.h"
-#include "../RTSP/rtsp.h"
+//#include "../RTSP/rtsp.h"
 #include "VS300ClientSDK.h"
 #ifdef _DEBUG
-#pragma comment(lib,"../debug/rtsp.lib")
+//#pragma comment(lib,"../debug/rtsp.lib")
 #pragma comment(lib,"VS300ClientSDKD")
 #else
-#pragma comment(lib,"../release/rtsp.lib")
+//#pragma comment(lib,"../release/rtsp.lib")
 #pragma comment(lib,"VS300ClientSDK")
 #endif
 #include "../ipcplaysdk/IPCPlaySDK.h"
@@ -25,6 +25,7 @@
 #include <map>
 #include "VideoFrame.h"
 #include "DhStreamParser.h"
+#include "WndEvent.h"
 
 
 using namespace  std;
@@ -59,9 +60,12 @@ enum AVStatus
 	AvError_ScreenMode_notExist			 = AvError_base - 22,		// 指定的模式不存在
 	AvError_NotSingleFramePlayer		 = AvError_base - 23,		// 不是一单帧播放器
 	AvError_OutofPlayingRange			 = AvError_base - 24,		// 指定的时间点超出播放器的时间范围
+	AvError_PlayProcessNotExist			 = AvError_base - 25,		// 播放进程异常退出
+	AvError_PlayProcessListIsEmpty		 = AvError_base - 26,		// 播放进程表为空
 	AvError_ExternalError				 = AvError_base - 253,		// 内部错误
 	AvError_InsufficentMemory			 = AvError_base - 254,		// 内存不足
 	AvError_UnknownException			 = AvError_base - 255,		// 未知异常 
+	
 	AvError_AS300_Error = -2000
 };
 
@@ -575,13 +579,13 @@ protected:
 	volatile bool m_bThreadCheckRecvTimeRun;
 	long  m_nRecvTimeout;			// 接收数据超时值,默认值为5000毫秒
 	long  m_nReConnectInterval;		// 重连间隔时间,默认值为5000毫秒
-	static  UINT _stdcall ThreadCheckRecvTime(void *p)
-	{
-		CAVPlayerCtrl *pThis = (CAVPlayerCtrl *)p;
-		return pThis->ThreadCheckRecvTimeRun();
-	}
-
-	UINT ThreadCheckRecvTimeRun();
+// 	static  UINT _stdcall ThreadCheckRecvTime(void *p)
+// 	{
+// 		CAVPlayerCtrl *pThis = (CAVPlayerCtrl *)p;
+// 		return pThis->ThreadCheckRecvTimeRun();
+// 	}
+// 
+// 	UINT ThreadCheckRecvTimeRun();
 	
 	LRESULT OnFireRecvTimeout(WPARAM w,LPARAM l);
 
@@ -803,8 +807,19 @@ protected:
 	LONG QueryRecord(LPCTSTR szDeviceID, LONG nStartTime, LONG nStopTime, LONG pRecordArray,LONG nBufferCount, LONG* nRecordCount);
 	LONG GetErrorMessage(LONG nErrorCode, LPCTSTR strErrorMessage, LONG nBufferSize);
 public:
-	static CCriticalSectionProxy m_csMapDecoderPool;
+	static CCriticalSectionAgent m_csMapDecoderPool;
 	static map<string, ItemStatusList> m_mapDecoderPool;
+	//////////////////////////////////////////////////////////////////////////
+	// 用于多进程显示视频的代码 开始
+	DWORD  StartPlayProcess(INT nIndex);
+	void   StopPlayProcess(DWORD dwPID);
+	CCriticalSectionAgent m_csListProcess;
+	list<PlayProcess> m_listProcess;
+	LRESULT OnRegisterWnd(WPARAM w, LPARAM l);
+	LRESULT OnUnRegisterWnd(WPARAM w, LPARAM l);
+	LRESULT OnCreatePlayer(WPARAM w, LPARAM l);
+	// 用于多进程显示视频的代码 结束
+	//////////////////////////////////////////////////////////////////////////
 };
 
 struct _IPCConnection
@@ -819,13 +834,15 @@ struct _IPCConnection
 	byte	m_nFPS;
 	bool	m_bFillHeader;
 	bool	m_bEnableHWAccel;
-	long	m_hRtspSession;
+	//long	m_hRtspSession;
+	HWND	hPlayProcessWnd;		// 独立播放进程的主窗口
+	bool	bStopAll;
 	double	dfLastActiveTime;
 	double  dfReConnectTime;
-	char	szIP[32];
+	char	szCameraIP[32];
 	char	szAccount[32];
 	char	szPassword[32];
-	string  strRtspURL;
+	char    szRtspURL[512];
 	BSTR	bstrErrorString;
 	void	*m_pRtspCallBack;
 	SimpleStream* m_pSimpleStream;
@@ -836,13 +853,13 @@ struct _IPCConnection
 	HANDLE	hThread;
 	// AS300转发变量
 	bool	m_bIPCStart;
-	long	m_nPlaySession;	// 回放和转发播放的session
+	long	m_nAS300Session;	// 回放和转发播放的session
 	bool	m_bPlayBack;	// 回放标志，回放时为TRUE
 	long	m_nLoginID;
-
 	CHAR	m_strDeviceID[64];
 	PlayBackStatusPtr	pPlayStatus;
 	list<SimpleStream*> listSimpleStream;
+	map<long,HWND> mapPlayerWnd;
 #ifdef _DEBUG
 	static volatile LONG  nRefCount;
 #endif
@@ -850,6 +867,23 @@ struct _IPCConnection
 	_IPCConnection()
 	{
 		ZeroMemory(this, offsetof(_IPCConnection, pPlayStatus));
+		int nSize = sizeof(_IPCConnection);
+		m_pFrameBuffer = new byte[128 * 1024];
+		m_nBufferSize = 128 * 1024;
+		nRecvTimeout = 15000;
+		nReConnectInterval = 15000;
+		dfReConnectTime = 0.0f;
+		m_nLoginID = -1;
+#ifdef _DEBUG
+		InterlockedIncrement(&nRefCount);
+#endif
+	}
+	_IPCConnection(HWND hWnd,char *szIP,WORD nPort,char* szAccount,char *szPassword,char *szURL)
+	{
+		ZeroMemory(this, offsetof(_IPCConnection, pPlayStatus));
+		strcpy_s(szCameraIP, 32, szIP);
+		strcpy_s(szRtspURL,512, szURL);
+		mapPlayerWnd.insert(pair<long,HWND>((long)hWnd,hWnd));
 		int nSize = sizeof(_IPCConnection);
 		m_pFrameBuffer = new byte[128 * 1024];
 		m_nBufferSize = 128 * 1024;
@@ -920,6 +954,11 @@ struct _IPCConnection
 				}
 			}
 		}
+	}
+	/*
+	void OnSDPNotify(void *pData)
+	{
+
 	}
 #define _RTP_Header		0	
 #define _NALU			1
@@ -1021,15 +1060,7 @@ struct _IPCConnection
 			}
 		}
 		break;
-		case _NALU:
-		{
-			if (m_bFillHeader)
-			{
-				memcpy(&m_pFrameBuffer[m_nFrameLength], pBuffer, nBufferLen);
-				m_nFrameLength += nBufferLen;
-			}
-		}
-		break;
+
 		case _FrameData:
 		{
 			if (!m_bFillHeader)
@@ -1065,6 +1096,7 @@ struct _IPCConnection
 			break;
 		}
 	}
+	*/
 	~_IPCConnection()
 	{
 		bRunning = false;
@@ -1078,19 +1110,30 @@ struct _IPCConnection
 			hThread = NULL;
 		}
 
-		if (m_nPlaySession)
+		if (m_nAS300Session)
 		{
 			assert(m_nLoginID != -1);
 			if (!pPlayStatus)
 				SDK_CUStopVideoRequest(m_nLoginID, (CHAR *)m_strDeviceID);
 			else
-				SDK_CUStopPlayback(m_nLoginID, m_nPlaySession);
+				SDK_CUStopPlayback(m_nLoginID, m_nAS300Session);
 			m_nLoginID = -1;
-			m_nPlaySession = -1;
+			m_nAS300Session = -1;
 		}
 
-		if (m_hRtspSession)
-			rtsp_stop(m_hRtspSession);
+// 		if (m_hRtspSession)
+// 			rtsp_stop(m_hRtspSession);
+		if (hPlayProcessWnd && IsWindow(hPlayProcessWnd))
+		{
+			COPYDATASTRUCT cds;
+			PlayEvent WndEvent;
+			WndEvent.nCommand = CDS_STOP;
+			strcpy_s(WndEvent.szCameraIP,32, szCameraIP);
+			cds.dwData = CDS_STOP;
+			cds.cbData = sizeof(PlayEvent);
+			cds.lpData = &WndEvent;
+			::SendMessage(hPlayProcessWnd, WM_COPYDATA, 0, (LPARAM)&cds);
+		}
 		if (hPlayhandle)
 		{
 			PlayerInfo info;
@@ -1137,12 +1180,13 @@ struct _IPCConnection
 	LONG OpenAS300Session(LONG nLoginID, LPCTSTR szDeviceID)
 	{
 		strcpy_s(m_strDeviceID, 64, _AnsiString(szDeviceID, CP_ACP));
-		m_nPlaySession = SDK_CUVideoRequest(nLoginID, (char *)m_strDeviceID, 0, 1, 5000, 0, 0);
+		m_nAS300Session = SDK_CUVideoRequest(nLoginID, (char *)m_strDeviceID, 0, 1, 5000, 0, 0);
 		m_nLoginID = nLoginID;
 
-		return m_nPlaySession;
+		return m_nAS300Session;
 	}
-	LONG RtspConnect(char *szIP, char *szAccount, char *szPassword, map<CString, CameraUrlPtr> &mapCamera, PFRtspDataCallBack pRtspCallBack)
+	/*
+	LONG RtspConnect(char *szIP, char *szAccount, char *szPassword, map<CString, CameraUrlPtr> &mapCamera/*, PFRtspDataCallBack pRtspCallBack)
 	{
 		char szURL[512] = { 0 };
 		map<CString, CameraUrlPtr>::iterator itFinder = mapCamera.find(CString(szIP));
@@ -1159,16 +1203,16 @@ struct _IPCConnection
 		}
 		if (pRunlog)
 			pRunlog->Runlog(_T("%s RTSP URL = %s.\n"), __FUNCTIONW__, _UnicodeString(szURL, CP_ACP));
-		m_hRtspSession = rtsp_play(szURL, "", "", rtsp_TCP, 0, (PFRtspDataCallBack)pRtspCallBack, NULL, this);
+		//m_hRtspSession = rtsp_play(szURL, "", "", rtsp_TCP, 0, (PFRtspDataCallBack)pRtspCallBack, NULL, this);
 		if (!m_hRtspSession)
 			return AvError_ConnectDeviceFailed;
 		else
 		{
-			strRtspURL = szURL;
-			strcpy(this->szIP, szIP);
+			strcpy_s(szRtspURL,512,szURL);
+			strcpy(this->szCameraIP, szIP);
 			strcpy(this->szAccount, szAccount);
 			strcpy(this->szPassword, szPassword);
-			m_pRtspCallBack = pRtspCallBack;
+			//m_pRtspCallBack = pRtspCallBack;
 			dfLastActiveTime = GetExactTime();
 			return AvError_Succeed;
 		}
@@ -1176,11 +1220,11 @@ struct _IPCConnection
 
 	LONG Reconnect()
 	{
-		if (m_hRtspSession)
-		{
-			rtsp_stop(m_hRtspSession);
-			m_hRtspSession = 0;
-		}
+// 		if (m_hRtspSession)
+// 		{
+// 			rtsp_stop(m_hRtspSession);
+// 			m_hRtspSession = 0;
+// 		}
 
 		int nWndCount = 0;
 		HWND hWndArray[16] = { 0 };
@@ -1192,12 +1236,13 @@ struct _IPCConnection
 				InvalidateRect(hWndArray[i], NULL, TRUE);
 		}
 
-		m_hRtspSession = rtsp_play(strRtspURL.c_str(), "", "", rtsp_TCP, 0, (PFRtspDataCallBack)m_pRtspCallBack, NULL, this);
+		//m_hRtspSession = rtsp_play(strRtspURL, "", "", rtsp_TCP, 0, (PFRtspDataCallBack)m_pRtspCallBack, NULL, this);
 		if (!m_hRtspSession)
 			return AvError_ConnectDeviceFailed;
 		else
 			return AvError_Succeed;
 	}
+	
 	void StartCheckThread()
 	{
 		bRunning = true;
@@ -1217,18 +1262,18 @@ struct _IPCConnection
 					(pConnection->dfReConnectTime == 0.0f || (TimeSpanEx(pConnection->dfReConnectTime) * 1000) > pConnection->nReConnectInterval))
 				{
 					if (pConnection->pRunlog)
-						pConnection->pRunlog->Runlog(_T("%s (IP:%s)if offline,try to connect!\n"), __FUNCTIONW__, _UnicodeString(pConnection->szIP, CP_ACP));
+						pConnection->pRunlog->Runlog(_T("%s (IP:%s)if offline,try to connect!\n"), __FUNCTIONW__, _UnicodeString(pConnection->szCameraIP, CP_ACP));
 
 					if (pConnection->Reconnect() == AvError_Succeed)
 					{
 						if (pConnection->pRunlog)
-							pConnection->pRunlog->Runlog(_T("%s Camera(IP:%s)reconnect succeed!\n"), __FUNCTIONW__, _UnicodeString(pConnection->szIP, CP_ACP));
+							pConnection->pRunlog->Runlog(_T("%s Camera(IP:%s)reconnect succeed!\n"), __FUNCTIONW__, _UnicodeString(pConnection->szCameraIP, CP_ACP));
 						pConnection->dfReConnectTime = GetExactTime();
 					}
 					else
 					{
 						if (pConnection->pRunlog)
-							pConnection->pRunlog->Runlog(_T("%s device %s(IP:%s)reconnect failed,tried after %d second!\n"), __FUNCTIONW__, _UnicodeString(pConnection->szIP, CP_ACP), pConnection->nReConnectInterval);
+							pConnection->pRunlog->Runlog(_T("%s device %s(IP:%s)reconnect failed,tried after %d second!\n"), __FUNCTIONW__, _UnicodeString(pConnection->szCameraIP, CP_ACP), pConnection->nReConnectInterval);
 					}
 				}
 
@@ -1237,6 +1282,6 @@ struct _IPCConnection
 			Sleep(20);
 		}
 		return 0;
-	}
+	}*/
 };
 

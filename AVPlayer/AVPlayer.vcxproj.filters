@@ -117,9 +117,6 @@
     <ClInclude Include="ModePreview.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\CriticalSectionProxy.h">
-      <Filter>Public.inc</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\VideoFrame.h">
       <Filter>Public.inc</Filter>
     </ClInclude>
@@ -137,6 +134,12 @@
     </ClInclude>
     <ClInclude Include="svacparser\svacstream.h">
       <Filter>svacParser</Filter>
+    </ClInclude>
+    <ClInclude Include="WndEvent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\CriticalSectionAgent.h">
+      <Filter>Public.inc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -35,7 +35,7 @@
 #undef THIS_FILE
 static char THIS_FILE[]=__FILE__;
 #if defined(DEBUG_NEW)
-#define new DEBUG_NEW
+//#define new DEBUG_NEW
 #endif // DEBUG_NEW
 #endif // VC++ DEBUG
 

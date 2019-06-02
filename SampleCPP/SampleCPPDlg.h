@@ -96,6 +96,7 @@ public:
 	CDragListCtrl m_ctlDeviceList;
 	CListCtrl  m_listRecord;
 	vector<wstring>m_vecDevicePlaying;
+	vector<int> m_vecIndex;
 	afx_msg void OnBnClickedButtonStartswitch();
 	afx_msg void OnBnClickedButtonStopswitch();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);

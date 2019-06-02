@@ -58,15 +58,31 @@ struct   NTP_Packet
 /************************************************************************/
 BOOL NTPTiming(const char* szTimeServer);
 
-
+#define EPOCHFILETIME   (116444736000000000UL)
 #define TimeSpan(t)		(time(NULL) - (time_t)t)
 #define TimeSpanEx(t)	(GetExactTime() - t)
+#define MMTimeSpan(t)	(timeGetTime() - t)
 typedef struct __ExactTimeBase
 {
 	LONGLONG	dfFreq;
 	LONGLONG	dfCounter;
 	time_t		nBaseClock;
 	double		dfMilliseconds;
+	// 获取系统的当前时间，单位微秒(ms)
+	static UINT64 GetSysTimeMicros()
+	{
+		// 从1601年1月1日0:0:0:000到1970年1月1日0:0:0:000的时间(单位100ns)
+
+		FILETIME ft;
+		LARGE_INTEGER li;
+		UINT64 Time64 = 0;
+		GetSystemTimeAsFileTime(&ft);
+		li.LowPart = ft.dwLowDateTime;
+		li.HighPart = ft.dwHighDateTime;
+		// 从1970年1月1日0:0:0:000到现在的微秒数(UTC时间)
+		Time64 = (li.QuadPart - EPOCHFILETIME) /10;
+		return Time64;
+	}
 	__ExactTimeBase()
 	{
 		ZeroMemory(this,sizeof(ETB));
@@ -108,26 +124,29 @@ typedef struct __ExactTimeBase
 				}
 			}
 		}
-		GetSystemTime(&systime1);
+		UINT64 t1 = GetSysTimeMicros();
+		UINT64 t2 = 0;
+		int nCompares = 0;
 		// 校准基准时钟
 		while (true)
 		{
-			GetSystemTime(&systime2);
-			if (memcmp(&systime1, &systime2, sizeof(SYSTEMTIME)) != 0)
+			t2 = GetSysTimeMicros();
+			if (t2 != t1)
 				break;
+			nCompares ++;
 		}
+		nBaseClock = t2/(1000*1000);
+		dfMilliseconds = (double)(t2 - nBaseClock*1000*1000)/1000;
+
 		// 恢复线程和进程的优先级
 		SetThreadPriority(hThread, dwThreadPriority);
 		SetPriorityClass(hProcess, dwPriorityClass);
 
-		SystemTime2UTC(&systime2,(UINT64 *)&nBaseClock);
-		dfMilliseconds = (double)(systime2.wMilliseconds /1000);
-
-#ifdef _DEBUG
-		TCHAR szText[64] = {0};
-		_stprintf_s(szText,_T("BaseClock of ETB = %I64d.\n"),nBaseClock);
-		OutputDebugString(szText);
-#endif
+// #ifdef _DEBUG
+// 		TCHAR szText[64] = {0};
+// 		_stprintf_s(szText,_T("BaseClock of ETB = %I64d.\n"),nBaseClock);
+// 		OutputDebugString(szText);
+// #endif
 		LARGE_INTEGER LarInt;		
 		QueryPerformanceFrequency(&LarInt);	
 		dfFreq = LarInt.QuadPart;

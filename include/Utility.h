@@ -70,6 +70,7 @@ typedef BOOL (*KernelIoControlProc)(DWORD , LPVOID , DWORD , LPVOID , DWORD , LP
 #define SetAutoRun				SetAutoRunW
 #define DeleteAutoRun			DeleteAutoRunW
 #define	IsAutoRun				IsAutoRunW
+#define OutputBin				OutputBinW
 
 #else
 #ifdef _DEBUG
@@ -96,6 +97,7 @@ typedef BOOL (*KernelIoControlProc)(DWORD , LPVOID , DWORD , LPVOID , DWORD , LP
 #define SetAutoRun				SetAutoRunA
 #define DeleteAutoRun			DeleteAutoRunA
 #define	IsAutoRun				IsAutoRunA
+#define OutputBin				OutputBinA
 #endif
 
 // 功能描述		内存数据转换为16进制ASCII字符串
@@ -122,10 +124,10 @@ int AscString2HexA(IN CHAR *szAscString,IN int nAscStringLen, unsigned char *pHe
 
 
 // 取指定参数的一个字节
-#define  GetByte(p,n)  ((byte*)&p)[n]
-#define  GetInt16(p)	MAKEWORD(((byte *)&p)[1],((byte *)&p)[0])
-#define  GetInt32(p)	MAKELONG(GetInt16(((byte *)&p)[2]),GetInt16(p))
-#define  GetInt64(p)	MAKEUINT64(GetInt32(((byte *)&p)[4]),GetInt32(p))
+#define  GetAddrByte(p,n)  ((byte*)&p)[n]
+#define  GetAddrInt16(p)	MAKEWORD(((byte *)&p)[1],((byte *)&p)[0])
+#define  GetAddrInt32(p)	MAKELONG(GetAddrInt16(((byte *)&p)[2]),GetAddrInt16(p))
+#define  GetAddrInt64(p)	MAKEUINT64(GetAddrInt32(((byte *)&p)[4]),GetAddrInt32(p))
 
 ULONG inet_addrW(LPCWSTR IPW);
 WCHAR* FAR inet_ntow(in_addr in);
@@ -235,10 +237,10 @@ int  AnalysisDataW(WCHAR *szSrc,int nSrcLen,WCHAR *szText,int &nTextLen,WCHAR Fl
 #define		Bit64(x,bit)		((((INT64)x)&(((INT64)1) << bit))>>bit)
 #define		Bit(x,bit)		((((INT)x)&(((INT)1) << bit))>>bit)
 
-int		Mystrlen(LPCSTR str);
-int		Mystrcmp(LPCSTR srcstr,LPCSTR dststr);
-int		Mystrcpy(LPSTR  dststr,LPCSTR srcstr);
-int		Mystrcat(LPSTR  dststr,LPCSTR srcstr);
+// int		Mystrlen(LPCSTR str);
+// int		Mystrcmp(LPCSTR srcstr,LPCSTR dststr);
+// int		Mystrcpy(LPSTR  dststr,LPCSTR srcstr);
+// int		Mystrcat(LPSTR  dststr,LPCSTR srcstr);
 
 BYTE	*UINT642Byte(UINT64 nValue64);
 UINT64  Byte2UINT64(BYTE *pByte);
@@ -472,7 +474,13 @@ INT_PTR MultiByteStrToUnicodeStr(UINT_PTR nCodePage, LPCSTR lpMultiByteStr, LPWS
 #define _AnsiString(UnicodeText,CP)	(W2AString_(UnicodeText,CP).get())
 #define _UnicodeString(AnsiText,CP)		(A2WString_(AnsiText,CP).get())
 
-//#define stdshared_ptr		std::tr1::shared_ptr
+#ifdef _UNICODE
+#define  _StringT(X)		_UnicodeString(X,CP_ACP)
+#else
+#define _StringT(X)			_AnsiString(X,CP_ACP)
+#endif
+
+
 shared_ptr<char> UTF8StringW(IN LPCWSTR pText,int& OUT nReturnLength);
 shared_ptr<char> W2AString(IN LPCWSTR pText,int& OUT nReturnLength);
 shared_ptr<WCHAR> A2WString(IN LPCSTR pText,int& OUT nReturnLength);
@@ -489,3 +497,39 @@ DWORD GetOsMajorVersion();
 
 BOOL ModifyWndStyle(HWND hWnd, int nStyleOffset,   DWORD dwRemove, DWORD dwAdd, UINT nFlags);
 BOOL IsCancelDialogMessage(MSG* pMsg);
+
+
+/*
+用于查找存放结构体容器的仿函数模板
+用法：
+// 容器中要存放的结构体定义
+struct mystruct
+{
+UINT nKeyValue;	// 结构体中可以标识该结构体的成员
+WORD nValue2;
+};
+bool MyCompare(void *p1, void *p2)
+{
+UINT *pValue1 = (UINT *)p1;
+mystruct *pValue2 = (mystruct*)p2;
+return (*(UINT *)p1 == pValue2->nKeyValue);
+}
+list<mystruct> MyList;
+UINT nKey = 1234;
+auto itFind = find_if(MyList.begin(), MyList.end(), FinderFunctor<mystruct, UINT>(nKey, MyCompare));
+*/
+typedef bool(*CompareProcT)(void *p1, void *p2);
+template <class EleType, class KeyType>
+struct FinderFunctor
+{
+	KeyType Key;
+	CompareProcT pCompare;
+	FinderFunctor(KeyType InputKey, CompareProcT pCompareInput)
+		:Key(InputKey),
+		pCompare(pCompareInput)
+	{}
+	BOOL operator()(EleType &EelementFind)
+	{
+		return pCompare(&Key, &EelementFind);
+	}
+};

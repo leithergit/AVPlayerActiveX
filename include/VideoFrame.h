@@ -17,7 +17,7 @@ using namespace boost;
 #include <math.h>
 #include "AutoLock.h"
 #include "Utility.h"
-#include "CriticalSectionProxy.h"
+#include "CriticalSectionAgent.h"
 
 using namespace  std;
 

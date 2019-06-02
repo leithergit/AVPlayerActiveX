@@ -12,7 +12,7 @@
 
 #pragma comment(lib,"winmm.lib")
 #ifdef _DEBUG
-#define new DEBUG_NEW
+//#define new DEBUG_NEW
 #endif
 
 #define WM_SWITCH	WM_USER + 1024
@@ -381,6 +381,8 @@ void CSampleCPPDlg::OnBnClickedButtonLogout()
 void CSampleCPPDlg::OnBnClickedButtonPlay()
 {
 	int nCount = m_ctlDeviceList.GetItemCount();
+	m_vecDevicePlaying.clear();
+	m_vecIndex.clear();
 	TCHAR szDeviceID[32] = {0};
 	for (int i = 0;i < nCount;i ++)
 	{
@@ -409,6 +411,7 @@ void CSampleCPPDlg::OnBnClickedButtonPlay()
 					long nArraySize = 16;
 					int nErrorCode = m_AvPlayer.GetDeviceWindow(szDeviceID, (long *)hWndArray, &nArraySize);
 					m_vecDevicePlaying.push_back(szDeviceID);
+					m_vecIndex.push_back(i);
 				}
 			}
 			else if (m_AvPlayer.PlayStream(szDeviceID,(long)hVideoWnd,0) ==0)
@@ -515,6 +518,12 @@ LRESULT CSampleCPPDlg::OnSwitch(WPARAM wParam, LPARAM lParam)
 		{
 			m_AvPlayer.StopPlay(it->c_str(),NULL);
 			it = m_vecDevicePlaying.erase(it);
+			
+		}
+		for (auto it = m_vecIndex.begin(); it != m_vecIndex.end();)
+		{
+			m_ctlDeviceList.SetCheck(*it, FALSE);
+			it = m_vecIndex.erase(it);
 		}
 	}
 	int nCount = m_ctlDeviceList.GetItemCount();
@@ -529,6 +538,10 @@ LRESULT CSampleCPPDlg::OnSwitch(WPARAM wParam, LPARAM lParam)
 			if (m_AvPlayer.PlayStream(szDeviceID,(long)hVideoWnd,0) ==0)
 			{
 				m_vecDevicePlaying.push_back(szDeviceID);
+				m_vecIndex.push_back(m_nNextDevNo);
+				m_ctlDeviceList.SetCheck(m_nNextDevNo);
+				m_ctlDeviceList.EnsureVisible(m_nNextDevNo, TRUE);
+
 				m_nNextDevNo ++;
 				if (m_nNextDevNo == nCount)
 					m_nNextDevNo = 0;
@@ -558,6 +571,13 @@ END_EVENTSINK_MAP()
 void CSampleCPPDlg::OnBnClickedCheck1()
 {
 	TCHAR szDeviceID[32] = {0};
+	int nCursel = m_pVideoFrame->GetCurPanel();
+	if (nCursel < 0)
+	{
+		AfxMessageBox(_T("请先选中一个要播放的窗口！"));
+		return;
+	}
+	HWND hVideoWnd = m_pVideoFrame->GetPanelWnd(nCursel);
 	int nCount = m_ctlDeviceList.GetItemCount();
 	if (IsDlgButtonChecked(IDC_CHECK1) == BST_CHECKED)
 	{
@@ -566,7 +586,7 @@ void CSampleCPPDlg::OnBnClickedCheck1()
 			if (m_ctlDeviceList.GetCheck(i) )
 			{
 				m_ctlDeviceList.GetItemText(i,1,szDeviceID,32);
-				HWND hVideoWnd = GetDlgItem(IDC_STATIC_FRAME2)->GetSafeHwnd();
+				
 				m_ctlDeviceList.GetItemText(i,1,szDeviceID,32);
 				if (m_AvPlayer.PlayStream(szDeviceID,(long)hVideoWnd,1) ==0)
 				{
@@ -578,7 +598,6 @@ void CSampleCPPDlg::OnBnClickedCheck1()
 	}
 	else
 	{
-		HWND hVideoWnd = GetDlgItem(IDC_STATIC_FRAME2)->GetSafeHwnd();
 		BSTR bstrDeviceWnd;
 		if (m_AvPlayer.GetWindowDevice((long)hVideoWnd,&bstrDeviceWnd) == AvError_Succeed)
 		{
@@ -594,6 +613,13 @@ void CSampleCPPDlg::OnBnClickedCheck2()
 {
 	TCHAR szDeviceID[32] = {0};
 	int nCount = m_ctlDeviceList.GetItemCount();
+	int nCursel = m_pVideoFrame->GetCurPanel();
+	if (nCursel < 0)
+	{
+		AfxMessageBox(_T("请先选中一个要播放的窗口！"));
+		return;
+	}
+	HWND hVideoWnd = m_pVideoFrame->GetPanelWnd(nCursel);
 	if (IsDlgButtonChecked(IDC_CHECK2) == BST_CHECKED)
 	{
 		for (int i = 0;i < nCount;i ++)
@@ -601,7 +627,6 @@ void CSampleCPPDlg::OnBnClickedCheck2()
 			if (m_ctlDeviceList.GetCheck(i) )
 			{
 				m_ctlDeviceList.GetItemText(i,1,szDeviceID,32);
-				HWND hVideoWnd = GetDlgItem(IDC_STATIC_FRAME3)->GetSafeHwnd();
 				m_ctlDeviceList.GetItemText(i,1,szDeviceID,32);
 				if (m_AvPlayer.PlayStream(szDeviceID,(long)hVideoWnd,1) ==0)
 				{
@@ -613,8 +638,7 @@ void CSampleCPPDlg::OnBnClickedCheck2()
 	}
 	else
 	{
-		HWND hVideoWnd = GetDlgItem(IDC_STATIC_FRAME3)->GetSafeHwnd();
-		WCHAR szDeviceWnd[32] = {0};
+		HWND hVideoWnd = GetDlgItem(IDC_STATIC_FRAME3)->GetSafeHwnd();		WCHAR szDeviceWnd[32] = {0};
 		if (m_AvPlayer.GetWindowDevice((long)hVideoWnd,(BSTR *)&szDeviceWnd) == AvError_Succeed)
 		{
 			m_AvPlayer.StopPlay(szDeviceWnd,(long)hVideoWnd);
@@ -627,6 +651,13 @@ void CSampleCPPDlg::OnBnClickedCheck3()
 {
 	TCHAR szDeviceID[32] = {0};
 	int nCount = m_ctlDeviceList.GetItemCount();
+	int nCursel = m_pVideoFrame->GetCurPanel();
+	if (nCursel < 0)
+	{
+		AfxMessageBox(_T("请先选中一个要播放的窗口！"));
+		return;
+	}
+	HWND hVideoWnd = m_pVideoFrame->GetPanelWnd(nCursel);
 	if (IsDlgButtonChecked(IDC_CHECK3) == BST_CHECKED)
 	{
 		for (int i = 0;i < nCount;i ++)
@@ -634,7 +665,6 @@ void CSampleCPPDlg::OnBnClickedCheck3()
 			if (m_ctlDeviceList.GetCheck(i) )
 			{
 				m_ctlDeviceList.GetItemText(i,1,szDeviceID,32);
-				HWND hVideoWnd = GetDlgItem(IDC_STATIC_FRAME4)->GetSafeHwnd();
 				m_ctlDeviceList.GetItemText(i,1,szDeviceID,32);
 				if (m_AvPlayer.PlayStream(szDeviceID,(long)hVideoWnd,1) ==0)
 				{
@@ -646,7 +676,6 @@ void CSampleCPPDlg::OnBnClickedCheck3()
 	}
 	else
 	{
-		HWND hVideoWnd = GetDlgItem(IDC_STATIC_FRAME3)->GetSafeHwnd();
 		WCHAR szDeviceWnd[32] = {0};
 		if (m_AvPlayer.GetWindowDevice((long)hVideoWnd,(BSTR *)&szDeviceWnd) == AvError_Succeed)
 		{

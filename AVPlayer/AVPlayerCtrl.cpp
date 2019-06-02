@@ -12,7 +12,7 @@
 
 
 #ifdef _DEBUG
-#define new DEBUG_NEW
+//#define new DEBUG_NEW
 #endif
 
 #define ID_TIMER_DELETEFILE 1024
@@ -21,12 +21,15 @@ extern CAVPlayerApp theApp;
 volatile LONG _IPCConnection::nRefCount = 0;
 #endif
 
-CCriticalSectionProxy  CAVPlayerCtrl::m_csMapDecoderPool;
+CCriticalSectionAgent  CAVPlayerCtrl::m_csMapDecoderPool;
 map<string, ItemStatusList> CAVPlayerCtrl::m_mapDecoderPool;
 
 IMPLEMENT_DYNCREATE(CAVPlayerCtrl, COleControl)
 
 // Message map
+UINT	WM_REGISTERWND = 0;
+UINT	WM_UNREGISTERWND = 0;
+UINT	WM_CREATEPLAYER = 0;
 
 BEGIN_MESSAGE_MAP(CAVPlayerCtrl, COleControl)
 	ON_OLEVERB(AFX_IDS_VERB_PROPERTIES, OnProperties)
@@ -38,9 +41,10 @@ BEGIN_MESSAGE_MAP(CAVPlayerCtrl, COleControl)
 	//ON_MESSAGE(WM_FRAME_LBUTTONUP, &CAVPlayerCtrl::OnFrameLButtonUp)
 	//ON_WM_LBUTTONDOWN()
 	ON_WM_MOUSEACTIVATE()
+	ON_REGISTERED_MESSAGE(WM_REGISTERWND, OnRegisterWnd)
+	ON_REGISTERED_MESSAGE(WM_UNREGISTERWND, OnUnRegisterWnd)
+	ON_REGISTERED_MESSAGE(WM_CREATEPLAYER, OnCreatePlayer)
 END_MESSAGE_MAP()
-
-
 
 // Dispatch map
 // #define DISP_FUNCTION_ID(theClass, szExternalName, dispid, pfnMember, vtRetVal, vtsParams)\
@@ -161,7 +165,13 @@ BOOL CAVPlayerCtrl::CAVPlayerCtrlFactory::UpdateRegistry(BOOL bRegister)
 		return AfxOleUnregisterClass(m_clsid, m_lpszProgID);
 }
 
-
+void WaitForDebug(bool bWait = false)
+{
+	while (bWait)
+	{
+		Sleep(10);
+	}
+}
 
 // CAVPlayerCtrl::CAVPlayerCtrl - Constructor
 
@@ -169,7 +179,63 @@ CAVPlayerCtrl::CAVPlayerCtrl()
 {
 	InitializeIIDs(&IID_DAVPlayer, &IID_DAVPlayerEvents);
 	m_nLogSaveDays = 30;
+#ifdef _DEBUG
+	//WaitForDebug(true);
+#endif
 	
+}
+
+void RegisterMyMesssage()
+{
+	WM_REGISTERWND = RegisterWindowMessage(_T("WM_REGISTERWND"));
+	// Unregister a window to primary wnd ,the LPARAM save the hwnd of windows
+	WM_UNREGISTERWND = RegisterWindowMessage(_T("WM_UNREGISTERWND"));
+	WM_CREATEPLAYER = RegisterWindowMessage(_T("WM_CREATEPLAYER"));
+}
+
+bool CompareProcess(void *p1, void *p2)
+{
+	DWORD *dwPID = (DWORD *)p1;
+	PlayProcess *pPP = (PlayProcess*)p2;
+	return *dwPID == pPP->dwProcessID;
+}
+LRESULT CAVPlayerCtrl::OnRegisterWnd(WPARAM w, LPARAM l)
+{
+	DWORD dwPID = (int)w;
+	HWND hWndPlayer = (HWND)l;
+	TraceMsgA("%s Process[%d] Regisgtered.\n", __FUNCTION__, dwPID);
+	m_csListProcess.Lock();
+	auto itFind = find_if(m_listProcess.begin(), m_listProcess.end(), FinderFunctor<PlayProcess, DWORD>(dwPID, CompareProcess));
+	if (itFind != m_listProcess.end())
+		itFind->hProcessWnd = hWndPlayer;
+	m_csListProcess.Unlock();
+	return 0;
+}
+
+LRESULT CAVPlayerCtrl::OnUnRegisterWnd(WPARAM w, LPARAM l)
+{
+	DWORD dwPID = (int)w;
+	HWND hWndPlayer = (HWND)l;
+	TraceMsgA("%s Process[%d] UnRegisgtered.\n", __FUNCTION__, dwPID);
+	m_csListProcess.Lock();
+	auto itFind = find_if(m_listProcess.begin(), m_listProcess.end(), FinderFunctor<PlayProcess, DWORD>(dwPID, CompareProcess));
+	if (itFind != m_listProcess.end())
+		m_listProcess.erase(itFind);
+	m_csListProcess.Unlock();
+	PostMessage(WM_CREATEPLAYER);
+	return 0;
+}
+
+LRESULT CAVPlayerCtrl::OnCreatePlayer(WPARAM w, LPARAM l)
+{
+	DWORD dwPID = StartPlayProcess(0);
+	TraceMsgA("%s Process[%d] is Created.\n", __FUNCTION__, dwPID);
+	PlayProcess pp;
+	pp.dwProcessID = dwPID;
+	m_csListProcess.Lock();
+	m_listProcess.push_back(pp);
+	m_csListProcess.Unlock();
+	return 0;
 }
 
 
@@ -405,13 +471,13 @@ LONG CAVPlayerCtrl::Login(LPCTSTR strServerIP, USHORT nServerPort, LPCTSTR strAc
 			dblock.Unlock();
 			LoadScreenMode();
 			LoadOPAssistXConfigure();
-			TCHAR szPath[MAX_PATH] = { 0 };
-			TCHAR szTempPath[MAX_PATH] = {0};
+			TCHAR szPath[1024] = { 0 };
+			TCHAR szTempPath[1024] = {0};
 			// 取得控件加载路径
-			GetModuleFileName(theApp.m_hInstance,szTempPath,MAX_PATH);
+			GetModuleFileName(theApp.m_hInstance,szTempPath,1024);
 			int nPos = _tcsReserverFind(szTempPath,_T('\\'));
-			_tcsncpy_s(szPath,MAX_PATH,szTempPath,nPos);
-			_tcscat_s(szPath, MAX_PATH, _T("\\Configuration.xml"));
+			_tcsncpy_s(szPath,1024,szTempPath,nPos);
+			_tcscat_s(szPath, 1024, _T("\\Configuration.xml"));
 			CMarkup xml;
 			if (PathFileExists(szPath) &&  xml.Load(szPath))
 			{
@@ -611,6 +677,8 @@ void   CAVPlayerCtrl::OnAS300PlayBackPos(int nSessionID, int nPos, int nTotal)
 	}
 }
 
+/*
+
 UINT CAVPlayerCtrl::ThreadCheckRecvTimeRun()
 {
 	double dfTFirst = GetExactTime();
@@ -630,18 +698,18 @@ UINT CAVPlayerCtrl::ThreadCheckRecvTimeRun()
 					(pConnection->dfReConnectTime == 0.0f || (TimeSpanEx(pConnection->dfReConnectTime) * 1000) > m_nReConnectInterval))
 				{
 					if (m_pRunlog)
-						m_pRunlog->Runlog(_T("%s 设备 %s(IP:%s)掉线,尝试重连!\n"), __FUNCTIONW__, _UnicodeString(it->first.c_str(), CP_ACP), _UnicodeString(pConnection->szIP, CP_ACP));
+						m_pRunlog->Runlog(_T("%s 设备 %s(IP:%s)掉线,尝试重连!\n"), __FUNCTIONW__, _UnicodeString(it->first.c_str(), CP_ACP), _UnicodeString(pConnection->szCameraIP, CP_ACP));
 
 					if (pConnection->Reconnect() == AvError_Succeed)
 					{
 						if (m_pRunlog)
-							m_pRunlog->Runlog(_T("%s 设备 %s(IP:%s)重连成功!\n"), __FUNCTIONW__, _UnicodeString(it->first.c_str(), CP_ACP), _UnicodeString(pConnection->szIP, CP_ACP));
+							m_pRunlog->Runlog(_T("%s 设备 %s(IP:%s)重连成功!\n"), __FUNCTIONW__, _UnicodeString(it->first.c_str(), CP_ACP), _UnicodeString(pConnection->szCameraIP, CP_ACP));
 						pConnection->dfReConnectTime = GetExactTime();
 					}
 					else
 					{
 						if (m_pRunlog)
-							m_pRunlog->Runlog(_T("%s 设备 %s(IP:%s)重连失败,%d秒后重试!\n"), __FUNCTIONW__, _UnicodeString(it->first.c_str(), CP_ACP), _UnicodeString(pConnection->szIP, CP_ACP), m_nReConnectInterval);
+							m_pRunlog->Runlog(_T("%s 设备 %s(IP:%s)重连失败,%d秒后重试!\n"), __FUNCTIONW__, _UnicodeString(it->first.c_str(), CP_ACP), _UnicodeString(pConnection->szCameraIP, CP_ACP), m_nReConnectInterval);
 					}
 				}
 			}
@@ -651,11 +719,18 @@ UINT CAVPlayerCtrl::ThreadCheckRecvTimeRun()
 	}
 	return 0;
 }
+*/
+
+void OnSDPNofity(long hHandle, void *pData, int nUser)
+{
+	_IPCConnection *pThis = (_IPCConnection *)nUser;
+	//pThis->OnSDPNotify(pData);
+}
 
 void RtspDataCallBack(long lHandle, char *pBuffer, int nParam, int nUser)
 {
 	_IPCConnection *pThis = (_IPCConnection *)nUser;
-	pThis->OnCalBack(pBuffer, nParam);
+	//pThis->OnCalBack(pBuffer, nParam);
 }
 
 // LRESULT CAVPlayerCtrl::SubClassProc(HWND hWnd, UINT nMessage, WPARAM wParam, LPARAM lParam)
@@ -691,93 +766,119 @@ LONG CAVPlayerCtrl::PlayStream(LPCTSTR strDeviceID, LONG hWnd,LONG nEnalbeHWAcce
 		return AvError_InvalidParameters;
 	CAutoLock dblock(&m_csDBConnector);
 	if (!m_pDBConnector)
-		return AvError_NotLogintoServer;
+	return AvError_NotLogintoServer;
 
 	dblock.Unlock();
 	// 从数据库获取相机的IP，端口，帐号，密码
 	try
 	{
 		// 330106 100 0052
-		char szChannelID[32] = {0};
+		char szChannelID[32] = { 0 };
 		char szDeviceID[32] = { 0 };
 		W2AHelper(strDeviceID, szChannelID, 32);
-		strncpy(szDeviceID,szChannelID,13);
-		
+		strncpy(szDeviceID, szChannelID, 13);
 		if (!::IsWindow((HWND)hWnd))
 		{
 			if (m_pRunlog)
-				m_pRunlog->Runlog(_T("%s Specialfied a invalid window!\n"),__FUNCTIONW__,strDeviceID);
+				m_pRunlog->Runlog(_T("%s Specialfied a invalid window!\n"), __FUNCTIONW__, strDeviceID);
 			return AvError_InvalidWindow;
 		}
-
+		if (m_listProcess.size() < 1)
+		{
+			if (m_pRunlog)
+				m_pRunlog->Runlog(_T("%s The play process list is empty.\n"), __FUNCTIONW__);
+			return AvError_PlayProcessListIsEmpty;
+		}
+		PlayProcess &PP = m_listProcess.front();
+		PlayEvent WndEvent;
+		char szURL[512] = { 0 };
+		WndEvent.nPort = 80;
+		WndEvent.nCommand = CDS_START;
+		WndEvent.hWnd = (HWND)hWnd;
+		WndEvent.bEnableHAccel = (bool)nEnalbeHWAccel;		
+		IPCConnectionPtr pConnection = nullptr;
 		RECT rt;
-		::GetWindowRect((HWND)hWnd,&rt);
+		::GetWindowRect((HWND)hWnd, &rt);
 		if (m_pRunlog)
-			m_pRunlog->Runlog(_T("%s Windows %08X Postion(%d,%d,%d,%d).\n"),__FUNCTIONW__,hWnd,rt.left,rt.right,rt.top,rt.bottom);
+			m_pRunlog->Runlog(_T("%s Windows %08X Postion(%d,%d,%d,%d).\n"), __FUNCTIONW__, hWnd, rt.left, rt.right, rt.top, rt.bottom);
 		CAutoLock ConnectionLock(&m_csMapConnection);
 		map<string, IPCConnectionPtr>::iterator itFind = m_MapConnection.find(szDeviceID);
 		if (itFind != m_MapConnection.end())
 		{
-			IPC_PLAYHANDLE &hPlayer = itFind->second->hPlayhandle;			
-			if (ipcplay_AddWindow(hPlayer, (HWND)hWnd) != IPC_Succeed)
+			pConnection = itFind->second;
+			if (pConnection->mapPlayerWnd.find(hWnd) != pConnection->mapPlayerWnd.end())
+			{
+				return AvError_Succeed;
+			}
+			pConnection->mapPlayerWnd.insert(pair<long,HWND>(hWnd,(HWND)hWnd));
+			ConnectionLock.Unlock();
+		}
+		else
+		{
+			ConnectionLock.Unlock();
+			dblock.Lock();
+			CMyResult res = m_pDBConnector->Query("SELECT `ipaddress`,`port`,`loginname`,`loginpasswd` FROM `devices` where `deviceid` = '%s'", _AnsiString(strDeviceID, CP_ACP));
+			if (res.RowCount() < 1)
 			{
 				if (m_pRunlog)
-					m_pRunlog->Runlog(_T("%s ipcplayhandle (%8x) can't add a window any more,hWnd (%08X)add failed..\n"), __FUNCTIONW__,hPlayer,hWnd);
-				return IPC_Error_RenderWndOverflow;
+					m_pRunlog->Runlog(_T("%s can't find the mismatched device with ID:%s!\n"), __FUNCTIONW__, strDeviceID);
+				return AvError_DeviceNotExist;
 			}
-			int nWndCount = 16;
-			HWND hArray[16] = {0};
-			int nStatus = ipcplay_GetRenderWindows(hPlayer,hArray,nWndCount);
-			if (m_pRunlog)
+			char *szIP = res["ipaddress"];
+			WORD nPort = res["port"];
+			char *szUser = res["loginname"];
+			char *szPass = res["loginpasswd"];
+			// 不再访问数据库，手动解锁
+			dblock.Unlock();
+			
+			auto itfind = m_mapCameraUrl.find(CString(szIP));
+			if (itfind == m_mapCameraUrl.end())
 			{
-				m_pRunlog->Runlog(_T("%s Device %s (%08X) is Playing,Extended to a new window %08X (WndCount = %d)!\n"),__FUNCTIONW__,strDeviceID,(long)hPlayer,hWnd,nWndCount);			
-				m_pRunlog->Runlog(_T("%s MapConnection size = %d.\n"),__FUNCTIONW__,m_MapConnection.size());
+				sprintf_s(szURL, 512, "rtsp://%s:%s@%s/axis-media/media.amp?camera=1&videocodec=h264", szUser, szPass, szIP);
 			}
-			return AvError_Succeed;
+			else
+			{
+				string strUrlFmt = _AnsiString((LPCTSTR)itfind->second->strURL, CP_ACP);
+				string strUser = _AnsiString((LPCTSTR)itfind->second->strAccount, CP_ACP);
+				string strPassword = _AnsiString((LPCTSTR)itfind->second->strPassword, CP_ACP);
+				if (strUser.length() && !strPassword.length())
+					sprintf_s(szURL, 512, strUrlFmt.c_str(), strUser.c_str(), strPassword.c_str(), szIP);
+				else
+					strcpy_s(szURL, 512, strUrlFmt.c_str());
+			}
+			pConnection = make_shared<_IPCConnection>((HWND)hWnd,szIP,nPort,szUser,szPass,(char *)szURL);
+			pConnection->pRunlog = m_pRunlog;
+			pConnection->hPlayProcessWnd = PP.hProcessWnd;
+			if (m_pRunlog)
+				m_pRunlog->Runlog(_T("%s Device %s (%08X) is playing on Window %08X.\n"), __FUNCTIONW__, strDeviceID, (long)pConnection->hPlayhandle, hWnd);
+			
 		}
-		ConnectionLock.Unlock();
-
-		dblock.Lock();
-		CMyResult res = m_pDBConnector->Query("SELECT `ipaddress`,`port`,`loginname`,`loginpasswd` FROM `devices` where `deviceid` = '%s'", _AnsiString(strDeviceID,CP_ACP));
-		if (res.RowCount() < 1)
+		strcpy_s(WndEvent.szCameraIP, 32, pConnection->szCameraIP);
+		strcpy_s(WndEvent.szRTSP_URL, 512, pConnection->szRtspURL);
+		COPYDATASTRUCT cds;
+		cds.cbData = sizeof(PlayEvent);
+		cds.lpData = &WndEvent;
+		if (pConnection->hPlayProcessWnd && IsWindow(pConnection->hPlayProcessWnd))
+			::SendMessage(pConnection->hPlayProcessWnd, WM_COPYDATA, 0, (LPARAM)&cds);
+		else
 		{
-			if (m_pRunlog) 
-				m_pRunlog->Runlog(_T("%s can't find the mismatched device with ID:%s!\n"),__FUNCTIONW__,strDeviceID);
-			return AvError_DeviceNotExist;
+			if (m_pRunlog)
+				m_pRunlog->Runlog(_T("%s The specified process is invalid.\n"), __FUNCTIONW__);
+			return AvError_PlayProcessNotExist;
 		}
-		char *szIP	 = res["ipaddress"];
-		WORD nPort	 = res["port"];
-		char *szUser = res["loginname"];
-		char *szPass = res["loginpasswd"];
-		// 不再访问数据库，手动解锁
-		dblock.Unlock();
-		
-		IPCConnectionPtr pConnection = shared_ptr<_IPCConnection>(new _IPCConnection());
-		pConnection->pRunlog = m_pRunlog;
-		pConnection->m_hWnd = (HWND)hWnd;
-// 		pConnection->hPlayhandle = ipcplay_OpenStream(pConnection->m_hWnd, NULL, 0);
-// 		
-// 		ipcplay_SetD3dShared(pConnection->hPlayhandle, (bool)nEnalbeHWAccel);
-// 		ipcplay_Start(pConnection->hPlayhandle, false, true, (bool)nEnalbeHWAccel);
-// 		ipcplay_EnableStreamParser(pConnection->hPlayhandle, CODEC_H264);
-		if (m_pRunlog)
-			m_pRunlog->Runlog(_T("%s Device %s (%08X) is playing on Window %08X.\n"),__FUNCTIONW__,strDeviceID,(long)pConnection->hPlayhandle,hWnd);
-		
-		//ipcplay_SetRocateAngle(pConnection->hPlayhandle,Rocate90);
-		
-		
-		LONG nResult = pConnection->RtspConnect(szIP,szUser,szPass,m_mapCameraUrl,RtspDataCallBack);
-		if (nResult != AvError_Succeed)
-		{
-			if (m_pRunlog) 
-				m_pRunlog->Runlog(_T("%s Connect device failed,IP = %s.\n"),__FUNCTIONW__,szIP);
-			return nResult;
-		}
-		pConnection->StartCheckThread();		
+//		ipcplay_SetRocateAngle(pConnection->hPlayhandle,Rocate90);
+// 		LONG nResult = pConnection->RtspConnect(szIP,szUser,szPass,m_mapCameraUrl,RtspDataCallBack);
+// 		if (nResult != AvError_Succeed)
+// 		{
+// 			if (m_pRunlog) 
+// 				m_pRunlog->Runlog(_T("%s Connect device failed,IP = %s.\n"),__FUNCTIONW__,szIP);
+// 			return nResult;
+// 		}
+// 		pConnection->StartCheckThread();
 		CAutoLock lock2(&m_csMapConnection);
 		m_MapConnection.insert(pair<string, IPCConnectionPtr>(szDeviceID, pConnection));
 		if (m_pRunlog)
-			m_pRunlog->Runlog(_T("%s MapConnection size = %d.\n"),__FUNCTIONW__,m_MapConnection.size());
+			m_pRunlog->Runlog(_T("%s MapConnection size = %d.\n"), __FUNCTIONW__, m_MapConnection.size());
 
 		return S_OK;
 	}
@@ -914,14 +1015,14 @@ LONG CAVPlayerCtrl::PlayComboStream(LPCTSTR szDevice1, LPCTSTR szDevice2, LONG h
 					m_pRunlog->Runlog(_T("%s Device %s (%08X) is playing on Window %08X On Rectangle(%d,%d,%d,%d).\n"),__FUNCTIONW__,szDeviceArray[nIndex],(long)pConnection->hPlayhandle,hWnd,pBorder[nIndex].left,pBorder[nIndex].top,pBorder[nIndex].right,pBorder[nIndex].bottom);
 
 				//ipcplay_SetRocateAngle(pConnection->hPlayhandle,Rocate90);
-				LONG nResult = pConnection->RtspConnect(szIP,szUser,szPass,m_mapCameraUrl,RtspDataCallBack);
-				pConnection->StartCheckThread();
-				if (nResult != AvError_Succeed)
-				{
-					if (m_pRunlog) 
-						m_pRunlog->Runlog(_T("%s Connect device (%s) failed,IP = %s.\n"),__FUNCTIONW__,szDeviceArray[nIndex],szIP);
-					return nResult;
-				}
+				//LONG nResult = pConnection->RtspConnect(szIP,szUser,szPass,m_mapCameraUrl,RtspDataCallBack);
+				//pConnection->StartCheckThread();
+// 				if (nResult != AvError_Succeed)
+// 				{
+// 					if (m_pRunlog) 
+// 						m_pRunlog->Runlog(_T("%s Connect device (%s) failed,IP = %s.\n"),__FUNCTIONW__,szDeviceArray[nIndex],szIP);
+// 					return nResult;
+// 				}
 			}
 			EnterCriticalSection(&m_csMapConnection);
 			m_MapConnection.insert(pair<string, IPCConnectionPtr>(_AnsiString(szDeviceArray[nIndex],CP_ACP), pConnection));
@@ -953,7 +1054,7 @@ LONG CAVPlayerCtrl::PlayComboStream(LPCTSTR szDevice1, LPCTSTR szDevice2, LONG h
 LONG CAVPlayerCtrl::PlaySrvStream(LPCTSTR strDeviceID, LONG hWnd, LONG nEnableHWAccel)
 {
 	AFX_MANAGE_STATE(AfxGetStaticModuleState());
-
+	
 	TraceFunction();
 
 	if (!strDeviceID || !hWnd)
@@ -1151,13 +1252,29 @@ void CAVPlayerCtrl::StopPlay(LPCTSTR strDeviceID,LONG hWnd)
 	map<string, IPCConnectionPtr>::iterator itFind = m_MapConnection.find(szDeviceID);
 	if (itFind != m_MapConnection.end())
 	{
-		IPC_PLAYHANDLE  hPlayer = itFind->second->hPlayhandle;
+		IPCConnectionPtr pConnection = itFind->second;
+		IPC_PLAYHANDLE  hPlayer = pConnection->hPlayhandle;
 		if (!hWnd)			// 停止所有窗口显示, 关闭播放器
 		{
-			EnterCriticalSection(&m_csMapSession);			
-			m_MapSession.erase(itFind->second->m_nPlaySession);
-			LeaveCriticalSection(&m_csMapSession);
-			itFind->second.reset();
+			if (!pConnection->m_nAS300Session)
+			{// 非AS300转发或回放句柄
+				PlayEvent WndEvent;
+				strcpy_s(WndEvent.szCameraIP, 32, pConnection->szCameraIP);
+				WndEvent.nCommand = CDS_STOP;
+				COPYDATASTRUCT cds;
+				cds.dwData = CDS_STOP;
+				cds.cbData = sizeof(PlayEvent);
+				cds.lpData = &WndEvent;
+				::SendMessage(pConnection->hPlayProcessWnd, WM_COPYDATA, 0, (LPARAM)&cds);
+			}
+			else
+			{
+				EnterCriticalSection(&m_csMapSession);
+				m_MapSession.erase(pConnection->m_nAS300Session);
+				LeaveCriticalSection(&m_csMapSession);
+			}
+			pConnection->bStopAll = true;		
+			pConnection.reset();
 			m_MapConnection.erase(itFind);
 			if (m_pRunlog) 
 			{
@@ -1167,29 +1284,42 @@ void CAVPlayerCtrl::StopPlay(LPCTSTR strDeviceID,LONG hWnd)
 		}
 		else
 		{
+			if (!pConnection->m_nAS300Session)
 			{
-				
+				PlayEvent WndEvent;
+				strcpy_s(WndEvent.szCameraIP, 32, pConnection->szCameraIP);
+				WndEvent.hWnd = (HWND)hWnd;
+				WndEvent.nCommand = CDS_STOP;
+				COPYDATASTRUCT cds;
+				cds.dwData = CDS_STOP;
+				cds.cbData = sizeof(PlayEvent);
+				cds.lpData = &WndEvent;
+				::SendMessage(pConnection->hPlayProcessWnd, WM_COPYDATA, 0, (LPARAM)&cds);
+				pConnection->mapPlayerWnd.erase(hWnd);
 			}
-			ipcplay_RemoveWindow(hPlayer,(HWND)hWnd);
-			::InvalidateRect((HWND)hWnd,NULL,true);	
-			int nWndCount = 16;
-			HWND hWndArray[16] = {0};
-			int nStatus = ipcplay_GetRenderWindows(hPlayer,hWndArray,nWndCount);
-			if (m_pRunlog) 
-				m_pRunlog->Runlog(_T("%s Device %s (%08X) Is stopped on Windows %08X (WndCount = %d).\n"),__FUNCTIONW__,strDeviceID,(long)hPlayer,hWnd,nWndCount);
-			if (nStatus == IPC_Succeed  && 
-				nWndCount == 0)
+			else
 			{
-				EnterCriticalSection(&m_csMapSession);
-				m_MapSession.erase(itFind->second->m_nPlaySession);
-				LeaveCriticalSection(&m_csMapSession);
-				itFind->second.reset();
-				lock.Lock();
-				m_MapConnection.erase(itFind);
-				if (m_pRunlog) 
+				ipcplay_RemoveWindow(hPlayer, (HWND)hWnd);
+				::InvalidateRect((HWND)hWnd, NULL, true);
+				int nWndCount = 16;
+				HWND hWndArray[16] = { 0 };
+				int nStatus = ipcplay_GetRenderWindows(hPlayer, hWndArray, nWndCount);
+				if (m_pRunlog)
+					m_pRunlog->Runlog(_T("%s Device %s (%08X) Is stopped on Windows %08X (WndCount = %d).\n"), __FUNCTIONW__, strDeviceID, (long)hPlayer, hWnd, nWndCount);
+				if (nStatus == IPC_Succeed  &&
+					nWndCount == 0)
 				{
-					m_pRunlog->Runlog(_T("%s Device %s (%08X) Play handle is freed.\n"),__FUNCTIONW__,strDeviceID,(long)hPlayer);
-					m_pRunlog->Runlog(_T("%s MapConnection size = %d.\n"),__FUNCTIONW__,m_MapConnection.size());
+					EnterCriticalSection(&m_csMapSession);
+					m_MapSession.erase(pConnection->m_nAS300Session);
+					LeaveCriticalSection(&m_csMapSession);
+					pConnection.reset();
+					lock.Lock();
+					m_MapConnection.erase(itFind);
+					if (m_pRunlog)
+					{
+						m_pRunlog->Runlog(_T("%s Device %s (%08X) Play handle is freed.\n"), __FUNCTIONW__, strDeviceID, (long)hPlayer);
+						m_pRunlog->Runlog(_T("%s MapConnection size = %d.\n"), __FUNCTIONW__, m_MapConnection.size());
+					}
 				}
 			}
 		}
@@ -1329,7 +1459,13 @@ LONG CAVPlayerCtrl::GetErrorMessage(LONG nErrorCode, LPCTSTR strErrorMessage, LO
 			strErrMsg = L"The specified mode ID is not exist.";
 			break;
 		case AvError_OutofPlayingRange:
-			strErrMsg = L"Out of Player Timer Ranage";
+			strErrMsg = L"Out of Player Timer Ranage.";
+			break;
+		case AvError_PlayProcessNotExist:		// 播放进程异常退出
+			strErrMsg = L"The Play Process Not exist.";
+			break;
+		case AvError_PlayProcessListIsEmpty:		// 播放进程表为空
+			strErrMsg = L"The Play Process list is empty.";
 			break;
 		case AvError_ExternalError:
 			strErrMsg = L"External error.";
@@ -1370,16 +1506,32 @@ int CAVPlayerCtrl::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
 	if (COleControl::OnCreate(lpCreateStruct) == -1)
 		return -1;
+	TCHAR szLog[128] = {0};
+	_stprintf(szLog,_T("AvPlayer_%08X_"),GetSafeHwnd());
+	//m_pRunlog = make_shared<CRunlog>(_T("AvPlayer"));
+	m_pRunlog = shared_ptr<CRunlog>(new CRunlog(szLog));
+
+	TCHAR szPath[1024] = { 0 };
+	TCHAR szTempPath[1024] = { 0 };
+	// 取得控件加载路径
+	GetModuleFileName(theApp.m_hInstance, szTempPath, MAX_PATH);
+	int nPos = _tcsReserverFind(szTempPath, _T('\\'));
+	_tcsncpy_s(szPath, 1024, szTempPath, nPos);
+	_tcscat_s(szPath, 1024, _T("\\WinPlayer.bin"));
+
+	if (!PathFileExists(szPath))
+	{
+		if (m_pRunlog)
+			m_pRunlog->Runlog(_T("The critical File WinPlayer.bin is missed,The AvPlayer Control can't be created.\n"), __FUNCTIONW__);
+		return -1;
+	}
 
 	OnActivateInPlace(TRUE, NULL);
 	InitializeCriticalSection(&m_csDBConnector);
 	InitializeCriticalSection(&m_csMapConnection);
 	InitializeCriticalSection(&m_csMapSession);
 	InitializeCriticalSection(&m_csOperationAssist);
-	TCHAR szLog[128] = {0};
-	_stprintf(szLog,_T("AvPlayer_%08X_"),GetSafeHwnd());
-	//m_pRunlog = make_shared<CRunlog>(_T("AvPlayer"));
-	m_pRunlog = shared_ptr<CRunlog>(new CRunlog(szLog));
+	
 	int nSize = m_MapConnection.size();
 	// 清理日志，默认只保存30天日志
 	LogManager();
@@ -1399,15 +1551,21 @@ int CAVPlayerCtrl::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_strAccount = _T("");
 	m_strServerIP = _T("");
 	m_nLoginID = -1;
-
+	RegisterMyMesssage();
 	ShowWindow(SW_SHOW);
+	// 创建播放进程
+	for (int i = 0; i < 2; i++)
+	{
+		PlayProcess pp;
+		pp.dwProcessID = StartPlayProcess(i);
+		m_listProcess.push_back(pp);
+	}
 	
 	// 初始化AS300客户端SDK
 	SDK_CUInit();
 	SDK_CUSetDevStatusCallback(DevStatusCallBack, this);
 	SDK_CUSetEventCallback(EventInfoCallback, this);
 	SetControlSize(48, 48);
-
 // 	m_pVideoFrame = new CVideoFrame;
 // 	CRect rtClient;
 // 	GetClientRect(&rtClient);
@@ -1424,6 +1582,41 @@ int CAVPlayerCtrl::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	return 0;
 }
 
+DWORD CAVPlayerCtrl::StartPlayProcess(INT nIndex)
+{
+	TCHAR szAppPath[1024] = { 0 };
+	STARTUPINFO si;
+	PROCESS_INFORMATION pi;
+	ZeroMemory(&si, sizeof(si));
+	si.cb = sizeof(si);
+	ZeroMemory(&pi, sizeof(pi));
+	GetAppPath(szAppPath, 1024);
+	TCHAR szCmdLine[1024] = { 0 };
+	DWORD dwPrimaryPID = GetCurrentProcessId();
+	HANDLE hPseudoThread = GetCurrentThread();		// 取得伪线程句柄
+	HANDLE hProcess = GetCurrentProcess();			// 取得伪进程句柄
+	HANDLE hRealThread = nullptr;
+	DWORD dwPrimaryTID = -1;
+	DuplicateHandle(hProcess, hPseudoThread, hProcess, &hRealThread, 0, false, 0);// 取得真实线程句柄
+	if (hRealThread)
+		dwPrimaryTID = GetThreadId(hPseudoThread);
+	int nMaxSwitch = 32;
+	_stprintf_s(szCmdLine, 1024, _T("%s\\WinPlayer.bin /Process:%02d /Wnd:%d /PID:%d /TID:%d /MaxCount:%d"), szAppPath, nIndex, (long)m_hWnd, dwPrimaryPID, dwPrimaryTID, nMaxSwitch);
+	if (!CreateProcess(NULL, szCmdLine,
+		NULL, NULL, FALSE, 0, NULL, NULL,
+		&si, &pi))
+	{
+		return 0;
+	}
+	else
+		return pi.dwProcessId;
+}
+
+void  CAVPlayerCtrl::StopPlayProcess(DWORD dwPID)
+{
+
+}
+
 LONG CAVPlayerCtrl::GetDeviceWindow(LPCTSTR strDeviceID, LONG* hWndArray, LONG* nArraySize)
 {
 	AFX_MANAGE_STATE(AfxGetStaticModuleState());
@@ -1432,25 +1625,46 @@ LONG CAVPlayerCtrl::GetDeviceWindow(LPCTSTR strDeviceID, LONG* hWndArray, LONG* 
 		return AvError_InvalidParameters;
 
 	CAutoLock lock(&m_csMapConnection);
-	HWND hWndArray1[16] = {0};
-	int nArraySize1 = 16;
+	
 	map<string,IPCConnectionPtr>::iterator itFind = m_MapConnection.find(_AnsiString(strDeviceID,CP_ACP));
 	if (itFind == m_MapConnection.end())	
 		return AvError_DeviceNotInPlaying;
-	if (ipcplay_GetRenderWindows(itFind->second->hPlayhandle,hWndArray1,nArraySize1) != IPC_Succeed)
+	IPCConnectionPtr pConnection = itFind->second;
+	if (pConnection->m_nAS300Session)
 	{
-		return AvError_ExternalError;
-	}
-	if (*nArraySize < nArraySize1)
-	{
-		return AVError_BufferOverflow;
+		HWND hWndArray1[16] = {0};
+		int nArraySize1 = 16;
+		if (ipcplay_GetRenderWindows(itFind->second->hPlayhandle, hWndArray1, nArraySize1) != IPC_Succeed)
+		{
+			return AvError_ExternalError;
+		}
+		if (*nArraySize < nArraySize1)
+		{
+			return AVError_BufferOverflow;
+		}
+		else
+		{
+			memcpy(hWndArray, hWndArray1, nArraySize1*sizeof(long));
+			*nArraySize = nArraySize1;
+			return AvError_Succeed;
+		}
 	}
 	else
 	{
-		memcpy(hWndArray,hWndArray1,nArraySize1*sizeof(long));
-		*nArraySize = nArraySize1;
-		return AvError_Succeed;
+		if (*nArraySize < pConnection->mapPlayerWnd.size())
+		{
+			return AVError_BufferOverflow;
+		}
+		else
+		{
+			int nCount = 0;
+			for (auto it = pConnection->mapPlayerWnd.begin(); it != pConnection->mapPlayerWnd.end(); it++)
+				hWndArray[nCount++] = it->first;
+			*nArraySize = nCount;
+			return AvError_Succeed;
+		}
 	}
+
 }
 
 LONG CAVPlayerCtrl::GetWindowDevice(LONG hWnd, BSTR* strDeviceID)
@@ -1462,23 +1676,43 @@ LONG CAVPlayerCtrl::GetWindowDevice(LONG hWnd, BSTR* strDeviceID)
 	CAutoLock lock(&m_csMapConnection);
 	HWND hWndArray[16] = {0};
 	int nArraySize = 16;
-	for (map<string,IPCConnectionPtr>::iterator it = m_MapConnection.begin();
+	for (auto it = m_MapConnection.begin();
 		it != m_MapConnection.end();
 		it ++)
 	{
-		nArraySize = 16;
-		if (ipcplay_GetRenderWindows(it->second->hPlayhandle,hWndArray,nArraySize) != IPC_Succeed)
-			continue;
+		IPCConnectionPtr pConnection = it->second;
+		if (pConnection->m_nAS300Session)
+		{
+			nArraySize = 16;
+			if (ipcplay_GetRenderWindows(pConnection->hPlayhandle, hWndArray, nArraySize) != IPC_Succeed)
+				continue;
 
-		for (int i = 0;i < nArraySize;i ++)
-			if (hWnd == (long)hWndArray[i])
+			for (int i = 0; i < nArraySize; i++)
+				if (hWnd == (long)hWndArray[i])
+				{
+					BSTR bstrDevice = ::SysAllocString(_UnicodeString(it->first.c_str(), CP_ACP));
+					if (bstrDevice == NULL)
+						return AvError_InsufficentMemory;
+					*strDeviceID = bstrDevice;
+					return AvError_Succeed;
+				}
+		}
+		else
+		{
+			auto itFind = pConnection->mapPlayerWnd.find(hWnd);
+			if (itFind != pConnection->mapPlayerWnd.end())
 			{
-				BSTR bstrDevice = ::SysAllocString(_UnicodeString(it->first.c_str(),CP_ACP));
+				BSTR bstrDevice = ::SysAllocString(_UnicodeString(it->first.c_str(), CP_ACP));
 				if (bstrDevice == NULL)
 					return AvError_InsufficentMemory;
 				*strDeviceID = bstrDevice;
 				return AvError_Succeed;
 			}
+			else
+			{
+				return AvError_WindowNotPlaying;
+			}
+		}
 	}
 	return AvError_WindowNotPlaying;
 }
@@ -2730,7 +2964,7 @@ LONG CAVPlayerCtrl::PlayBack(LONG hWnd,LPCTSTR strDeviceID, LONG nStartTime,LONG
 		long hPlaySession = SDK_CUPlaybackByFile(m_nLoginID, &pRecordArray[0], nTimeout, "", 0);
 		if (hPlaySession < 0)
 			return (AvError_AS300_Error + hPlaySession);
-		pConnection->m_nPlaySession = hPlaySession;
+		pConnection->m_nAS300Session = hPlaySession;
 		pConnection->m_nLoginID = m_nLoginID;
 		EnterCriticalSection(&m_csMapConnection);
 		m_MapConnection.insert(pair<string, IPCConnectionPtr>(szDeviceID, pConnection));

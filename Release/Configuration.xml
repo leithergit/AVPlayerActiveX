@@ -10,8 +10,12 @@
 		<!-- 配置非安讯士摄像的连接信息,请注意配置信息的大小写-->
 		<!-- IP 为摄像机IP地址，User为摄像机登录帐号,Password为登录密码,Url为拉取视频所用的地址串-->
 		<!-- 松下摄像机的Url:"rtsp://%s:%s@%s/ONVIF/MediaInput?profile=2_def_profile6"-->
-		<!-- 示例:
-		<Camera IP="192.168.2.110" User="admin" Password="admin12345" Url="rtsp://%s:%s@%s/ONVIF/MediaInput?profile=2_def_profile6" />
-			-->	
+	
+		<Camera IP="192.168.1.2" User="admin" Password="admin" Url="rtsp://%s:%s@%s:554/ch01" />		
+		<Camera IP="192.168.1.3" User="admin" Password="admin" Url="rtsp://%s:%s@%s:554/ch01" />
+		<Camera IP="192.168.1.4" User="admin" Password="admin" Url="rtsp://%s:%s@%s:554/ch01" />
+		<Camera IP="192.168.1.5" User="admin" Password="admin" Url="rtsp://%s:%s@%s:554/ch01" />
+		<Camera IP="192.168.254.2" User="" Password="" Url="rtsp://192.168.43.78:8554/channel0" />
+		<Camera IP="192.168.43.78" User="" Password="" Url="rtsp://192.168.43.78:8554/channel1" />
 	</CameraList>	
 </Configuration>

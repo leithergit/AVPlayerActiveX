@@ -5,7 +5,7 @@
 #include "AVPlayerPropPage.h"
 
 #ifdef _DEBUG
-#define new DEBUG_NEW
+//#define new DEBUG_NEW
 #endif
 
 
