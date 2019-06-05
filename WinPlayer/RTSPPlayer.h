@@ -56,10 +56,11 @@ using namespace  std::tr1;
 void OnRTSPStream(long lHandle, char *pBuffer, int nParam, int nUser);
 void OnSDPNofity(long hHandle, void *pData, int nUser);
 void OnDisconnect(long hHandle, int nErorr, int nUser);
+struct _RTSPConnection;
 //////////////////////////////////////////////////////////////////////////
 /// 用于重连RTSP的函数和数据结构
- list<LONG> listConnect;
- CCriticalSectionAgent csListConnect;
+list<_RTSPConnection *> listConnection;
+ CCriticalSectionAgent csListConnection;
  HANDLE hThreadEvent = nullptr;
  HANDLE hThreadConnect = nullptr;
  void PostConnection(void * pConnection);
@@ -71,16 +72,23 @@ struct _RTSPConnection
 {
 	IPC_PLAYHANDLE hPlayhandle;
 	IPC_MEDIAINFO *pMediaHeader;
+	int		nSize;
 	HWND	hWnd;
 	bool	bHWAccel;
 	byte	*m_pFrameBuffer;
 	CRITICAL_SECTION csPlayHandle;
+	
 	int		nConnectType;
 	int		nPort;
 	char	szURL[1024];
 	char	szPassword[32];
 	char	szAccount[32];
 	char	szIP[32];
+	double  dfDisconnected;			// 摄像机断线时间
+	int		nConnectTimeout;		// 连接摄像机超时间，超过这个时间后，摄像机无响应时，认为摄像机掉线，默认250ms
+	int		nMaxFrameInterval;		// 最大帧间隔，超这个时间，则认为摄像机掉线,默认250ms
+	int		nReconnectInterval;		// 断线重连间隔,默认5000ms
+	CRITICAL_SECTION csConnect;		// 
 	int		m_nBufferSize;
 	int		m_nFrameLength;
 	int		m_nIFrameLength;
@@ -88,17 +96,24 @@ struct _RTSPConnection
 	void	*pSDPNotify;
 	void	*pOnDisconect;
 	long	m_hRtspSession;
-	CRunlog* pRunlog;
+	bool	bSPSInput;
+	bool	bPPSInput;
+	bool	bSEIInput;
+	shared_ptr<CRunlog> pRunlog;
 	RECT	rtZoomBorder;		// 缩放边界
 	bool	bPercent;			// 缩放方式，为True时，使用则按百分缩放，否则按象素缩放
-
 	_RTSPConnection(HWND hWnd)
 	{
 		ZeroMemory(this, sizeof(_RTSPConnection));
+		nSize = sizeof(_RTSPConnection);
 		this->hWnd = hWnd;
 		m_nBufferSize = 128 * 1024;
 		m_pFrameBuffer = new byte[m_nBufferSize];	
 		InitializeCriticalSection(&csPlayHandle);
+		InitializeCriticalSection(&csConnect);
+		nConnectTimeout = 250;
+		nMaxFrameInterval = 250;
+		nReconnectInterval = 5000;
 		pMediaHeader = new IPC_MEDIAINFO;
 	}
 
@@ -146,10 +161,10 @@ struct _RTSPConnection
 
 	void PostConnection()
 	{
-		TraceMsgA("%s %d IP = %s.\n", __FUNCTION__,(int)time(0), szIP);
-		csListConnect.Lock();
-		listConnect.push_back((LONG)this);
-		csListConnect.Unlock();
+		dfDisconnected = GetExactTime();
+		csListConnection.Lock();
+		listConnection.push_back(this);
+		csListConnection.Unlock();
 	}
 
 	static void OnRTSPStream(long lHandle, char *pBuffer, int nBufferLen, int nUser)
@@ -173,11 +188,44 @@ struct _RTSPConnection
 			pThis->m_nBufferSize = nNewBufferSize;
 
 		}
-		if (nNalType == 5 || nNalType == 1 ||
-			nNalType == 7 || nNalType == 8)
+		bool bInputFrame = true;
+		switch (nNalType)
+		{
+		case 1:
+		case 5:
+			bInputFrame = true;
+			break;
+		case 6:
+		{
+			if (pThis->bSEIInput)
+				bInputFrame = false;
+			else
+				pThis->bSEIInput = true;
+		}
+			break;
+		case 7:
+		{
+			if (pThis->bSPSInput)
+				bInputFrame = false;
+			else
+				pThis->bSPSInput = true;
+		}
+			break;
+		case 8:
+		{
+			if (pThis->bPPSInput)
+				bInputFrame = false;
+			else
+				pThis->bPPSInput = true;
+		}
+
+		default:
+			break;
+		}
+					
+		if (bInputFrame)
 		{
 			byte szStart_code[] = { 0, 0, 0, 1 };
-
 			memcpy_s(&pThis->m_pFrameBuffer[pThis->m_nFrameLength], pThis->m_nBufferSize - pThis->m_nFrameLength, szStart_code, 4);
 			pThis->m_nFrameLength += 4;
 			memcpy_s(&pThis->m_pFrameBuffer[pThis->m_nFrameLength], pThis->m_nBufferSize - pThis->m_nFrameLength, pBuffer, nBufferLen);
@@ -185,7 +233,6 @@ struct _RTSPConnection
 			int nFrameType = IPC_P_FRAME;
 			if (nNalType == 5)
 				nFrameType = IPC_I_FRAME;
-
 			if (TryEnterCriticalSection(&pThis->csPlayHandle))
 			{
 				if (pThis->hPlayhandle)
@@ -199,6 +246,7 @@ struct _RTSPConnection
 	}
 	~_RTSPConnection()
 	{
+		EnterCriticalSection(&csConnect);
 		if (m_hRtspSession)
 			rtsp_stop(m_hRtspSession);
 
@@ -210,25 +258,36 @@ struct _RTSPConnection
 
 		if (pMediaHeader)
 			delete pMediaHeader;
+		LeaveCriticalSection(&csConnect);
+		DeleteCriticalSection(&csConnect);
 		DeleteCriticalSection(&csPlayHandle);
+	}
+	bool CheckConnectTime()
+	{
+		return ((TimeSpanEx(dfDisconnected)*1000) >= nReconnectInterval);
 	}
 	void Reset(bool bStopDecode = true)
 	{
 		if (m_hRtspSession)
+		{
 			rtsp_stop(m_hRtspSession);
-		if (bStopDecode)
-		{
-			if (hPlayhandle)
-				ipcplay_Close(hPlayhandle);
+			m_hRtspSession = 0;
+			if (bStopDecode)
+			{
+				if (hPlayhandle)
+				{
+					ipcplay_Close(hPlayhandle);
+					hPlayhandle = nullptr;
+				}
+			}
+			else
+			{
+				if (hPlayhandle)
+					ipcplay_Refresh(hPlayhandle);
+			}
+			int nSize = sizeof(_RTSPConnection) - offsetof(_RTSPConnection, m_hRtspSession);
+			ZeroMemory(&m_hRtspSession, sizeof(_RTSPConnection) - offsetof(_RTSPConnection, m_hRtspSession));
 		}
-		else
-		{
-			if (hPlayhandle)
-				ipcplay_Refresh(hPlayhandle);
-		}
-		
-		int nSize = sizeof(_RTSPConnection) - offsetof(_RTSPConnection, m_hRtspSession);
-		ZeroMemory(&m_hRtspSession, sizeof(_RTSPConnection) - offsetof(_RTSPConnection, m_hRtspSession));
 	}
 
 	void AddWindow(HWND hWnd)
@@ -260,7 +319,10 @@ struct _RTSPConnection
 	}
 	LONG RtspConnect(char *szIP, int nPort, char *szAccount, char *szPassword, char *szURL)
 	{
-		m_hRtspSession = rtsp_play(szURL, szAccount, szPassword, rtsp_TCP, nPort, OnSDPNofity, OnRTSPStream, OnDisconnect, this, 2000);
+		if (!TryEnterCriticalSection(&csConnect))
+			return 0;
+		m_hRtspSession = rtsp_play(szURL, szAccount, szPassword, rtsp_TCP, nPort, OnSDPNofity, OnRTSPStream, OnDisconnect, this, nConnectTimeout,nMaxFrameInterval);
+		LeaveCriticalSection(&csConnect);
 		if (!m_hRtspSession)
 		{
 			if (pRunlog)
@@ -279,11 +341,16 @@ struct _RTSPConnection
 	}
 	LONG Reconnect()
 	{
+		if (!TryEnterCriticalSection(&csConnect))
+			return 0;
+		if (nSize != sizeof(_RTSPConnection))
+			return 0;
 		Reset(false);
 		if (pRunlog)
 			pRunlog->Runlog("%s Try to connect Device:%s via %s.\n", __FUNCTION__, szIP, szURL);
-		TraceMsgA("%s %d Try to connect Device : %s via %s.\n", __FUNCTION__, (int)time(0), szIP, szURL);
-		m_hRtspSession = rtsp_play(szURL, "", "", nConnectType, nPort, OnSDPNofity, OnRTSPStream,OnDisconnect, this,2000);
+	
+		m_hRtspSession = rtsp_play(szURL, "", "", nConnectType, nPort, OnSDPNofity, OnRTSPStream,OnDisconnect, this,nConnectTimeout,nMaxFrameInterval);
+		LeaveCriticalSection(&csConnect);
 		if (!m_hRtspSession)
 		{
 			if (pRunlog)

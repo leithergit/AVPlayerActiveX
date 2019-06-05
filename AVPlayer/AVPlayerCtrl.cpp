@@ -203,7 +203,8 @@ LRESULT CAVPlayerCtrl::OnRegisterWnd(WPARAM w, LPARAM l)
 {
 	DWORD dwPID = (int)w;
 	HWND hWndPlayer = (HWND)l;
-	TraceMsgA("%s Process[%d] Regisgtered.\n", __FUNCTION__, dwPID);
+	if (m_pRunlog)
+		m_pRunlog->Runlog(_T("%s Process[%d] Regisgtered hWnd = [%08X].\n"), __FUNCTIONW__, dwPID,hWndPlayer);
 	m_csListProcess.Lock();
 	auto itFind = find_if(m_listProcess.begin(), m_listProcess.end(), FinderFunctor<PlayProcess, DWORD>(dwPID, CompareProcess));
 	if (itFind != m_listProcess.end())
@@ -216,7 +217,8 @@ LRESULT CAVPlayerCtrl::OnUnRegisterWnd(WPARAM w, LPARAM l)
 {
 	DWORD dwPID = (int)w;
 	HWND hWndPlayer = (HWND)l;
-	TraceMsgA("%s Process[%d] UnRegisgtered.\n", __FUNCTION__, dwPID);
+	if (m_pRunlog)
+		m_pRunlog->Runlog(_T("%s Process[%d] UnRegisgtered,hWnd = [%8X].\n"), __FUNCTIONW__, dwPID,hWndPlayer);
 	m_csListProcess.Lock();
 	auto itFind = find_if(m_listProcess.begin(), m_listProcess.end(), FinderFunctor<PlayProcess, DWORD>(dwPID, CompareProcess));
 	if (itFind != m_listProcess.end())
@@ -228,8 +230,9 @@ LRESULT CAVPlayerCtrl::OnUnRegisterWnd(WPARAM w, LPARAM l)
 
 LRESULT CAVPlayerCtrl::OnCreatePlayer(WPARAM w, LPARAM l)
 {
-	DWORD dwPID = StartPlayProcess(0);
-	TraceMsgA("%s Process[%d] is Created.\n", __FUNCTION__, dwPID);
+	DWORD dwPID = StartPlayProcess(0,m_szModulePath);
+	if (m_pRunlog)
+		m_pRunlog->Runlog(_T("%s Process[%d] is Created.\n"), __FUNCTIONW__, dwPID);
 	PlayProcess pp;
 	pp.dwProcessID = dwPID;
 	m_csListProcess.Lock();
@@ -237,7 +240,6 @@ LRESULT CAVPlayerCtrl::OnCreatePlayer(WPARAM w, LPARAM l)
 	m_csListProcess.Unlock();
 	return 0;
 }
-
 
 void StartCGI(char *szURL,char *szIP,WORD nPort,CHAR *szUser,char *szPassword)
 {
@@ -789,7 +791,28 @@ LONG CAVPlayerCtrl::PlayStream(LPCTSTR strDeviceID, LONG hWnd,LONG nEnalbeHWAcce
 				m_pRunlog->Runlog(_T("%s The play process list is empty.\n"), __FUNCTIONW__);
 			return AvError_PlayProcessListIsEmpty;
 		}
-		PlayProcess &PP = m_listProcess.front();
+		PlayProcess PP; 
+		while (m_listProcess.size())
+		{
+			m_csListProcess.Lock();
+			PP = m_listProcess.front();
+			m_csListProcess.Unlock();
+			if (IsWindow(PP.hProcessWnd))
+				break;
+			// 当前选中的进程已经退出？
+			m_csListProcess.Lock();
+			m_listProcess.pop_front();
+			m_csListProcess.Unlock();
+			DWORD dwPID = StartPlayProcess(0, m_szModulePath);
+			if (m_pRunlog)
+				m_pRunlog->Runlog(_T("%s Process[%d] is Created.\n"), __FUNCTION__, dwPID);
+			PlayProcess pp;
+			pp.dwProcessID = dwPID;
+			m_csListProcess.Lock();
+			m_listProcess.push_back(pp);
+			m_csListProcess.Unlock();
+		} 
+		
 		PlayEvent WndEvent;
 		char szURL[512] = { 0 };
 		WndEvent.nPort = 80;
@@ -799,8 +822,8 @@ LONG CAVPlayerCtrl::PlayStream(LPCTSTR strDeviceID, LONG hWnd,LONG nEnalbeHWAcce
 		IPCConnectionPtr pConnection = nullptr;
 		RECT rt;
 		::GetWindowRect((HWND)hWnd, &rt);
-		if (m_pRunlog)
-			m_pRunlog->Runlog(_T("%s Windows %08X Postion(%d,%d,%d,%d).\n"), __FUNCTIONW__, hWnd, rt.left, rt.right, rt.top, rt.bottom);
+		//if (m_pRunlog)
+		//	m_pRunlog->Runlog(_T("%s Windows %08X Postion(%d,%d,%d,%d).\n"), __FUNCTIONW__, hWnd, rt.left, rt.right, rt.top, rt.bottom);
 		CAutoLock ConnectionLock(&m_csMapConnection);
 		map<string, IPCConnectionPtr>::iterator itFind = m_MapConnection.find(szDeviceID);
 		if (itFind != m_MapConnection.end())
@@ -812,6 +835,7 @@ LONG CAVPlayerCtrl::PlayStream(LPCTSTR strDeviceID, LONG hWnd,LONG nEnalbeHWAcce
 			}
 			pConnection->mapPlayerWnd.insert(pair<long,HWND>(hWnd,(HWND)hWnd));
 			ConnectionLock.Unlock();
+			pConnection->hPlayProcessWnd = PP.hProcessWnd;
 		}
 		else
 		{
@@ -841,16 +865,18 @@ LONG CAVPlayerCtrl::PlayStream(LPCTSTR strDeviceID, LONG hWnd,LONG nEnalbeHWAcce
 				string strUrlFmt = _AnsiString((LPCTSTR)itfind->second->strURL, CP_ACP);
 				string strUser = _AnsiString((LPCTSTR)itfind->second->strAccount, CP_ACP);
 				string strPassword = _AnsiString((LPCTSTR)itfind->second->strPassword, CP_ACP);
-				if (strUser.length() && !strPassword.length())
+				if (strUser.length() && strPassword.length())
 					sprintf_s(szURL, 512, strUrlFmt.c_str(), strUser.c_str(), strPassword.c_str(), szIP);
+				else if (strUser.length())
+					sprintf_s(szURL, 512, strUrlFmt.c_str(), strUser.c_str(),  szIP);
 				else
-					strcpy_s(szURL, 512, strUrlFmt.c_str());
+					sprintf_s(szURL, 512, strUrlFmt.c_str(), szIP);
 			}
 			pConnection = make_shared<_IPCConnection>((HWND)hWnd,szIP,nPort,szUser,szPass,(char *)szURL);
 			pConnection->pRunlog = m_pRunlog;
 			pConnection->hPlayProcessWnd = PP.hProcessWnd;
-			if (m_pRunlog)
-				m_pRunlog->Runlog(_T("%s Device %s (%08X) is playing on Window %08X.\n"), __FUNCTIONW__, strDeviceID, (long)pConnection->hPlayhandle, hWnd);
+			//if (m_pRunlog)
+			//	m_pRunlog->Runlog(_T("%s Device %s (%08X) is playing on Window %08X.\n"), __FUNCTIONW__, strDeviceID, (long)pConnection->hPlayhandle, hWnd);
 			
 		}
 		strcpy_s(WndEvent.szCameraIP, 32, pConnection->szCameraIP);
@@ -859,7 +885,18 @@ LONG CAVPlayerCtrl::PlayStream(LPCTSTR strDeviceID, LONG hWnd,LONG nEnalbeHWAcce
 		cds.cbData = sizeof(PlayEvent);
 		cds.lpData = &WndEvent;
 		if (pConnection->hPlayProcessWnd && IsWindow(pConnection->hPlayProcessWnd))
-			::SendMessage(pConnection->hPlayProcessWnd, WM_COPYDATA, 0, (LPARAM)&cds);
+		{
+			DWORD dwResult = 0;
+			if (!SendMessageTimeout(pConnection->hPlayProcessWnd, WM_COPYDATA, 0, (LPARAM)&cds, SMTO_NORMAL, 200, &dwResult))
+			{
+				// 有错误发生
+				DWORD dwError = GetLastError();
+				if (dwError == ERROR_TIMEOUT)
+				{
+					m_pRunlog->Runlog(_T("%s SendMessage Time out,Error = %d,Result = %d."), __FUNCTIONW__, dwError,dwResult);
+				}
+			}
+		}
 		else
 		{
 			if (m_pRunlog)
@@ -877,8 +914,8 @@ LONG CAVPlayerCtrl::PlayStream(LPCTSTR strDeviceID, LONG hWnd,LONG nEnalbeHWAcce
 // 		pConnection->StartCheckThread();
 		CAutoLock lock2(&m_csMapConnection);
 		m_MapConnection.insert(pair<string, IPCConnectionPtr>(szDeviceID, pConnection));
-		if (m_pRunlog)
-			m_pRunlog->Runlog(_T("%s MapConnection size = %d.\n"), __FUNCTIONW__, m_MapConnection.size());
+		//if (m_pRunlog)
+		//	m_pRunlog->Runlog(_T("%s MapConnection size = %d.\n"), __FUNCTIONW__, m_MapConnection.size());
 
 		return S_OK;
 	}
@@ -1276,11 +1313,11 @@ void CAVPlayerCtrl::StopPlay(LPCTSTR strDeviceID,LONG hWnd)
 			pConnection->bStopAll = true;		
 			pConnection.reset();
 			m_MapConnection.erase(itFind);
-			if (m_pRunlog) 
-			{
-				m_pRunlog->Runlog(_T("%s Device %s Play handle is freed.\n"),__FUNCTIONW__,strDeviceID);
-				m_pRunlog->Runlog(_T("%s MapConnection size = %d.\n"),__FUNCTIONW__,m_MapConnection.size());
-			}
+// 			if (m_pRunlog) 
+// 			{
+// 				m_pRunlog->Runlog(_T("%s Device %s Play handle is freed.\n"),__FUNCTIONW__,strDeviceID);
+// 				m_pRunlog->Runlog(_T("%s MapConnection size = %d.\n"),__FUNCTIONW__,m_MapConnection.size());
+// 			}
 		}
 		else
 		{
@@ -1304,8 +1341,8 @@ void CAVPlayerCtrl::StopPlay(LPCTSTR strDeviceID,LONG hWnd)
 				int nWndCount = 16;
 				HWND hWndArray[16] = { 0 };
 				int nStatus = ipcplay_GetRenderWindows(hPlayer, hWndArray, nWndCount);
-				if (m_pRunlog)
-					m_pRunlog->Runlog(_T("%s Device %s (%08X) Is stopped on Windows %08X (WndCount = %d).\n"), __FUNCTIONW__, strDeviceID, (long)hPlayer, hWnd, nWndCount);
+				//if (m_pRunlog)
+				//	m_pRunlog->Runlog(_T("%s Device %s (%08X) Is stopped on Windows %08X (WndCount = %d).\n"), __FUNCTIONW__, strDeviceID, (long)hPlayer, hWnd, nWndCount);
 				if (nStatus == IPC_Succeed  &&
 					nWndCount == 0)
 				{
@@ -1315,11 +1352,11 @@ void CAVPlayerCtrl::StopPlay(LPCTSTR strDeviceID,LONG hWnd)
 					pConnection.reset();
 					lock.Lock();
 					m_MapConnection.erase(itFind);
-					if (m_pRunlog)
-					{
-						m_pRunlog->Runlog(_T("%s Device %s (%08X) Play handle is freed.\n"), __FUNCTIONW__, strDeviceID, (long)hPlayer);
-						m_pRunlog->Runlog(_T("%s MapConnection size = %d.\n"), __FUNCTIONW__, m_MapConnection.size());
-					}
+// 					if (m_pRunlog)
+// 					{
+// 						m_pRunlog->Runlog(_T("%s Device %s (%08X) Play handle is freed.\n"), __FUNCTIONW__, strDeviceID, (long)hPlayer);
+// 						m_pRunlog->Runlog(_T("%s MapConnection size = %d.\n"), __FUNCTIONW__, m_MapConnection.size());
+// 					}
 				}
 			}
 		}
@@ -1512,20 +1549,43 @@ int CAVPlayerCtrl::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_pRunlog = shared_ptr<CRunlog>(new CRunlog(szLog));
 
 	TCHAR szPath[1024] = { 0 };
-	TCHAR szTempPath[1024] = { 0 };
+	TCHAR szMudulePath[1024] = { 0 };
 	// 取得控件加载路径
-	GetModuleFileName(theApp.m_hInstance, szTempPath, MAX_PATH);
-	int nPos = _tcsReserverFind(szTempPath, _T('\\'));
-	_tcsncpy_s(szPath, 1024, szTempPath, nPos);
-	_tcscat_s(szPath, 1024, _T("\\WinPlayer.bin"));
-
-	if (!PathFileExists(szPath))
+	GetModuleFileName(theApp.m_hInstance, szMudulePath, MAX_PATH);
+	
+	int nPos = _tcsReserverFind(szMudulePath, _T('\\'));
+	_tcsncpy_s(szPath, 1024, szMudulePath, nPos);
+	_tcscat_s(szPath, 1024, _T("\\Configuration.xml"));
+	CMarkup xml;
+	if (PathFileExists(szPath) && xml.Load(szPath))
 	{
-		if (m_pRunlog)
-			m_pRunlog->Runlog(_T("The critical File WinPlayer.bin is missed,The AvPlayer Control can't be created.\n"), __FUNCTIONW__);
-		return -1;
-	}
+		// 配置文件的格式
+		/*
+		<?xml version="1.0" encoding="utf-8"?>
+		<Configuration >
+		<CameraPostion Enable ="true"/>
+		<LogManager SaveDays ="30"/>
+		<PlayerProcess MaxSwitch ="1024"/>
+		<CameraList>
+		<Camera IP="192.168.1.26" User="root" Password="" Url="" Port =""/>
+		<Camera IP="192.168.1.30" User="root" Password="" Url="" Port =""/>
+		</CameraList>
+		</Configuration>
+		*/
 
+		CString strValue;
+		bool bEnable = false;
+		if (xml.FindElem(_T("Configuration")))
+		{
+			if (xml.FindChildElem(_T("PlayerProcess")))
+			{
+				xml.IntoElem();
+				m_nMaxSwitch = (int)_tcstolong((LPCTSTR)xml.GetAttrib(_T("MaxSwitch")));
+				xml.OutOfElem();
+			}
+		}
+	}
+	
 	OnActivateInPlace(TRUE, NULL);
 	InitializeCriticalSection(&m_csDBConnector);
 	InitializeCriticalSection(&m_csMapConnection);
@@ -1554,10 +1614,20 @@ int CAVPlayerCtrl::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	RegisterMyMesssage();
 	ShowWindow(SW_SHOW);
 	// 创建播放进程
+	_tcsncpy_s(szPath, 1024, szMudulePath, nPos);
+	_tcscat_s(szPath, 1024, _T("\\MediaContainer.bin"));
+
+	if (!PathFileExists(szPath))
+	{
+		if (m_pRunlog)
+			m_pRunlog->Runlog(_T("The critical File WinPlayer.bin is missed,The AvPlayer Control can't be created.\n"), __FUNCTIONW__);
+		return -1;
+	}
+	_tcsncpy_s(m_szModulePath, 1024, szMudulePath, nPos);
 	for (int i = 0; i < 2; i++)
 	{
 		PlayProcess pp;
-		pp.dwProcessID = StartPlayProcess(i);
+		pp.dwProcessID = StartPlayProcess(i, m_szModulePath);
 		m_listProcess.push_back(pp);
 	}
 	
@@ -1582,15 +1652,13 @@ int CAVPlayerCtrl::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	return 0;
 }
 
-DWORD CAVPlayerCtrl::StartPlayProcess(INT nIndex)
+DWORD CAVPlayerCtrl::StartPlayProcess(INT nIndex,TCHAR *szModulePath)
 {
-	TCHAR szAppPath[1024] = { 0 };
 	STARTUPINFO si;
 	PROCESS_INFORMATION pi;
 	ZeroMemory(&si, sizeof(si));
 	si.cb = sizeof(si);
 	ZeroMemory(&pi, sizeof(pi));
-	GetAppPath(szAppPath, 1024);
 	TCHAR szCmdLine[1024] = { 0 };
 	DWORD dwPrimaryPID = GetCurrentProcessId();
 	HANDLE hPseudoThread = GetCurrentThread();		// 取得伪线程句柄
@@ -1600,8 +1668,8 @@ DWORD CAVPlayerCtrl::StartPlayProcess(INT nIndex)
 	DuplicateHandle(hProcess, hPseudoThread, hProcess, &hRealThread, 0, false, 0);// 取得真实线程句柄
 	if (hRealThread)
 		dwPrimaryTID = GetThreadId(hPseudoThread);
-	int nMaxSwitch = 32;
-	_stprintf_s(szCmdLine, 1024, _T("%s\\WinPlayer.bin /Process:%02d /Wnd:%d /PID:%d /TID:%d /MaxCount:%d"), szAppPath, nIndex, (long)m_hWnd, dwPrimaryPID, dwPrimaryTID, nMaxSwitch);
+
+	_stprintf_s(szCmdLine, 1024, _T("%s\\MediaContainer.bin /Process:%02d /Wnd:%d /PID:%d /TID:%d /MaxCount:%d"), szModulePath, nIndex, (long)m_hWnd, dwPrimaryPID, dwPrimaryTID, m_nMaxSwitch);
 	if (!CreateProcess(NULL, szCmdLine,
 		NULL, NULL, FALSE, 0, NULL, NULL,
 		&si, &pi))

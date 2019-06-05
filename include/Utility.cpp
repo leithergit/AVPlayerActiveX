@@ -1248,54 +1248,54 @@ void EventDelay(HANDLE hEvent,DWORD dwTime)
 	}
 }
 
-int Mystrlen(LPCTSTR str)
-{
-	if (str == NULL)
-		return 0;
-	int nLen = 0;
-	while (*str!= NULL)
-	{
-		str ++;
-		nLen  ++;
-	}
-	return nLen;
-}
-int Mystrcmp(LPCTSTR srcstr,LPCTSTR dststr)
-{
-	if (srcstr == NULL || dststr == NULL)
-		return -1;
-	int nsrclen = _tcslen(srcstr);
-	int ndstlen = _tcslen(dststr);
-	if (ndstlen == nsrclen)
-	{
-		for (int i = 0;i < nsrclen; i ++)
-		{
-			if (*srcstr ++ != *dststr ++)
-				return -1;
-		}
-		return 0;
-	}
-	else 
-		return -1;
-}
-int Mystrcpy(LPTSTR dststr,LPCTSTR srcstr)
-{
-	if (srcstr == NULL || dststr == NULL)
-		return -1;
-	int nsrclen = _tcslen(srcstr);
-	memcpy(dststr,srcstr,nsrclen*sizeof(TCHAR));
-	return nsrclen;
-
-}
-int Mystrcat(LPTSTR  dststr,LPCTSTR srcstr)
-{
-	if (srcstr == NULL || dststr == NULL)
-		return -1;
-	int nsrclen = _tcslen(srcstr);
-	int ndstlen = _tcslen(dststr);
-	memcpy(dststr+ndstlen,srcstr,nsrclen*sizeof(TCHAR));
-	return (nsrclen + ndstlen);
-}
+// int Mystrlen(LPCTSTR str)
+// {
+// 	if (str == NULL)
+// 		return 0;
+// 	int nLen = 0;
+// 	while (*str!= NULL)
+// 	{
+// 		str ++;
+// 		nLen  ++;
+// 	}
+// 	return nLen;
+// }
+// int Mystrcmp(LPCTSTR srcstr,LPCTSTR dststr)
+// {
+// 	if (srcstr == NULL || dststr == NULL)
+// 		return -1;
+// 	int nsrclen = _tcslen(srcstr);
+// 	int ndstlen = _tcslen(dststr);
+// 	if (ndstlen == nsrclen)
+// 	{
+// 		for (int i = 0;i < nsrclen; i ++)
+// 		{
+// 			if (*srcstr ++ != *dststr ++)
+// 				return -1;
+// 		}
+// 		return 0;
+// 	}
+// 	else 
+// 		return -1;
+// }
+// int Mystrcpy(LPTSTR dststr,LPCTSTR srcstr)
+// {
+// 	if (srcstr == NULL || dststr == NULL)
+// 		return -1;
+// 	int nsrclen = _tcslen(srcstr);
+// 	memcpy(dststr,srcstr,nsrclen*sizeof(TCHAR));
+// 	return nsrclen;
+// 
+// }
+// int Mystrcat(LPTSTR  dststr,LPCTSTR srcstr)
+// {
+// 	if (srcstr == NULL || dststr == NULL)
+// 		return -1;
+// 	int nsrclen = _tcslen(srcstr);
+// 	int ndstlen = _tcslen(dststr);
+// 	memcpy(dststr+ndstlen,srcstr,nsrclen*sizeof(TCHAR));
+// 	return (nsrclen + ndstlen);
+// }
 
 int StrReserverFind(LPCSTR srcstr,CHAR ch)
 {

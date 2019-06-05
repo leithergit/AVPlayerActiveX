@@ -48,7 +48,7 @@ extern "C"
 		int httpPort,
 		PFRtspDisConnect cbDisconnectCallBack,
 								void* pUser,
-								int ConnnectTimeout=5000);
+								int ConnnectTimeout=250);
 	RTSP_EXPORT long rtsp_play(const char *pUrl, 
 								const char* user, 
 								const char* pass, 
@@ -58,7 +58,8 @@ extern "C"
 								void* cbDataCallBack,
 								void* cbDisconnectCallBack,
 								void* pUser,
-								int nConnectTimeout=5000);
+								int nConnectTimeout=250,
+								int nMaxFrameInterval = 2000);
 	RTSP_EXPORT long rtsp_setCallback(long lPlayHandle, void* cbSDPNotify, void* cbDataCallBack, void* cbDisconnectCallBack, void* pUser);
 
 	RTSP_EXPORT int	 rtsp_stop(long lHandle);

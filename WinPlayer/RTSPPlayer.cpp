@@ -7,6 +7,8 @@
 #include <map>
 #include <memory>
 #include "CriticalSectionAgent.h"
+#include "BugTrap.h"
+#pragma comment(lib,"BugTrap.lib")
 using namespace std;
 using namespace std::tr1;
 
@@ -33,20 +35,32 @@ LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 void			StartThreadConnect();
 void			StopThreadConnect();
 DWORD			g_nSwitchTimes = 0;								// 视频切换次数
-CRunlog			*g_pRunlog = nullptr;
+shared_ptr<CRunlog>	g_pRunlog = nullptr;
 DWORD			g_dwPrimaryPID = -1;
 DWORD			g_dwPrimaryTID = -1;
 HWND			g_hWindow = nullptr;
 HANDLE			hThreadWaitPrimaryProcessExit = nullptr;
 UINT __stdcall ThreadWaitPrimaryProcessExit(void *);
-UINT			WM_REGISTERWND = 0;
-UINT			WM_UNREGISTERWND = 0;
-UINT			WM_CREATEPLAYER = 0;
+
 // CCriticalSectionAgent g_csWnd2Connection;
 // map<HWND, IPCConnectionPtr> g_mapWnd2Connection;
 CCriticalSectionAgent g_csIP2Connection;
 map<LONG, RTSPConnectionPtr> g_mapIP2Connection;
 
+static void SetupExceptionHandler()
+{
+	BT_SetAppName(_T("WinPlayer"));
+	BT_SetActivityType(BTA_SAVEREPORT);
+	TCHAR szReportPath[1024] = { 0 };
+	GetAppPath(szReportPath, 1024);
+	BT_SetReportFilePath(szReportPath);
+	BT_SetFlags(BTF_SHOWADVANCEDUI);
+	BT_InstallSehFilter();
+}
+
+UINT			WM_REGISTERWND = 0;
+UINT			WM_UNREGISTERWND = 0;
+UINT			WM_CREATEPLAYER = 0;
 void RegisterMyMesssage()
 {
 	WM_REGISTERWND = RegisterWindowMessage(_T("WM_REGISTERWND"));
@@ -60,34 +74,40 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
                      _In_ LPTSTR    lpCmdLine,
                      _In_ int       nCmdShow)
 {
+
 #ifdef _DEBUG
 	//WaitForAttach(true);
 #endif
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
+		
+	TCHAR szLogName[128] = { 0 };
+	_stprintf_s(szLogName, 128, _T("Mediaplayer_%04X_"), GetCurrentProcessId());
+	g_pRunlog = make_shared<CRunlog>(szLogName);
 	
+
 	TCHAR *szSampleString = _T("/Process:%02d /Wnd:%d /PID:%d /TID:%d /MaxCount:%d");
 	if (_tcslen(lpCmdLine) <  _tcslen(szSampleString))
 	{
 		//MessageBox(nullptr, _T("命令行参数长度不足."), _T("RTSPPlayer"), MB_OK | MB_ICONSTOP);
-		TraceMsg("%s The length of command line is not enough,CmdLine:%s\n", __FUNCTION__, lpCmdLine);
+		g_pRunlog->Runlog("%s The length of command line is not enough,CmdLine:%s\n", __FUNCTION__, lpCmdLine);
 		return 0;
 	}
 	TCHAR szRTSP_URL[1024] = { 0 };	
 	if (_stscanf_s(lpCmdLine, _T("/Process:%02d /Wnd:%d /PID:%d /TID:%d /MaxCount:%d"), &g_nProcessIndex, &g_hPrimaryWnd, &g_dwPrimaryPID, &g_dwPrimaryTID,&g_nMaxSwitchCount) < 5)
 	{
-		TraceMsg("%s the parameters of not enough ,CmdLine:%s\n", __FUNCTION__, lpCmdLine);
+		g_pRunlog->Runlog("%s the parameters of not enough ,CmdLine:%s\n", __FUNCTION__, lpCmdLine);
 		return 0;
 	}
 
 	if (!IsWindow(g_hPrimaryWnd))
 	{
-		TraceMsg("%s the g_hPrimaryWnd attached a invalid window.\n", __FUNCTION__);
+		g_pRunlog->Runlog("%s the g_hPrimaryWnd attached a invalid window.\n", __FUNCTION__);
 		return 0;
 	}
 	if (g_nProcessIndex < 0 || g_nProcessIndex > _Max_PlayProcess)
 	{
-		TraceMsg("%s The index of Process is out of bounds,CmdLine:%s\n", __FUNCTION__, lpCmdLine);
+		g_pRunlog->Runlog("%s The index of Process is out of bounds,CmdLine:%s\n", __FUNCTION__, lpCmdLine);
 		return 0;
 	}
 	
@@ -132,7 +152,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 
 	g_hInstance = hInstance; // Store instance handle in our global variable
 	//#define CreateWindowA(lpClassName, lpWindowName, dwStyle, x, y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam) CreateWindowExA(0L, lpClassName, lpWindowName, dwStyle, x, y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam)
-	g_hWindow = CreateWindow(szWindowClass, szTitle, WS_CAPTION | WS_SYSMENU | WS_BORDER | WS_GROUP|WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, 0, 0, 0, NULL, NULL, hInstance, NULL);
+	g_hWindow = CreateWindow(szWindowClass, szTitle, WS_CAPTION | WS_SYSMENU | WS_BORDER | WS_GROUP/*|WS_OVERLAPPEDWINDOW*/, CW_USEDEFAULT, 0, 0, 0, NULL, NULL, hInstance, NULL);
 
 	if (!g_hWindow)
 	{
@@ -142,15 +162,14 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	if (IsWindow(g_hPrimaryWnd))
 		SendMessage(g_hPrimaryWnd, WM_REGISTERWND, (WPARAM)GetCurrentProcessId(), (LPARAM)g_hWindow);
 	else
-		TraceMsg("%s The hWnd of Primary is invalid,CmdLine:%s\n", __FUNCTION__, lpCmdLine);
+		g_pRunlog->Runlog("%s The hWnd of Primary is invalid,CmdLine:%s\n", __FUNCTION__, lpCmdLine);
 #ifdef _DEBUG
 	ShowWindow(g_hWindow, nCmdShow);
 	UpdateWindow(g_hWindow);
 	//WaitForAttach(true);
 #endif
-
 	StartThreadConnect();
-	hThreadWaitPrimaryProcessExit = (HANDLE )_beginthreadex(0, 64, ThreadWaitPrimaryProcessExit, 0, 0, 0);
+	hThreadWaitPrimaryProcessExit = (HANDLE)_beginthreadex(0, 64, ThreadWaitPrimaryProcessExit, 0, 0, 0);
 	CloseHandle(hThreadWaitPrimaryProcessExit);
 	hThreadWaitPrimaryProcessExit = nullptr;
 	MSG msg;
@@ -160,8 +179,9 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
+	g_pRunlog->Runlog("The process will exit,Now Try to Stop ReConnect Thread.\n");
 	StopThreadConnect();
-
+	g_pRunlog->Runlog("The process exit normally.\n");
 	return 0;
 }
 
@@ -209,6 +229,13 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	return RegisterClassEx(&wcex);
 }
 
+bool CompareCamera(void *p1, void *p2)
+{
+	LONG *dwIP = (LONG *)p1;
+	_RTSPConnection *pConnection = (_RTSPConnection*)p2;
+	return (*dwIP == inet_addr(pConnection->szIP));
+}
+
 /*
 最多同时启动M+N个进程，M为屏幕窗口数，N备用线程,主进程同时启动这些线程，并记录线程ID和主窗口号
 每个进程都会记录自己的视频切换次数，超过指定次数后，主进程将不再把任务分配给任务超限的进程(O))，在下一次切换
@@ -220,7 +247,6 @@ M和N都可配置
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	int wmId, wmEvent;
-
 	switch (message)
 	{
 	case WM_CREATE:
@@ -238,14 +264,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			g_mapIP2Connection.clear();
 			if (g_nSwitchTimes >= g_nMaxSwitchCount)
 			{
-				DestroyWindow(hWnd);
-				delete g_pRunlog;
-				g_pRunlog = nullptr;
+				DestroyWindow(hWnd);				
+				g_pRunlog->Runlog("SwitchTimes is over %d,current process will exit.\n", g_nMaxSwitchCount);
 			}
 			break;
 		}
-		if (!g_pRunlog)
-			g_pRunlog = new CRunlog();
+		
+			
 		int nCount = pMyCDS->cbData / sizeof(PlayEvent);
 		PlayEvent *pWndArray = (PlayEvent *)pMyCDS->lpData;
 		for (int i = 0; i < nCount; i++)
@@ -274,21 +299,35 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 			case CDS_STOP:		// Stop Session;
 			{
+				bool bDeleteCamera = false;
 				auto itFindIP = g_mapIP2Connection.find(nIP);
 				if (itFindIP != g_mapIP2Connection.end())
 				{
 					if (WndEvent.hWnd)
 					{
-						if (itFindIP->second->RemoveWindow(WndEvent.hWnd) == 0)
-							g_mapIP2Connection.erase(nIP);
+						if (itFindIP->second->RemoveWindow(WndEvent.hWnd) == 0)						
+							bDeleteCamera = true;
 					}
 					else // 移除所有窗口，即关闭当前摄像机
+						bDeleteCamera = true;
+					if (bDeleteCamera)
+					{// 先删除重连列表中的所有连接
+						csListConnection.Lock();
+						for (auto it = listConnection.begin(); it != listConnection.end();)
+						{
+							if (nIP = inet_addr((*it)->szIP))
+								it = listConnection.erase(it);
+							else
+								it++;
+						}
+						csListConnection.Unlock();
 						g_mapIP2Connection.erase(nIP);
-					
+					}
 				}
 				if (g_nSwitchTimes >= g_nMaxSwitchCount && g_mapIP2Connection.size() == 0)
 				{
 					// 超过切换次数进程退出
+					g_pRunlog->Runlog("SwitchTimes is over %d,current process will exit.\n", g_nMaxSwitchCount);
 					SendMessage(g_hPrimaryWnd, WM_UNREGISTERWND, (WPARAM)GetCurrentProcessId(), (LPARAM)hWnd);
 					DestroyWindow(hWnd);
 				}
@@ -356,29 +395,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 UINT __stdcall ThreadReconnect(void *p)
 {
-	while (WaitForSingleObject(hThreadEvent, 25) == WAIT_TIMEOUT)
+	while (WaitForSingleObject(hThreadEvent, 40) == WAIT_TIMEOUT)
 	{
-		list<LONG> TempList;
-		if (csListConnect.TryLock())
+		if (csListConnection.TryLock())
 		{
-			if (listConnect.size())
-				listConnect.swap(TempList);
-			csListConnect.Unlock();
+			if (listConnection.size())
+			{
+				_RTSPConnection *pConnection = listConnection.front();
+				if (pConnection->CheckConnectTime())
+				{
+					pConnection->Reconnect();
+					listConnection.pop_front();
+				}
+				else
+					pConnection->Reset();
+			}
+			csListConnection.Unlock();
 		}
-		if (!TempList.size())
-			continue;
-		
-		TraceMsgA("%s %d TempList Size = %d.\n", __FUNCTION__,(int)time(0), TempList.size());
-		for (auto it = TempList.begin(); it != TempList.end();)
-		{
-			double dfT1 = GetExactTime();
-			((_RTSPConnection *)(*it))->Reconnect();
-			if (TimeSpanEx(dfT1)> 1.0f)
-				TraceMsgA("%s %d Timespan of Reconnect = %.3f.\n", __FUNCTION__,(int)time(0), TimeSpanEx(dfT1));
-			it = TempList.erase(it);
-		}
-	} ;
-
+	} 
 	return 0;
 }
 

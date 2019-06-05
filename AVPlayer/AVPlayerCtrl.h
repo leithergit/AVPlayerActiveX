@@ -811,7 +811,9 @@ public:
 	static map<string, ItemStatusList> m_mapDecoderPool;
 	//////////////////////////////////////////////////////////////////////////
 	// 用于多进程显示视频的代码 开始
-	DWORD  StartPlayProcess(INT nIndex);
+	int m_nMaxSwitch = 512;
+	TCHAR  m_szModulePath[1024];
+	DWORD  StartPlayProcess(INT nIndex, TCHAR *szModulePath);
 	void   StopPlayProcess(DWORD dwPID);
 	CCriticalSectionAgent m_csListProcess;
 	list<PlayProcess> m_listProcess;
