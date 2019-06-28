@@ -102,7 +102,7 @@ struct _RTSPConnection
 	shared_ptr<CRunlog> pRunlog;
 	RECT	rtZoomBorder;		// 缩放边界
 	bool	bPercent;			// 缩放方式，为True时，使用则按百分缩放，否则按象素缩放
-	_RTSPConnection(HWND hWnd)
+	_RTSPConnection(HWND hWnd, int nConnectTimeout =500, int nMaxFrameInterval=500, int nReconnectInterval=5000)
 	{
 		ZeroMemory(this, sizeof(_RTSPConnection));
 		nSize = sizeof(_RTSPConnection);
@@ -111,9 +111,9 @@ struct _RTSPConnection
 		m_pFrameBuffer = new byte[m_nBufferSize];	
 		InitializeCriticalSection(&csPlayHandle);
 		InitializeCriticalSection(&csConnect);
-		nConnectTimeout = 250;
-		nMaxFrameInterval = 250;
-		nReconnectInterval = 5000;
+		this->nConnectTimeout = nConnectTimeout;
+		this->nMaxFrameInterval = nMaxFrameInterval;
+		this->nReconnectInterval = nReconnectInterval;
 		pMediaHeader = new IPC_MEDIAINFO;
 	}
 
@@ -153,15 +153,17 @@ struct _RTSPConnection
 		}
 	}
 
-	static void OnDisconnect(long hHandle, int nErorr, int nUser)
+	static void OnDisconnect(long hHandle, int nErorr, int nUser,char *szProc)
 	{
 		_RTSPConnection *pThis = (_RTSPConnection *)nUser;
-		pThis->PostConnection();
+		pThis->PostConnection(nErorr,szProc);
 	}
 
-	void PostConnection()
+	void PostConnection(int nError, char *szProc)
 	{
 		dfDisconnected = GetExactTime();
+		if (pRunlog)
+			pRunlog->Runlog("%s device %s Disconnected,Stack:%s\tError =%d.\n", __FUNCTION__, szIP,szProc,nError);
 		csListConnection.Lock();
 		listConnection.push_back(this);
 		csListConnection.Unlock();
@@ -173,10 +175,11 @@ struct _RTSPConnection
 		byte szHeader[64] = { 0 };
 		int nHeadersize = 64;
 		int nNalType = pBuffer[0] & 0x1F;
-		if (pThis->m_nBufferSize < pThis->m_nFrameLength + nBufferLen)
+		int nTotalLength = pThis->m_nFrameLength + nBufferLen + 4;
+		if (pThis->m_nBufferSize < nTotalLength)
 		{
 			int nNewBufferSize = pThis->m_nBufferSize;
-			while (nNewBufferSize <= (pThis->m_nFrameLength + nBufferLen))
+			while (nNewBufferSize < nTotalLength)
 				nNewBufferSize *= 2;
 			byte *pTemp = new byte[nNewBufferSize];
 			if (pTemp == NULL)
@@ -342,6 +345,10 @@ struct _RTSPConnection
 	LONG Reconnect()
 	{
 		if (!TryEnterCriticalSection(&csConnect))
+		{
+			if (pRunlog)
+				pRunlog->Runlog("%s Device %s TryEnterCriticalSection failed.\n", __FUNCTION__, szIP);
+		}
 			return 0;
 		if (nSize != sizeof(_RTSPConnection))
 			return 0;
@@ -349,7 +356,7 @@ struct _RTSPConnection
 		if (pRunlog)
 			pRunlog->Runlog("%s Try to connect Device:%s via %s.\n", __FUNCTION__, szIP, szURL);
 	
-		m_hRtspSession = rtsp_play(szURL, "", "", nConnectType, nPort, OnSDPNofity, OnRTSPStream,OnDisconnect, this,nConnectTimeout,nMaxFrameInterval);
+		m_hRtspSession = rtsp_play(szURL, szAccount, szPassword, nConnectType, nPort, OnSDPNofity, OnRTSPStream,OnDisconnect, this,nConnectTimeout,nMaxFrameInterval);
 		LeaveCriticalSection(&csConnect);
 		if (!m_hRtspSession)
 		{
@@ -357,7 +364,6 @@ struct _RTSPConnection
 				pRunlog->Runlog("%s Failed in connecting Device:%s via %s.\n", __FUNCTION__, szIP, szURL);
 			return -1010;
 		}
-			
 		else
 			return 0;
 	}

@@ -201,8 +201,6 @@ BOOL CSampleCPPDlg::OnInitDialog()
 	m_bitmapZpmc.LoadBitmap(IDB_BITMAP_ZPMC);
 
 	UpdateServer();
-
-
 	::RegisterHotKey(m_hWnd, ID_F12, MOD_ALT | MOD_CONTROL, VK_HOME);
 	m_bmpActived.LoadBitmap( IDB_ACTIVED);
 	m_bmpUnActived.LoadBitmap(IDB_UNACTIVED);
@@ -251,6 +249,9 @@ BOOL CSampleCPPDlg::OnInitDialog()
 	m_WndSizeManager.SaveWndPosition(nIDArrayRight, sizeof(nIDArrayRight) / sizeof(UINT), DockRight);
 	m_WndSizeManager.SaveWndPosition(nIDArrayRightBottom, sizeof(nIDArrayRightBottom) / sizeof(UINT), (DockType)(DockRight | DockBottom));
 	m_WndSizeManager.SaveWndPosition(nIDArrayRightTopBottom, sizeof(nIDArrayRightTopBottom) / sizeof(UINT), (DockType)(DockRight |DockTop| DockBottom));
+	OnBnClickedButtonLogin();
+	m_ctlDeviceList.SetCheck(0, 1);
+	OnBnClickedButtonPlay();
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }

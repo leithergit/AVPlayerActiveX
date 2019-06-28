@@ -797,6 +797,10 @@ LONG CAVPlayerCtrl::PlayStream(LPCTSTR strDeviceID, LONG hWnd,LONG nEnalbeHWAcce
 			m_csListProcess.Lock();
 			PP = m_listProcess.front();
 			m_csListProcess.Unlock();
+			if (!PP.hProcessWnd)
+			{// 进程窗口尚未注册，需继续等待
+				return AvError_SystemIsBusy;
+			}
 			if (IsWindow(PP.hProcessWnd))
 				break;
 			// 当前选中的进程已经退出？
@@ -858,7 +862,7 @@ LONG CAVPlayerCtrl::PlayStream(LPCTSTR strDeviceID, LONG hWnd,LONG nEnalbeHWAcce
 			auto itfind = m_mapCameraUrl.find(CString(szIP));
 			if (itfind == m_mapCameraUrl.end())
 			{
-				sprintf_s(szURL, 512, "rtsp://%s:%s@%s/axis-media/media.amp?camera=1&videocodec=h264", szUser, szPass, szIP);
+				sprintf_s(szURL, 512, "rtsp://%s:%s@%s/axis-media/media.amp?camera=1&videocodec=h264",szUser,szPass,  szIP);
 			}
 			else
 			{
@@ -881,6 +885,8 @@ LONG CAVPlayerCtrl::PlayStream(LPCTSTR strDeviceID, LONG hWnd,LONG nEnalbeHWAcce
 		}
 		strcpy_s(WndEvent.szCameraIP, 32, pConnection->szCameraIP);
 		strcpy_s(WndEvent.szRTSP_URL, 512, pConnection->szRtspURL);
+		strcpy_s(WndEvent.szUser, 32, pConnection->szAccount);
+		strcpy_s(WndEvent.szPassword, 32, pConnection->szPassword);
 		COPYDATASTRUCT cds;
 		cds.cbData = sizeof(PlayEvent);
 		cds.lpData = &WndEvent;

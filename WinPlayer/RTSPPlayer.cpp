@@ -27,8 +27,8 @@ HWND			g_hPrimaryWnd = nullptr;
 HWND			*g_pWndArray = nullptr;
 INT				g_nProcessIndex = -1;
 INT				g_nMaxSwitchCount = 1024;
-TCHAR			*szTitle = _T("Win Player");					// The title bar text
-TCHAR			*szWindowClass = _T("Win Player");
+TCHAR			*szTitle = _T("Media Container");					// The title bar text
+TCHAR			*szWindowClass = _T("Media Container");
 ATOM			MyRegisterClass(HINSTANCE hInstance);
 BOOL			InitInstance(HINSTANCE, int);
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -40,6 +40,9 @@ DWORD			g_dwPrimaryPID = -1;
 DWORD			g_dwPrimaryTID = -1;
 HWND			g_hWindow = nullptr;
 HANDLE			hThreadWaitPrimaryProcessExit = nullptr;
+int				g_nSocketTimeout = 250;
+int				g_nMaxFrameInterval = 250;
+int				g_nReConnectInteval = 5000;
 UINT __stdcall ThreadWaitPrimaryProcessExit(void *);
 
 // CCriticalSectionAgent g_csWnd2Connection;
@@ -49,12 +52,12 @@ map<LONG, RTSPConnectionPtr> g_mapIP2Connection;
 
 static void SetupExceptionHandler()
 {
-	BT_SetAppName(_T("WinPlayer"));
+	BT_SetAppName(_T("MediaContainer"));
 	BT_SetActivityType(BTA_SAVEREPORT);
 	TCHAR szReportPath[1024] = { 0 };
 	GetAppPath(szReportPath, 1024);
 	BT_SetReportFilePath(szReportPath);
-	BT_SetFlags(BTF_SHOWADVANCEDUI);
+	BT_SetFlags(BTF_DETAILEDMODE);
 	BT_InstallSehFilter();
 }
 
@@ -74,7 +77,13 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
                      _In_ LPTSTR    lpCmdLine,
                      _In_ int       nCmdShow)
 {
+	char szAppPath[1024];
+	GetAppPath(szAppPath, 1024);
+	_tcscat_s(szAppPath, 1024, _T("\\MediaContainer.ini"));
 
+	g_nSocketTimeout = GetPrivateProfileInt(_T("Parameters"), "SocketTimeout", 500, szAppPath);
+	g_nMaxFrameInterval = GetPrivateProfileInt(_T("Parameters"), "MaxFrameInterval", 500, szAppPath);
+	g_nReConnectInteval = GetPrivateProfileInt(_T("Parameters"), "ReConnectInterval", 5000, szAppPath);
 #ifdef _DEBUG
 	//WaitForAttach(true);
 #endif
@@ -82,7 +91,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(lpCmdLine);
 		
 	TCHAR szLogName[128] = { 0 };
-	_stprintf_s(szLogName, 128, _T("Mediaplayer_%04X_"), GetCurrentProcessId());
+	_stprintf_s(szLogName, 128, _T("MediaContainer_%04X_"), GetCurrentProcessId());
 	g_pRunlog = make_shared<CRunlog>(szLogName);
 	
 
@@ -149,6 +158,8 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 // 	CloseHandle(WndEvent.hStopEvent);	
 	
 	MyRegisterClass(hInstance);
+
+
 
 	g_hInstance = hInstance; // Store instance handle in our global variable
 	//#define CreateWindowA(lpClassName, lpWindowName, dwStyle, x, y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam) CreateWindowExA(0L, lpClassName, lpWindowName, dwStyle, x, y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam)
@@ -284,9 +295,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				auto itFindIP = g_mapIP2Connection.find(nIP);
 				if (itFindIP == g_mapIP2Connection.end())
 				{
-					RTSPConnectionPtr pConnection = make_shared<_RTSPConnection>(WndEvent.hWnd);
+					RTSPConnectionPtr pConnection = make_shared<_RTSPConnection>(WndEvent.hWnd, g_nSocketTimeout, g_nMaxFrameInterval, g_nReConnectInteval);
 					pConnection->pRunlog = g_pRunlog;
-					pConnection->RtspConnect(WndEvent.szCameraIP,WndEvent.nPort,"", "",	WndEvent.szRTSP_URL);
+					pConnection->RtspConnect(WndEvent.szCameraIP,WndEvent.nPort,WndEvent.szUser, WndEvent.szPassword,WndEvent.szRTSP_URL);
 					strcpy(pConnection->szURL, WndEvent.szRTSP_URL);				
 					g_mapIP2Connection.insert(pair<LONG, RTSPConnectionPtr>(nIP,pConnection));
 					g_nSwitchTimes++;

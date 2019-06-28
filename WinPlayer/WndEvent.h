@@ -22,6 +22,8 @@ struct PlayEvent
 {
 	CDS_Command	nCommand;
 	HWND	hWnd;					// 显示图像的窗口句柄
+	char	szUser[32];
+	char	szPassword[32];
 	CHAR	szCameraIP[32];			// 摄像机IP
 	char	szRTSP_URL[512];		// 
 	bool	bEnableHAccel;

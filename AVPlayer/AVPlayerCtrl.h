@@ -62,6 +62,7 @@ enum AVStatus
 	AvError_OutofPlayingRange			 = AvError_base - 24,		// 指定的时间点超出播放器的时间范围
 	AvError_PlayProcessNotExist			 = AvError_base - 25,		// 播放进程异常退出
 	AvError_PlayProcessListIsEmpty		 = AvError_base - 26,		// 播放进程表为空
+	AvError_SystemIsBusy				 = AvError_base - 27,		// 系统正忙，请稍后再试
 	AvError_ExternalError				 = AvError_base - 253,		// 内部错误
 	AvError_InsufficentMemory			 = AvError_base - 254,		// 内存不足
 	AvError_UnknownException			 = AvError_base - 255,		// 未知异常 
@@ -885,6 +886,8 @@ struct _IPCConnection
 		ZeroMemory(this, offsetof(_IPCConnection, pPlayStatus));
 		strcpy_s(szCameraIP, 32, szIP);
 		strcpy_s(szRtspURL,512, szURL);
+		strcpy_s(this->szAccount, 32, szAccount);
+		strcpy_s(this->szPassword, 32, szPassword);
 		mapPlayerWnd.insert(pair<long,HWND>((long)hWnd,hWnd));
 		int nSize = sizeof(_IPCConnection);
 		m_pFrameBuffer = new byte[128 * 1024];

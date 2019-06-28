@@ -37,7 +37,7 @@ struct _RTSPParam
 };
 typedef void(*PFSDPCallBack)(long hRTSPSession, void *pSDP, long nUser);
 typedef void (*PFRtspDataCallBack)(long lHandle, char *pBuffer, int nParam, int nUser);
-typedef void (*PFRtspDisConnect)(long lHandle, int nErrorCode,int dwUser);
+typedef void (*PFRtspDisConnect)(long lHandle, int nErrorCode,int dwUser,char *szProc);
 
 
 extern "C"
