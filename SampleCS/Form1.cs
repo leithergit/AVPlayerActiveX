@@ -40,6 +40,11 @@ namespace SampleCS
         AvError_LoadAssitConfigFailed    = AvError_base - 18,		// 加载辅助操作配置文件失败
         AvError_DeivceNotConfigAssist    = AvError_base - 19,		// 设置未配置为操作辅助设备
         AvError_FailedEnableAssist       = AvError_base - 20,		// 启用辅助设置失败
+        AvError_Crane_notExist           = AvError_base - 21,		// 吊机设备不存在
+        AvError_ScreenMode_notExist      = AvError_base - 22,		// 指定的模式不存在
+        AvError_NotSingleFramePlayer     = AvError_base - 23,		// 不是一单帧播放器
+        AvError_OutofPlayingRange        = AvError_base - 24,		// 指定的时间点超出播放器的时间范围
+        AvError_AS300ServiceIsDisabled   = AvError_base - 25,		// AS300服务尚未开启,需修改Configure.xml文件
         AvError_ExternalError            = AvError_base - 253,		// 内部错误
         AvError_InsufficentMemory        = AvError_base - 254,		// 内存不足
         AvError_UnknownException         = AvError_base - 255		// 未知异常 

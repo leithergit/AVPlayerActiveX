@@ -60,9 +60,10 @@ enum AVStatus
 	AvError_ScreenMode_notExist			 = AvError_base - 22,		// 指定的模式不存在
 	AvError_NotSingleFramePlayer		 = AvError_base - 23,		// 不是一单帧播放器
 	AvError_OutofPlayingRange			 = AvError_base - 24,		// 指定的时间点超出播放器的时间范围
-	AvError_PlayProcessNotExist			 = AvError_base - 25,		// 播放进程异常退出
-	AvError_PlayProcessListIsEmpty		 = AvError_base - 26,		// 播放进程表为空
-	AvError_SystemIsBusy				 = AvError_base - 27,		// 系统正忙，请稍后再试
+	AvError_AS300ServiceIsDisabled		 = AvError_base - 25,		// AS300服务尚未开启,需修改Configure.xml文件
+	AvError_PlayProcessNotExist			 = AvError_base - 26,		// 播放进程异常退出
+	AvError_PlayProcessListIsEmpty		 = AvError_base - 27,		// 播放进程表为空
+	AvError_SystemIsBusy				 = AvError_base - 28,		// 系统正忙，请稍后再试
 	AvError_ExternalError				 = AvError_base - 253,		// 内部错误
 	AvError_InsufficentMemory			 = AvError_base - 254,		// 内存不足
 	AvError_UnknownException			 = AvError_base - 255,		// 未知异常 

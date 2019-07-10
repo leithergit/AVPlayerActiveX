@@ -834,9 +834,9 @@ LONG CAVPlayerCtrl::PlayStream(LPCTSTR strDeviceID, LONG hWnd,LONG nEnalbeHWAcce
 		{
 			pConnection = itFind->second;
 			if (pConnection->mapPlayerWnd.find(hWnd) != pConnection->mapPlayerWnd.end())
-			{
 				return AvError_Succeed;
-			}
+			else if (pConnection->mapPlayerWnd.size() > 4)
+				return IPC_Error_RenderWndOverflow;
 			pConnection->mapPlayerWnd.insert(pair<long,HWND>(hWnd,(HWND)hWnd));
 			ConnectionLock.Unlock();
 			pConnection->hPlayProcessWnd = PP.hProcessWnd;
@@ -1308,7 +1308,8 @@ void CAVPlayerCtrl::StopPlay(LPCTSTR strDeviceID,LONG hWnd)
 				cds.dwData = CDS_STOP;
 				cds.cbData = sizeof(PlayEvent);
 				cds.lpData = &WndEvent;
-				::SendMessage(pConnection->hPlayProcessWnd, WM_COPYDATA, 0, (LPARAM)&cds);
+				if (pConnection->hPlayProcessWnd)
+					::SendMessage(pConnection->hPlayProcessWnd, WM_COPYDATA, 0, (LPARAM)&cds);
 			}
 			else
 			{

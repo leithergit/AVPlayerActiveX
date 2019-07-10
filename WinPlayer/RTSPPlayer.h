@@ -39,6 +39,47 @@ struct PlayEvent
 };
 */
 
+
+#define _TraceMemory
+
+//#if defined(_DEBUG) && defined(_TraceMemory)
+#define TraceTimeout		150
+#define TraceFunction()	CTraceFunction Tx(__FUNCTION__);
+#define TraceFunction1(szText)	CTraceFunction Tx(__FUNCTION__,szText);
+// #else 
+// #define TraceFunction()	
+// #endif
+
+
+/// @brief 跟踪函数执行过程的一些信息的类,主要用于调试
+class CTraceFunction
+{
+	explicit CTraceFunction(){};
+public:
+	CTraceFunction(CHAR *szFunction, CHAR *szTxt = NULL)
+	{
+		ZeroMemory(this, sizeof(CTraceFunction));
+		m_dfTimeIn = GetExactTime();
+		strcpy(m_szFunction, szFunction);
+	}
+	~CTraceFunction()
+	{
+		CHAR szText[4096] = { 0 };
+		if (strlen(m_szText) == 0)
+			sprintf_s(szText, 4096, "%s\t_OUT_ %s \tTimeSpan = %.3f.\n", __FUNCTION__, m_szFunction, TimeSpanEx(m_dfTimeIn));
+		else
+			sprintf_s(szText, 4096, "%s\t_OUT_ %s %s\tTimeSpan = %.3f.\n", __FUNCTION__, m_szFunction, m_szText, TimeSpanEx(m_dfTimeIn));
+		OutputDebugStringA(szText);
+
+	}
+private:
+	double	m_dfTimeIn;
+	CHAR	m_szFile[MAX_PATH];
+	CHAR	m_szText[1024];
+	CHAR	m_szFunction[256];
+};
+
+
 #define _MAX_VIDEO_WINDOW	(64)
 #define _Max_Switch_Times	(1024)
 
@@ -149,6 +190,8 @@ struct _RTSPConnection
 			pThis->hPlayhandle = ipcplay_OpenStream(pThis->hWnd, NULL, 0);
 			ipcplay_SetStreamHeader(pThis->hPlayhandle, (byte *)pThis->pMediaHeader, sizeof(IPC_MEDIAINFO));
 			ipcplay_SetMaxFrameSize(pThis->hPlayhandle, 1024 * 1024);
+			if (pThis->bHWAccel)
+				ipcplay_SetD3dShared(pThis->hPlayhandle, true);
 			ipcplay_Start(pThis->hPlayhandle, false, true, pThis->bHWAccel);
 		}
 	}
@@ -249,6 +292,7 @@ struct _RTSPConnection
 	}
 	~_RTSPConnection()
 	{
+		TraceFunction1(szIP);
 		EnterCriticalSection(&csConnect);
 		if (m_hRtspSession)
 			rtsp_stop(m_hRtspSession);
@@ -322,6 +366,7 @@ struct _RTSPConnection
 	}
 	LONG RtspConnect(char *szIP, int nPort, char *szAccount, char *szPassword, char *szURL)
 	{
+		TraceFunction1(szIP);
 		if (!TryEnterCriticalSection(&csConnect))
 			return 0;
 		m_hRtspSession = rtsp_play(szURL, szAccount, szPassword, rtsp_TCP, nPort, OnSDPNofity, OnRTSPStream, OnDisconnect, this, nConnectTimeout,nMaxFrameInterval);
@@ -344,12 +389,12 @@ struct _RTSPConnection
 	}
 	LONG Reconnect()
 	{
+		TraceFunction1(szIP);
 		if (!TryEnterCriticalSection(&csConnect))
 		{
 			if (pRunlog)
 				pRunlog->Runlog("%s Device %s TryEnterCriticalSection failed.\n", __FUNCTION__, szIP);
 		}
-			return 0;
 		if (nSize != sizeof(_RTSPConnection))
 			return 0;
 		Reset(false);

@@ -58,13 +58,14 @@
 #define IDC_COMBO_PTZ                   1034
 #define IDC_BUTTON_COMMAND              1035
 #define IDC_AVPLAYERCTRL2               1036
-#define IDC_CHECK_DCDRAW                1037
+#define IDC_CHECK_HACCEL                1037
 #define IDC_CHECK_ENABLETRANLATE        1038
 #define IDC_BUTTON_UPDATEAssist         1039
 #define IDC_STATIC_CONFIG               1040
 #define IDC_STATIC_CONFIGWND            1041
 #define IDC_COMBO_SWITCH                1042
 #define IDC_STATIC_VIDEOFRAME           1043
+
 #define IDC_BUTTON1                     1044
 #define IDC_STATIC_SWITCHTIME           1045
 #define IDC_STATIC_NEXTT                1046
@@ -92,6 +93,7 @@
 #define IDC_BUTTON_RIGHTDOWN            1080
 #define IDC_BUTTON_ZOOMIN               1081
 #define IDC_BUTTON_ZOOMOUT              1082
+#define IDC_CHECK_DCDRAW	            1083
 #define ID_FILE_OUTPUT                  32771
 
 // Next default values for new objects

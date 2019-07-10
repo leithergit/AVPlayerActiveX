@@ -297,6 +297,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				{
 					RTSPConnectionPtr pConnection = make_shared<_RTSPConnection>(WndEvent.hWnd, g_nSocketTimeout, g_nMaxFrameInterval, g_nReConnectInteval);
 					pConnection->pRunlog = g_pRunlog;
+					pConnection->bHWAccel = WndEvent.bEnableHAccel;
 					pConnection->RtspConnect(WndEvent.szCameraIP,WndEvent.nPort,WndEvent.szUser, WndEvent.szPassword,WndEvent.szRTSP_URL);
 					strcpy(pConnection->szURL, WndEvent.szRTSP_URL);				
 					g_mapIP2Connection.insert(pair<LONG, RTSPConnectionPtr>(nIP,pConnection));

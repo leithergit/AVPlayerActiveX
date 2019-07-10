@@ -251,7 +251,7 @@ BOOL CSampleCPPDlg::OnInitDialog()
 	m_WndSizeManager.SaveWndPosition(nIDArrayRightTopBottom, sizeof(nIDArrayRightTopBottom) / sizeof(UINT), (DockType)(DockRight |DockTop| DockBottom));
 	OnBnClickedButtonLogin();
 	m_ctlDeviceList.SetCheck(0, 1);
-	OnBnClickedButtonPlay();
+	//OnBnClickedButtonPlay();
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -385,6 +385,7 @@ void CSampleCPPDlg::OnBnClickedButtonPlay()
 	m_vecDevicePlaying.clear();
 	m_vecIndex.clear();
 	TCHAR szDeviceID[32] = {0};
+	long nHaccel = IsDlgButtonChecked(IDC_CHECK_HACCEL) == BST_CHECKED;
 	for (int i = 0;i < nCount;i ++)
 	{
 		if (m_ctlDeviceList.GetCheck(i) && m_vecDevicePlaying.size() < 4)
@@ -406,7 +407,7 @@ void CSampleCPPDlg::OnBnClickedButtonPlay()
 			m_ctlDeviceList.GetItemText(i, 1, szDeviceID, 32);
 			if (IsDlgButtonChecked(IDC_CHECK_ENABLETRANLATE) == BST_CHECKED)
 			{
-				if (m_AvPlayer.PlaySrvStream(szDeviceID, (long)hVideoWnd, 0) == 0)
+				if (m_AvPlayer.PlaySrvStream(szDeviceID, (long)hVideoWnd, nHaccel) == 0)
 				{
 					HWND hWndArray[16] = { 0 };
 					long nArraySize = 16;
@@ -415,7 +416,7 @@ void CSampleCPPDlg::OnBnClickedButtonPlay()
 					m_vecIndex.push_back(i);
 				}
 			}
-			else if (m_AvPlayer.PlayStream(szDeviceID,(long)hVideoWnd,0) ==0)
+			else if (m_AvPlayer.PlayStream(szDeviceID, (long)hVideoWnd, nHaccel) == 0)
 			{
 				HWND hWndArray[16] = {0};
 				long nArraySize = 16; 
@@ -528,7 +529,7 @@ LRESULT CSampleCPPDlg::OnSwitch(WPARAM wParam, LPARAM lParam)
 		}
 	}
 	int nCount = m_ctlDeviceList.GetItemCount();
-	
+	long nHaccel = IsDlgButtonChecked(IDC_CHECK_HACCEL) == BST_CHECKED;
 	if (m_nNextDevNo <= (nCount -1))
 	{
 		TCHAR szDeviceID[32] = {0};
@@ -536,7 +537,7 @@ LRESULT CSampleCPPDlg::OnSwitch(WPARAM wParam, LPARAM lParam)
 		{
 			HWND hVideoWnd = m_pVideoFrame->GetPanelWnd(m_vecDevicePlaying.size());
 			m_ctlDeviceList.GetItemText(m_nNextDevNo,1,szDeviceID,32);
-			if (m_AvPlayer.PlayStream(szDeviceID,(long)hVideoWnd,0) ==0)
+			if (m_AvPlayer.PlayStream(szDeviceID, (long)hVideoWnd, nHaccel) == 0)
 			{
 				m_vecDevicePlaying.push_back(szDeviceID);
 				m_vecIndex.push_back(m_nNextDevNo);
