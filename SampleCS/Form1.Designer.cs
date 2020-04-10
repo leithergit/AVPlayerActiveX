@@ -59,15 +59,18 @@
             this.CheckBox_Transmit = new System.Windows.Forms.CheckBox();
             this.button_UpdateOpAssist = new System.Windows.Forms.Button();
             this.comboBox_mode = new System.Windows.Forms.ComboBox();
-            this.axAVPlayer1 = new AxAVPlayerLib.AxAVPlayer();
             this.SwitchScreen = new System.Windows.Forms.Button();
             this.pictureBox5 = new System.Windows.Forms.PictureBox();
+            this.QueryRecord = new System.Windows.Forms.Button();
+            this.PlayRecord = new System.Windows.Forms.Button();
+            this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
+            this.axAVPlayer1 = new AxAVPlayerLib.AxAVPlayer();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox4)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.axAVPlayer1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox5)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.axAVPlayer1)).BeginInit();
             this.SuspendLayout();
             // 
             // button_Stop
@@ -353,16 +356,6 @@
             this.comboBox_mode.Size = new System.Drawing.Size(70, 20);
             this.comboBox_mode.TabIndex = 30;
             // 
-            // axAVPlayer1
-            // 
-            this.axAVPlayer1.Enabled = true;
-            this.axAVPlayer1.Location = new System.Drawing.Point(1078, 26);
-            this.axAVPlayer1.Name = "axAVPlayer1";
-            this.axAVPlayer1.OcxState = ((System.Windows.Forms.AxHost.State)(resources.GetObject("axAVPlayer1.OcxState")));
-            this.axAVPlayer1.Size = new System.Drawing.Size(32, 32);
-            this.axAVPlayer1.TabIndex = 31;
-            this.axAVPlayer1.Visible = false;
-            // 
             // SwitchScreen
             // 
             this.SwitchScreen.Location = new System.Drawing.Point(169, 33);
@@ -375,21 +368,56 @@
             // 
             // pictureBox5
             // 
-            this.pictureBox5.Location = new System.Drawing.Point(4, 63);
+            this.pictureBox5.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pictureBox5.Location = new System.Drawing.Point(1080, 40);
             this.pictureBox5.Name = "pictureBox5";
-            this.pictureBox5.Size = new System.Drawing.Size(895, 561);
-            this.pictureBox5.TabIndex = 33;
+            this.pictureBox5.Size = new System.Drawing.Size(41, 34);
+            this.pictureBox5.TabIndex = 13;
             this.pictureBox5.TabStop = false;
-            this.pictureBox5.Visible = false;
+            // 
+            // QueryRecord
+            // 
+            this.QueryRecord.Location = new System.Drawing.Point(350, 32);
+            this.QueryRecord.Name = "QueryRecord";
+            this.QueryRecord.Size = new System.Drawing.Size(89, 23);
+            this.QueryRecord.TabIndex = 34;
+            this.QueryRecord.Text = "Query Record";
+            this.QueryRecord.UseVisualStyleBackColor = true;
+            this.QueryRecord.Click += new System.EventHandler(this.QueryRecord_Click);
+            // 
+            // PlayRecord
+            // 
+            this.PlayRecord.Location = new System.Drawing.Point(445, 32);
+            this.PlayRecord.Name = "PlayRecord";
+            this.PlayRecord.Size = new System.Drawing.Size(89, 23);
+            this.PlayRecord.TabIndex = 34;
+            this.PlayRecord.Text = "Play Record";
+            this.PlayRecord.UseVisualStyleBackColor = true;
+            this.PlayRecord.Click += new System.EventHandler(this.PlayRecord_Click);
+            // 
+            // openFileDialog1
+            // 
+            this.openFileDialog1.FileName = "openFileDialog1";
+            // 
+            // axAVPlayer1
+            // 
+            this.axAVPlayer1.Enabled = true;
+            this.axAVPlayer1.Location = new System.Drawing.Point(999, 35);
+            this.axAVPlayer1.Name = "axAVPlayer1";
+            this.axAVPlayer1.OcxState = ((System.Windows.Forms.AxHost.State)(resources.GetObject("axAVPlayer1.OcxState")));
+            this.axAVPlayer1.Size = new System.Drawing.Size(48, 48);
+            this.axAVPlayer1.TabIndex = 35;
+            this.axAVPlayer1.Visible = false;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1147, 799);
-            this.Controls.Add(this.pictureBox5);
-            this.Controls.Add(this.SwitchScreen);
             this.Controls.Add(this.axAVPlayer1);
+            this.Controls.Add(this.PlayRecord);
+            this.Controls.Add(this.QueryRecord);
+            this.Controls.Add(this.SwitchScreen);
             this.Controls.Add(this.comboBox_mode);
             this.Controls.Add(this.button_UpdateOpAssist);
             this.Controls.Add(this.textbox_ReportInterval);
@@ -417,6 +445,7 @@
             this.Controls.Add(this.pictureBox4);
             this.Controls.Add(this.pictureBox3);
             this.Controls.Add(this.pictureBox2);
+            this.Controls.Add(this.pictureBox5);
             this.Controls.Add(this.pictureBox1);
             this.Name = "Form1";
             this.Text = "Form1";
@@ -425,8 +454,8 @@
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox4)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.axAVPlayer1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox5)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.axAVPlayer1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -463,11 +492,14 @@
         private System.Windows.Forms.CheckBox CheckBox_Transmit;
         private System.Windows.Forms.Button button_UpdateOpAssist;
         private System.Windows.Forms.ComboBox comboBox_mode;
-        private AxAVPlayerLib.AxAVPlayer axAVPlayer1;
         private System.Windows.Forms.Button SwitchScreen;
         bool m_bFitFrame = false;
+       // private AxAVPlayerLib.AxAVPlayer axAVPlayer1;
         private System.Windows.Forms.PictureBox pictureBox5;
-     
+        private System.Windows.Forms.Button QueryRecord;
+        private System.Windows.Forms.Button PlayRecord;
+        private System.Windows.Forms.OpenFileDialog openFileDialog1;
+        private AxAVPlayerLib.AxAVPlayer axAVPlayer1;
     }
 }
 

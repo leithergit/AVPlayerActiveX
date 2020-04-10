@@ -16,6 +16,9 @@
     <Filter Include="Public.inc">
       <UniqueIdentifier>{ba05a5b2-4cac-47fd-973b-0a0ee2d45937}</UniqueIdentifier>
     </Filter>
+    <Filter Include="svacParser">
+      <UniqueIdentifier>{facf85b5-a461-448d-ac70-2c93d6467ec2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AVPlayer.cpp">
@@ -53,6 +56,15 @@
     </ClCompile>
     <ClCompile Include="..\Include\TimeUtility.cpp">
       <Filter>Public.inc</Filter>
+    </ClCompile>
+    <ClCompile Include="svacparser\DhStreamParser.cpp">
+      <Filter>svacParser</Filter>
+    </ClCompile>
+    <ClCompile Include="svacparser\StreamParser.cpp">
+      <Filter>svacParser</Filter>
+    </ClCompile>
+    <ClCompile Include="svacparser\svacstream.cpp">
+      <Filter>svacParser</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -113,6 +125,18 @@
     </ClInclude>
     <ClInclude Include="..\Include\TimeUtility.h">
       <Filter>Public.inc</Filter>
+    </ClInclude>
+    <ClInclude Include="svacparser\DhStreamParser.h">
+      <Filter>svacParser</Filter>
+    </ClInclude>
+    <ClInclude Include="svacparser\FrameList.h">
+      <Filter>svacParser</Filter>
+    </ClInclude>
+    <ClInclude Include="svacparser\StreamParser.h">
+      <Filter>svacParser</Filter>
+    </ClInclude>
+    <ClInclude Include="svacparser\svacstream.h">
+      <Filter>svacParser</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

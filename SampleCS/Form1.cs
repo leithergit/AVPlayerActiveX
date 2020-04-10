@@ -40,9 +40,69 @@ namespace SampleCS
         AvError_LoadAssitConfigFailed    = AvError_base - 18,		// 加载辅助操作配置文件失败
         AvError_DeivceNotConfigAssist    = AvError_base - 19,		// 设置未配置为操作辅助设备
         AvError_FailedEnableAssist       = AvError_base - 20,		// 启用辅助设置失败
+        AvError_Crane_notExist           = AvError_base - 21,		// 吊机设备不存在
+        AvError_ScreenMode_notExist      = AvError_base - 22,		// 指定的模式不存在
+        AvError_NotSingleFramePlayer     = AvError_base - 23,		// 不是一单帧播放器
+        AvError_OutofPlayingRange        = AvError_base - 24,		// 指定的时间点超出播放器的时间范围
+        AvError_AS300ServiceIsDisabled   = AvError_base - 25,		// AS300服务尚未开启,需修改Configure.xml文件
         AvError_ExternalError            = AvError_base - 253,		// 内部错误
         AvError_InsufficentMemory        = AvError_base - 254,		// 内存不足
         AvError_UnknownException         = AvError_base - 255		// 未知异常 
+    };
+
+    enum IPCPLAY_Status
+    {
+        IPC_Succeed = (0),	///< 操作成功
+        IPC_Error_InvalidParameters          = (-1),	///< 无效的参数
+        IPC_Error_NotVideoFile               = (-2),	///< 非视频录像文件
+        IPC_Error_NotInputStreamHeader       = (-3),	///< 未输入视频录像文件头
+        IPC_Error_InvalidSDKVersion          = (-4),	///< 录像文件头中的的SDK版本无效
+        IPC_Error_PlayerNotStart             = (-5),	///< 播放器尚未启动,无法取得播放过程的信息或属性
+        IPC_Error_PlayerHasStart             = (-6),	///< 播放器已经启动，不能执行初始化或其它设置操作
+        IPC_Error_NotFilePlayer              = (-7),	///< 这不是一个文件播放对象
+        IPC_Error_InvalidFrame               = (-8),	///< 无效的帧
+        IPC_Error_InvalidFrameType           = (-9),	///< 无效的帧类型
+        IPC_Error_SummaryNotReady            = (-10),	///< 文件摘要信息尚未准备好
+        IPC_Error_FrameCacheIsFulled         = (-11),	///< 视频帧缓冲区已经满
+        IPC_Error_FileNotOpened              = (-12),	///< 尚未打开视频文件
+        IPC_Error_MaxFrameSizeNotEnough      = (-13),	///< 最大帧尺寸不足，可能视频文件中存在超过256K的帧数据,应调用SetMaxFrameSize设置新的帧尺寸上限
+        IPC_Error_InvalidPlayRate            = (-14),	///< 无效的播放倍率
+        IPC_Error_BufferSizeNotEnough        = (-15),	///< 提供的缓冲区长度不足
+        IPC_Error_VideoThreadNotRun          = (-16),	///< 视频解码线程尚未启动或已经退出
+        IPC_Error_AudioThreadNotRun          = (-17),	///< 音频频解码线程尚未启动或已经退出
+        IPC_Error_ReadFileFailed             = (-18),	///< 读文件失败
+        IPC_Error_FileNotExist               = (-19),	///< 文件不存在
+        IPC_Error_InvalidTimeOffset          = (-20),	///< 无效的时间偏移或时间超出文件长度范围
+        IPC_Error_DecodeFailed               = (-21),	///< 解码失败
+        IPC_Error_InvalidWindow              = (-22),	///< 无效的窗口句柄
+        IPC_Error_AudioDeviceNotReady        = (-23),	///< 音频播放初始化失败(播放设备未就绪),
+        IPC_Error_DxError                    = (-24),	///< DirectX 错误
+        IPC_Error_PlayerIsNotPaused          = (-25),	///< 播放器尚未暂停
+        IPC_Error_VideoThreadStartFailed     = (-26),	///< 播放线程启动失败
+        IPC_Error_VideoThreadAbnormalExit    = (-27),	///< 播放线程异常退出
+        IPC_Error_WindowNotAssigned          = (-28),	///< 未指定显示窗口,无法截图
+        IPC_Error_SnapShotProcessNotRun      = (-29),	///< 截图进程未运行
+        IPC_Error_SnapShotProcessFileMissed  = (-30),	///< 截图程序文件丢失
+        IPC_Error_SnapShotProcessStartFailed = (-31),///< 截图进程启动失败
+        IPC_Error_SnapShotFailed             = (-32),	///< 截图进程未运行
+        IPC_Error_PlayerHasStop              = (-33),	///< 播放器已经停止，不能执行初始化或其它设置操作
+        IPC_Error_InvalidCacheSize           = (-34),	///< 播放器已经启动，不能执行初始化或其它设置操作
+        IPC_Error_UnsupportHaccel            = (-35),	///< 当前系统不支持硬解码功能
+        IPC_Error_UnsupportedCodec           = (-36),	///< 不支持的编码格式
+        IPC_Error_RenderWndOverflow          = (-37),	///< 渲染窗口超限
+        IPC_Error_RocateNotWork              = (-38),	///< 图像旋转不适用，可能是启用了硬解码
+        IPC_Error_BufferOverflow             = (-39),	///< 缓存溢出,可能提供的缓存空间不足以容纳所请求的数据
+        IPC_Error_DXRenderInitialized        = (-40),	///< DirectX渲染器已经初始化
+        IPC_Error_ParserNotFound             = (-41),	///< 找不到匹配的解析器
+        IPC_Error_AllocateCodecContextFailed = (-42),	///< 分配编码上下文失败
+        IPC_Error_StreamParserExisted        = (-43),	///< 流解析器已经存在
+        IPC_Error_StreamParserNotStarted     = (-44),	///< 流解析器尚未启动
+        IPC_Error_DXRenderNotInitialized     = (-45),	///< DirectX渲染器尚未初始化
+        IPC_Error_NotAsyncPlayer             = (-46),	///< 当前播放器未启用异步渲染功能
+        IPC_Error_MediaFileHeaderError       = (-47),	///< 文件件头有错误
+        IPC_Error_UnsupportedFormat          = (-48),	///< 不支持的图像格式
+        IPC_Error_OpenCodecFailed            = (-49),	///< 分配编码上下文失败
+        IPC_Error_InsufficentMemory          = (-255)	///< 内存不足
     };
     struct DevicePlay
     {
@@ -64,6 +124,7 @@ namespace SampleCS
      // public delegate void ExternDCDrawDelegate(long pUserPtr, RECT rtDC, long hDc, long hWnd);
     public  delegate void ExternDCDrawDelegate(int hWnd, int hDc, RECT rtDC, int pUserPtr); 
    
+   
 
     public partial class Form1 : Form
     {
@@ -73,7 +134,199 @@ namespace SampleCS
         public ExternDCDrawDelegate ExternDCDrawEvent;
 
         public CDrawInfo []m_ExternDraw;
-       
+
+        public string ipcplay_GetErrorMessage(int nErrorCode)
+        {
+            IPCPLAY_Status nStatus = (IPCPLAY_Status)nErrorCode;
+            switch(nStatus)
+            {
+                case IPCPLAY_Status.IPC_Error_AllocateCodecContextFailed:
+                    break;
+            }
+            switch (nStatus)
+            {
+                case IPCPLAY_Status.IPC_Succeed:
+                    return "Succeed.";
+                case IPCPLAY_Status.IPC_Error_InvalidParameters:
+                    return "Invalid Parameters.";
+                case IPCPLAY_Status.IPC_Error_NotVideoFile:
+                    return "The input file is not a video file or it's a unknow video file.";
+                case IPCPLAY_Status.IPC_Error_NotInputStreamHeader:
+                    return "No  StreamHeader is Input.";
+                case IPCPLAY_Status.IPC_Error_InvalidSDKVersion:
+                    return "Thie SDK Version of StreamHeader is invalid.";
+                case IPCPLAY_Status.IPC_Error_PlayerNotStart:
+                    return "The Player not started";
+                case IPCPLAY_Status.IPC_Error_PlayerHasStart:
+                    return "The player is started.";
+                case IPCPLAY_Status.IPC_Error_NotFilePlayer:
+                    return "The input handle is not a FilePlayer.";
+                case IPCPLAY_Status.IPC_Error_InvalidFrame:
+                    return "A invalid frame is input.";
+                case IPCPLAY_Status.IPC_Error_InvalidFrameType:
+                    return "The Frame type is invalid.";
+                case IPCPLAY_Status.IPC_Error_SummaryNotReady:
+                    return "The Summary is not ready.";
+                case IPCPLAY_Status.IPC_Error_FrameCacheIsFulled:
+                    return "The frame cache is fulled";
+                case IPCPLAY_Status.IPC_Error_FileNotOpened:
+                    return "The file is not opened.";
+                case IPCPLAY_Status.IPC_Error_MaxFrameSizeNotEnough:
+                    return "the size of MaxFrame is not Enough,please specified a larger one.";
+                case IPCPLAY_Status.IPC_Error_InvalidPlayRate:
+                    return "The play rate is Invalid .";
+                case IPCPLAY_Status.IPC_Error_BufferSizeNotEnough:
+                    return "The Buffer Size Not Enough.";
+                case IPCPLAY_Status.IPC_Error_VideoThreadNotRun:
+                    return "The Video Thread Not Run.";
+                case IPCPLAY_Status.IPC_Error_AudioThreadNotRun:
+                    return "The Audio Thread Not Run.";
+                case IPCPLAY_Status.IPC_Error_ReadFileFailed:
+                    return "Failed in read file.";
+                case IPCPLAY_Status.IPC_Error_FileNotExist:
+                    return "The specified file is not exist.";
+                case IPCPLAY_Status.IPC_Error_InvalidTimeOffset:
+                    return "The time offset is invalid.";
+                case IPCPLAY_Status.IPC_Error_DecodeFailed:
+                    return "Failed in decoding.";
+                case IPCPLAY_Status.IPC_Error_InvalidWindow:
+                    return "Input a invalid window";
+                case IPCPLAY_Status.IPC_Error_AudioDeviceNotReady:
+                    return "Audio Device is Not Ready.";
+                case IPCPLAY_Status.IPC_Error_DxError:
+                    return "DirectX Error.";
+                case IPCPLAY_Status.IPC_Error_PlayerIsNotPaused:
+                    return "The Player is not paused.";
+                case IPCPLAY_Status.IPC_Error_VideoThreadStartFailed:
+                    return "The Video Thread start failed.";
+                case IPCPLAY_Status.IPC_Error_VideoThreadAbnormalExit:
+                    return "The video thread exit abnormal.";
+                case IPCPLAY_Status.IPC_Error_MediaFileHeaderError:
+                    return "There is a error in Media file header.";
+                case IPCPLAY_Status.IPC_Error_WindowNotAssigned:
+                    return "Please specify a window to show video.";
+                case IPCPLAY_Status.IPC_Error_SnapShotProcessNotRun:
+                    return "SnapShot Process Not Run.";
+                case IPCPLAY_Status.IPC_Error_SnapShotProcessFileMissed:
+                    return "SnapShot Process File Missed.";
+                case IPCPLAY_Status.IPC_Error_SnapShotProcessStartFailed:
+                    return "SnapShot Process Start Failed.";
+                case IPCPLAY_Status.IPC_Error_SnapShotFailed:
+                    return "SnapShot Failed.";
+                case IPCPLAY_Status.IPC_Error_PlayerHasStop:
+                    return "The Player Has Stopped.";
+                case IPCPLAY_Status.IPC_Error_InvalidCacheSize:
+                    return "Invalid Cache Size";
+                case IPCPLAY_Status.IPC_Error_UnsupportHaccel:
+                    return "Unsupport Haccel.";
+                case IPCPLAY_Status.IPC_Error_UnsupportedFormat:
+                    return "Unsupported Photo Format.";
+                case IPCPLAY_Status.IPC_Error_UnsupportedCodec:
+                    return "Unsupported Video Codec.";
+                case IPCPLAY_Status.IPC_Error_RenderWndOverflow:
+                    return "Render window Overflow.";
+                case IPCPLAY_Status.IPC_Error_RocateNotWork:
+                    return "Rocate Not Work";
+                case IPCPLAY_Status.IPC_Error_BufferOverflow:
+                    return "Buffer Over flow";
+                case IPCPLAY_Status.IPC_Error_DXRenderInitialized:
+                    return "DirectX Render has been Initialized.";
+                case IPCPLAY_Status.IPC_Error_ParserNotFound:
+                    return "Parser Not Found.";
+                case IPCPLAY_Status.IPC_Error_AllocateCodecContextFailed:
+                    return "Allocate Codec Context Failed.";
+                case IPCPLAY_Status.IPC_Error_OpenCodecFailed:
+                    return "Open Codec Failed.";
+                case IPCPLAY_Status.IPC_Error_StreamParserExisted:
+                    return "Stream Parser Existed.";
+                case IPCPLAY_Status.IPC_Error_StreamParserNotStarted:
+                    return "Stream Parser Not Started.";
+                case IPCPLAY_Status.IPC_Error_DXRenderNotInitialized:
+                    return "DirectX Render Not Initialized";
+                case IPCPLAY_Status.IPC_Error_NotAsyncPlayer:
+                    return "Not a AsyncPlayer";
+                case IPCPLAY_Status.IPC_Error_InsufficentMemory:
+                    return "Insufficent Memory";
+                default:
+                    return "Unknown Error.";
+            }
+        }
+        public string GetErrorMessage(int nErrorCode)
+        {
+	        if (nErrorCode == 0)
+		        return "Succeed.";
+	        
+	        else if (nErrorCode < 0 && nErrorCode >-1000)
+		        return ipcplay_GetErrorMessage(nErrorCode);
+	       
+	        else if (nErrorCode < -1000 && nErrorCode >= -2000)
+	        {
+                AVStatus nStatus = (AVStatus)nErrorCode;
+                switch (nStatus)
+		        {
+                    case AVStatus.AvError_Succeed:
+			            return "Succeed.";
+                    case AVStatus.AvError_InvalidParameters:
+			            return "Invalid Parameters.";
+                    case AVStatus.AvError_Invalid_ServerAddress:
+			            return "Invalid Servere address.";	
+                    case AVStatus.AvError_Invliad_ServerPort:
+			            return "Invliad Server port.";	
+                    case AVStatus.AvError_Invalid_AccountOrPassword:		
+			            return "Account or password is Invliad.";	
+                    case AVStatus.AvError_ConnectServerFailed:		
+			            return "Failed in connect Server.";	
+                    case AVStatus.AvError_LoginFailed:
+			            return "Failed in login to the server.";	
+                    case AVStatus.AvError_NotLogintoServer:
+			            return "Not login to the Server.";	
+                    case AVStatus.AvError_InvalidWindow:
+                        return "The handle of window to play video is invalid.";
+                    case AVStatus.AvError_DeviceNotExist:
+			            return "The sepecified device it not exist.";
+                    case AVStatus.AvError_ConnectDeviceFailed:
+			            return "Failed in connect the sepecified device.";	
+                    case AVStatus.AvError_DeviceInPlaying:
+			            return "The sepecified device is being played now,please don't play again.";	
+                    case AVStatus.AvError_DBException:
+			            return "An exception occured when access database.";
+		            case AVStatus.AvError_DeviceNotInPlaying:
+			            return "The device is not in playing.";
+		            case AVStatus.AVError_BufferOverflow:
+			            return "Buffer over flow." ;// 缓存溢出,提供的内存空间不足以容纳所请求的数据";
+		            case AVStatus.AvError_WindowNotPlaying:
+			            return "There is no any devices been played on the windows."; //窗口尚未播放任何设备";
+		            case AVStatus.AvError_InvlaidPtzCommand:
+			            return "Invalid PTZ Command.";
+		            case AVStatus.AvError_Invalid_PtzValue:
+			            return "Invalid PTZ Value.";
+		            case AVStatus.AvError_LoadAssitConfigFailed:
+			            return "Failed to load OperationAssist.xml.";
+		            case AVStatus.AvError_DeivceNotConfigAssist:
+			            return "The Device is not specified in the OperationAssist.xml.";
+		            case AVStatus.AvError_FailedEnableAssist:
+			            return "Failed in enable Operation Assist.";
+		            case AVStatus.AvError_Crane_notExist:
+			            return "The specified Crane ID is not exist.";
+		            case AVStatus.AvError_ScreenMode_notExist:
+			            return "The specified mode ID is not exist.";
+		            case AVStatus.AvError_OutofPlayingRange:
+			            return "Out of Player Timer Ranage";
+		            case AVStatus.AvError_AS300ServiceIsDisabled:
+			            return "AS300 Service is Disabled,Please Edit Configure.xml to active it.";
+		            case AVStatus.AvError_ExternalError:
+			            return "External error.";
+                    case AVStatus.AvError_InsufficentMemory:
+			            return "Insufficent Memory.";	
+                    case AVStatus.AvError_UnknownException:
+			            return "Unknown Exception.";
+		            default:
+			            return "Can't locate the error code.";
+		        }
+	        }
+            else
+                return "Unkonw Error code";
+        }
 
         public Form1()
         {
@@ -90,7 +343,7 @@ namespace SampleCS
                 //textBox_ServerIP.Text = "172.27.18.101";
                 //textBox_ServerIP.Text = "192.168.10.128";
                 // 获取数据读取超时值，单位为毫秒
-                textbox_RecvTimeout.Text = axAVPlayer1.RecvTimeout.ToString();
+              textbox_RecvTimeout.Text = axAVPlayer1.RecvTimeout.ToString();
             // 获取报告超时间隔值，单位为毫秒，即每隔一段时间发送一次超报告
             textbox_ReportInterval.Text = axAVPlayer1.ReportInterval.ToString();
             ExternDCDrawEvent = new ExternDCDrawDelegate(ExternDCDraw);
@@ -106,19 +359,18 @@ namespace SampleCS
             {
                 listView_CameraID.Items.Clear();
                 string strDeviceIDList = "";
-                string strErrorMsg = "";
                 int nDeviceCount = 0;
                 // 从服务器取得所有设备的ID
                 int nErrorCode = axAVPlayer1.GetDeviceID(ref strDeviceIDList, ref nDeviceCount);
                 if (nErrorCode != (int)AVStatus.AvError_Succeed)
                 {
-                    axAVPlayer1.GetErrorMessage(nErrorCode, ref strErrorMsg);
-                    textBox_msg.Text += strErrorMsg;
+                    textBox_msg.Text += GetErrorMessage(nErrorCode);
+                    textBox_msg.Text += "\r\n";
                     // 释放strErrormsg所占内存
-                    axAVPlayer1.FreeString(ref strErrorMsg);
+                    //axAVPlayer1.FreeString(ref strErrorMsg);
                     return;
                 }
-                
+
                 string[] IDList = strDeviceIDList.Split(';');
                 int nIndex = 0;
                 listView_CameraID.BeginUpdate();
@@ -132,7 +384,7 @@ namespace SampleCS
                 }
                 // strDeviceIDList是控件内部申请的内存，需要使用FreeString手动释放
                 axAVPlayer1.FreeString(ref strDeviceIDList);
-            
+
                 listView_CameraID.EndUpdate();
                 button_Login.Enabled = false;
                 button_Logout.Enabled = true;
@@ -143,7 +395,7 @@ namespace SampleCS
                 checkBox2.Enabled = true;
                 checkBox3.Enabled = true;
 
-            }
+            } 
         }
 
         private void button_Logout_Click(object sender, EventArgs e)
@@ -177,19 +429,14 @@ namespace SampleCS
             for(int i = 0;i < listView_CameraID.CheckedItems.Count;i ++)
             {
                 string strDeviceID = listView_CameraID.CheckedItems[i].SubItems[1].Text;
-                int nEnalbeHWAccel = 0;     // 禁用硬解码
-                int nErrorCode = 0;
-                string strErrorMsg = "";
-            
+                int nEnalbeHWAccel = 1;     // 禁用硬解码
+                int nErrorCode = 0;         
                 
                 nErrorCode = axAVPlayer1.PlayStream(strDeviceID, (int)HandleArray[i], nEnalbeHWAccel);
                 if (nErrorCode != (int)AVStatus.AvError_Succeed)
                 {
-                    axAVPlayer1.GetErrorMessage(nErrorCode, ref strErrorMsg);
-                    textBox_msg.Text += strErrorMsg;
+                    textBox_msg.Text += GetErrorMessage(nErrorCode);
                     textBox_msg.Text += "\r\n";
-                    // 释放strErrormsg所占内存
-                    axAVPlayer1.FreeString(ref strErrorMsg);
                     return;
                 }
                 DevicePlay pDev = new DevicePlay();
@@ -199,18 +446,15 @@ namespace SampleCS
                 button_Play.Enabled = false;
                 button_Stop.Enabled = true;
                 // 获取设备正在播放的窗口句柄
-                int[] hWndArray = new int[16];
-                int nArraySize = 16;
-                nErrorCode = axAVPlayer1.GetDeviceWindow(strDeviceID,ref hWndArray[0],ref nArraySize);
-                if (nErrorCode != (int)AVStatus.AvError_Succeed)
-                {
-                    axAVPlayer1.GetErrorMessage(nErrorCode, ref strErrorMsg);
-                    textBox_msg.Text += strErrorMsg;
-                    textBox_msg.Text += "\r\n";
-                    // 释放strErrormsg所占内存
-                    axAVPlayer1.FreeString(ref strErrorMsg);
-                    return;
-                }
+//                 int[] hWndArray = new int[16];
+//                 int nArraySize = 16;
+//                 nErrorCode = axAVPlayer1.GetDeviceWindow(strDeviceID,ref hWndArray[0],ref nArraySize);
+//                 if (nErrorCode != (int)AVStatus.AvError_Succeed)
+//                 {
+//                     textBox_msg.Text += GetErrorMessage(nErrorCode);
+//                     textBox_msg.Text += "\r\n";
+//                     return;
+//                 }
             }            
         }
 
@@ -228,16 +472,12 @@ namespace SampleCS
            
             int nEnalbeHWAccel = 0;     // 禁用硬解码
             int nErrorCode = 0;
-            string strErrorMsg = "";
 
             nErrorCode = axAVPlayer1.PlayComboStream(strDeviceID1, strDeviceID2, (int)pictureBox1.Handle, nEnalbeHWAccel,1);
             if (nErrorCode != (int)AVStatus.AvError_Succeed)
             {
-                axAVPlayer1.GetErrorMessage(nErrorCode, ref strErrorMsg);
-                textBox_msg.Text += strErrorMsg;
+                textBox_msg.Text += GetErrorMessage(nErrorCode);
                 textBox_msg.Text += "\r\n";
-                // 释放strErrormsg所占内存
-                axAVPlayer1.FreeString(ref strErrorMsg);
                 return;
             } 
             button_Play.Enabled = false;
@@ -248,11 +488,8 @@ namespace SampleCS
             nErrorCode = axAVPlayer1.GetDeviceWindow(strDeviceID1,ref hWndArray[0],ref nArraySize);
             if (nErrorCode != (int)AVStatus.AvError_Succeed)
             {
-                axAVPlayer1.GetErrorMessage(nErrorCode, ref strErrorMsg);
-                textBox_msg.Text += strErrorMsg;
+                textBox_msg.Text += GetErrorMessage(nErrorCode);
                 textBox_msg.Text += "\r\n";
-                // 释放strErrormsg所占内存
-                axAVPlayer1.FreeString(ref strErrorMsg);
                 return;
             }
             
@@ -260,15 +497,15 @@ namespace SampleCS
         
         private void button_Stop_Click(object sender, EventArgs e)
         {
-//             int nCount = listView_CameraID.CheckedItems.Count;
-//             for (int i = 0; i < nCount; i++)
-//             {
-//                 string strDeviceID = listView_CameraID.CheckedItems[i].SubItems[1].Text;
-//                 // 终止所有窗口的播放
-//                 // StopPlay的第二个参数为窗口句柄，关闭在指定窗口显示的视频
-//                 // 若该参数为0，则关闭所有窗口的句柄
-//                 axAVPlayer1.StopPlay(strDeviceID,0);
-//             }
+            int nCount = listView_CameraID.CheckedItems.Count;
+            for (int i = 0; i < nCount; i++)
+            {
+                string strDeviceID = listView_CameraID.CheckedItems[i].SubItems[1].Text;
+                // 终止所有窗口的播放
+                // StopPlay的第二个参数为窗口句柄，关闭在指定窗口显示的视频
+                // 若该参数为0，则关闭所有窗口的句柄
+                axAVPlayer1.StopPlay(strDeviceID,0);
+            }
             foreach(var dev in m_PlayList)
             {
                 axAVPlayer1.StopPlay(dev.strDevice,0);
@@ -297,15 +534,11 @@ namespace SampleCS
                 string strDeviceID = listView_CameraID.SelectedItems[0].SubItems[1].Text;
                 int nEnalbeHWAccel = 0;     // 禁用硬解码
                 int nErrorCode = 0;
-                string strErrorMsg = "";
                 nErrorCode = axAVPlayer1.PlayStream(strDeviceID, (int)pictureBox2.Handle, nEnalbeHWAccel);
                 if (nErrorCode != (int)AVStatus.AvError_Succeed)
                 {
-                    axAVPlayer1.GetErrorMessage(nErrorCode, ref strErrorMsg);
-                    textBox_msg.Text += strErrorMsg;
+                    textBox_msg.Text += GetErrorMessage(nErrorCode);
                     textBox_msg.Text += "\r\n";
-                    // 释放strErrormsg所占内存
-                    axAVPlayer1.FreeString(ref strErrorMsg);
                     return;
                 }
 
@@ -315,11 +548,8 @@ namespace SampleCS
                 nErrorCode = axAVPlayer1.GetDeviceWindow(strDeviceID, ref hWndArray[0], ref nArraySize);
                 if (nErrorCode != (int)AVStatus.AvError_Succeed)
                 {
-                    axAVPlayer1.GetErrorMessage(nErrorCode, ref strErrorMsg);
-                    textBox_msg.Text += strErrorMsg;
+                    textBox_msg.Text += GetErrorMessage(nErrorCode);
                     textBox_msg.Text += "\r\n";
-                    // 释放strErrormsg所占内存
-                    axAVPlayer1.FreeString(ref strErrorMsg);
                     return;
                 }
                 textBox_msg.Text += (strDeviceID + "已在 " + nArraySize.ToString() + " 个窗口上播放.\r\n");
@@ -328,16 +558,12 @@ namespace SampleCS
             else 
             {
                 string strDeviceID = "";
-                string strErrorMsg = "";
                 //  直接从播放图像的窗口句柄获取设备ID
                 int nErrorCode = axAVPlayer1.GetWindowDevice((int)pictureBox2.Handle, ref strDeviceID);
                 if (nErrorCode != (int)AVStatus.AvError_Succeed)
                 {
-                    axAVPlayer1.GetErrorMessage(nErrorCode, ref strErrorMsg);
-                    textBox_msg.Text += strErrorMsg;
+                    textBox_msg.Text += GetErrorMessage(nErrorCode);
                     textBox_msg.Text += "\r\n";
-                    // 释放strErrormsg所占内存
-                    axAVPlayer1.FreeString(ref strErrorMsg);
                     return;
                 }
                 axAVPlayer1.StopPlay(strDeviceID, (int)pictureBox2.Handle);
@@ -358,15 +584,11 @@ namespace SampleCS
 
                 int nEnalbeHWAccel = 0;     // 禁用硬解码
                 int nErrorCode = 0;
-                string strErrorMsg = "";
                 nErrorCode = axAVPlayer1.PlayStream(strDeviceID, (int)pictureBox3.Handle, nEnalbeHWAccel);
                 if (nErrorCode != (int)AVStatus.AvError_Succeed)
                 {
-                    axAVPlayer1.GetErrorMessage(nErrorCode, ref strErrorMsg);
-                    textBox_msg.Text += strErrorMsg;
+                    textBox_msg.Text += GetErrorMessage(nErrorCode);
                     textBox_msg.Text += "\r\n";
-                    // 释放strErrormsg所占内存
-                    axAVPlayer1.FreeString(ref strErrorMsg);
                     return;
                 }
                 // 获取设备正在播放的窗口句柄
@@ -375,11 +597,8 @@ namespace SampleCS
                 nErrorCode = axAVPlayer1.GetDeviceWindow(strDeviceID, ref hWndArray[0], ref nArraySize);
                 if (nErrorCode != (int)AVStatus.AvError_Succeed)
                 {
-                    axAVPlayer1.GetErrorMessage(nErrorCode, ref strErrorMsg);
-                    textBox_msg.Text += strErrorMsg;
+                    textBox_msg.Text += GetErrorMessage(nErrorCode);
                     textBox_msg.Text += "\r\n";
-                    // 释放strErrormsg所占内存
-                    axAVPlayer1.FreeString(ref strErrorMsg);
                     return;
                 }
                 textBox_msg.Text += (strDeviceID + "已在 " + nArraySize.ToString() + " 个窗口上播放.\r\n");
@@ -387,16 +606,12 @@ namespace SampleCS
             else
             {
                 string strDeviceID = "";
-                string strErrorMsg = "";
                 //  直接从播放图像的窗口句柄获取设备ID
                 int nErrorCode = axAVPlayer1.GetWindowDevice((int)pictureBox3.Handle, ref strDeviceID);
                 if (nErrorCode != (int)AVStatus.AvError_Succeed)
                 {
-                    axAVPlayer1.GetErrorMessage(nErrorCode, ref strErrorMsg);
-                    textBox_msg.Text += strErrorMsg;
+                    textBox_msg.Text += GetErrorMessage(nErrorCode);
                     textBox_msg.Text += "\r\n";
-                    // 释放strErrormsg所占内存
-                    axAVPlayer1.FreeString(ref strErrorMsg);
                     return;
                 }
                 axAVPlayer1.StopPlay(strDeviceID, (int)pictureBox3.Handle);
@@ -417,15 +632,11 @@ namespace SampleCS
                 string strDeviceID = listView_CameraID.SelectedItems[0].SubItems[1].Text;
                 int nEnalbeHWAccel = 0;     // 禁用硬解码
                 int nErrorCode = 0;
-                string strErrorMsg = "";
                 nErrorCode = axAVPlayer1.PlayStream(strDeviceID, (int)pictureBox4.Handle, nEnalbeHWAccel);
                 if (nErrorCode != (int)AVStatus.AvError_Succeed)
                 {
-                    axAVPlayer1.GetErrorMessage(nErrorCode, ref strErrorMsg);
-                    textBox_msg.Text += strErrorMsg;
+                    textBox_msg.Text += GetErrorMessage(nErrorCode);
                     textBox_msg.Text += "\r\n";
-                    // 释放strErrormsg所占内存
-                    axAVPlayer1.FreeString(ref strErrorMsg);
                     return;
                 }
 
@@ -435,11 +646,8 @@ namespace SampleCS
                 nErrorCode = axAVPlayer1.GetDeviceWindow(strDeviceID, ref hWndArray[0], ref nArraySize);
                 if (nErrorCode != (int)AVStatus.AvError_Succeed)
                 {
-                    axAVPlayer1.GetErrorMessage(nErrorCode, ref strErrorMsg);
-                    textBox_msg.Text += strErrorMsg;
+                    textBox_msg.Text += GetErrorMessage(nErrorCode);
                     textBox_msg.Text += "\r\n";
-                    // 释放strErrormsg所占内存
-                    axAVPlayer1.FreeString(ref strErrorMsg);
                     return;
                 }
                 textBox_msg.Text += (strDeviceID + "已在 " + nArraySize.ToString() + " 个窗口上播放.\r\n");
@@ -447,16 +655,12 @@ namespace SampleCS
             else
             {
                 string strDeviceID = "";
-                string strErrorMsg = "";
                 //  直接从播放图像的窗口句柄获取设备ID
                 int nErrorCode = axAVPlayer1.GetWindowDevice((int)pictureBox4.Handle, ref strDeviceID);
                 if (nErrorCode != (int)AVStatus.AvError_Succeed)
                 {
-                    axAVPlayer1.GetErrorMessage(nErrorCode, ref strErrorMsg);
-                    textBox_msg.Text += strErrorMsg;
+                    textBox_msg.Text += GetErrorMessage(nErrorCode);
                     textBox_msg.Text += "\r\n";
-                    // 释放strErrormsg所占内存
-                    axAVPlayer1.FreeString(ref strErrorMsg);
                     return;
                 }
                 axAVPlayer1.StopPlay(strDeviceID, (int)pictureBox4.Handle);
@@ -498,7 +702,7 @@ namespace SampleCS
                 }
             }
         }
-
+        /*
         private void axAVPlayer1_RecvTimeoutEvent(object sender, AxAVPlayerLib._DAVPlayerEvents_RecvTimeoutEvent e)
         {
             // 设备e.strDevice接收数据超时，可能断线, 此时可以把窗口刷黑
@@ -519,7 +723,7 @@ namespace SampleCS
             textBox_msg.Text += " 可能已经掉线.\r\n";
             axAVPlayer1.FreeString(ref e.strDevice);
         }
-
+        */
         private void checkBox4_CheckedChanged(object sender, EventArgs e)
         {
             if (checkBox4.Checked == true)
@@ -718,11 +922,7 @@ namespace SampleCS
                     axAVPlayer1.EnableOperationAssist(dev.strDevice, 1);
         }
 
-        private void axAVPlayer1_RecvTimeoutEvent_1(object sender, AxAVPlayerLib._DAVPlayerEvents_RecvTimeoutEvent e)
-        {
-
-        }
-
+ 
         private void SwitchScreen_Click(object sender, EventArgs e)
         {
             if (!m_bFitFrame)
@@ -743,8 +943,18 @@ namespace SampleCS
             } 
             int nMode = Convert.ToInt32(comboBox_mode.SelectedItem.ToString());
             int nCrane = 1;         // 配置文件只配置了1和2号Crane
-            axAVPlayer1.SwitchScreen(nCrane, nMode);
+            //axAVPlayer1.SwitchScreen(nCrane, nMode);
             m_bFitFrame = true;     
+
+        }
+
+        private void QueryRecord_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void PlayRecord_Click(object sender, EventArgs e)
+        {
 
         }
     };

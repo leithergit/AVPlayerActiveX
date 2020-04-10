@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="gbk"?>
-<Configuration >
-	<!-- 配置说明，请勿删除 -->
+<!-- 配置说明，请勿删除 -->
+<!-- 是否启用AS300登录,AS300="true"时启用,AS300="false"时关闭-->
+<Configuration AS300="true">
+	
 	<!-- 是否启用图像合并功能,Enable="true"时启用,Enable="false"时关闭-->
 	<CameraPostion Enable ="false"/>
 	<!-- 设置控件日志保存期限,SaveDays="30",则日志保存期限为30天,超过30天的日志将被删除-->
 	<LogManager SaveDays ="30"/>
+	<AsyncPlayer YUVFrameCacheSize ="50"/>
 	<CameraList>
 		<!-- 配置非安讯士摄像的连接信息,请注意配置信息的大小写-->
 		<!-- IP 为摄像机IP地址，User为摄像机登录帐号,Password为登录密码,Url为拉取视频所用的地址串-->
@@ -14,7 +17,7 @@
 		<Camera IP="192.168.1.3" User="admin" Password="admin" Url="rtsp://%s:%s@%s:554/ch01" />
 		<Camera IP="192.168.1.4" User="admin" Password="admin" Url="rtsp://%s:%s@%s:554/ch01" />
 		<Camera IP="192.168.1.5" User="admin" Password="admin" Url="rtsp://%s:%s@%s:554/ch01" />
-		<Camera IP="192.168.1.6" User="admin" Password="admin" Url="rtsp://%s:%s@%s:554/ch01" />
-		<Camera IP="192.168.1.7" User="admin" Password="admin" Url="rtsp://%s:%s@%s:554/ch01" />
+		<Camera IP="192.168.254.2" User="" Password="" Url="rtsp://192.168.43.78:8554/channel0" />
+		<Camera IP="192.168.43.78" User="" Password="" Url="rtsp://192.168.43.78:8554/channel1" />
 	</CameraList>	
 </Configuration>

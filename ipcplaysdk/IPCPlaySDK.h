@@ -13,6 +13,8 @@
 #include "Media.h"
 
 /*
+MS VC++ 14.0 _MSC_VER = 1915 (Visual C++ 2017)
+MS VC++ 13.0 _MSC_VER = 1900 (Visual C++ 2015)
 MS VC++ 12.0 _MSC_VER = 1800 (Visual C++ 2013)
 MS VC++ 11.0 _MSC_VER = 1700 (Visual C++ 2012)
 MS VC++ 10.0 _MSC_VER = 1600(Visual C++ 2010)
@@ -94,7 +96,8 @@ enum IPC_CALLBACK
 	YUVCaptureEx,	/// 扩展的YUV回调，可得到已分离的YUV数据和相应的参数数据,回调定义详见@see CaptureYUVEx
 	YUVFilter,		/// YUV过滤器，可得到已分离的YUV数据和相应的参数数据，若对数据作出改变会显示在画面上,回调定义详见@see CaptureYUVEx
 	FramePaser,		/// 文件帧解析回调，可得到完整正在播放的文件中的一帧未解码的帧,回调定义详见@see CaptureFrame
-	FilePlayer		/// 文件播放回调，可得到关于播放器的一些完整信息,回调定义详见@see FilePlayProc
+	FilePlayer,		/// 文件播放回调，可得到关于播放器的一些完整信息,回调定义详见@see FilePlayProc
+	RGBCapture,		/// RGB数据回调
 };
 
 typedef enum {
@@ -109,58 +112,65 @@ typedef enum {
 	IPC_726,            ///< 726编码帧
 	IPC_AAC,            ///< AAC编码帧。
 	IPC_MAX,
-} APP_NET_TCP_STREAM_TYPE;
+} IPC_STREAM_TYPE;
 
-#define		IPC_Succeed							(0)		///< 操作成功
-#define		IPC_Error_InvalidParameters			(-1)	///< 无效的参数
-#define		IPC_Error_NotVideoFile				(-2)	///< 非视频录像文件
-#define		IPC_Error_NotInputStreamHeader		(-3)	///< 未输入视频录像文件头
-#define		IPC_Error_InvalidSDKVersion			(-4)	///< 录像文件头中的的SDK版本无效
-#define		IPC_Error_PlayerNotStart			(-5)	///< 播放器尚未启动,无法取得播放过程的信息或属性
-#define		IPC_Error_PlayerHasStart			(-6)	///< 播放器已经启动，不能执行初始化或其它设置操作
-#define		IPC_Error_NotFilePlayer				(-7)	///< 这不是一个文件播放对象
-#define		IPC_Error_InvalidFrame				(-8)	///< 无效的帧
-#define		IPC_Error_InvalidFrameType			(-9)	///< 无效的帧类型
-#define		IPC_Error_SummaryNotReady			(-10)	///< 文件摘要信息尚未准备好
-#define		IPC_Error_FrameCacheIsFulled		(-11)	///< 视频帧缓冲区已经满
-#define		IPC_Error_FileNotOpened				(-12)	///< 尚未打开视频文件
-#define		IPC_Error_MaxFrameSizeNotEnough		(-13)	///< 最大帧尺寸不足，可能视频文件中存在超过256K的帧数据,应调用SetMaxFrameSize设置新的帧尺寸上限
-#define		IPC_Error_InvalidPlayRate			(-14)	///< 无效的播放倍率
-#define		IPC_Error_BufferSizeNotEnough		(-15)	///< 提供的缓冲区长度不足
-#define		IPC_Error_VideoThreadNotRun			(-16)	///< 视频解码线程尚未启动或已经退出
-#define		IPC_Error_AudioThreadNotRun			(-17)	///< 音频频解码线程尚未启动或已经退出
-#define		IPC_Error_ReadFileFailed			(-18)	///< 读文件失败
-#define		IPC_Error_FileNotExist				(-19)	///< 文件不存在
-#define		IPC_Error_InvalidTimeOffset			(-20)	///< 无效的时间偏移或时间超出文件长度范围
-#define		IPC_Error_DecodeFailed				(-21)	///< 解码失败
-#define		IPC_Error_InvalidWindow				(-21)	///< 无效的窗口句柄
-#define		IPC_Error_AudioFailed				(-22)	///< 音频播放初始化失败(播放设备未就绪)
-#define		IPC_Error_DxError					(-23)	///< DirectX 错误
-#define		IPC_Error_PlayerIsNotPaused			(-24)	///< 播放器尚未暂停
-#define		IPC_Error_VideoThreadStartFailed	(-25)	///< 播放线程启动失败
-#define		IPC_Error_VideoThreadAbnormalExit	(-26)	///< 播放线程异常退出
-#define		IPC_Error_MediaFileHeaderError		(-27)	///< 文件件头有错误
-#define		IPC_Error_WindowNotAssigned			(-28)	///< 未指定显示窗口,无法截图
-#define		IPC_Error_SnapShotProcessNotRun		(-29)	///< 截图进程未运行
-#define		IPC_Error_SnapShotProcessFileMissed	(-30)	///< 截图程序文件丢失
-#define		IPC_Error_SnapShotProcessStartFailed (-31)	///< 截图进程启动失败
-#define		IPC_Error_SnapShotFailed	 		(-32)	///< 截图进程未运行
-#define		IPC_Error_PlayerHasStop				(-33)	///< 播放器已经停止，不能执行初始化或其它设置操作
-#define		IPC_Error_InvalidCacheSize			(-34)	///< 播放器已经启动，不能执行初始化或其它设置操作
-#define		IPC_Error_UnsupportHaccel			(-35)	///< 当前系统不支持硬解码功能
-#define		IPC_Error_UnsupportedFormat			(-35)	///< 不支持的图像格式
-#define		IPC_Error_UnsupportedCodec			(-36)	///< 不支持的编码格式
-#define		IPC_Error_RenderWndOverflow			(-37)	///< 渲染窗口超限
-#define		IPC_Error_RocateNotWork				(-38)	///< 图像旋转不适用，可能是启用了硬解码
-#define		IPC_Error_BufferOverflow			(-39)	///< 缓存溢出,可能提供的缓存空间不足以容纳所请求的数据
-#define		IPC_Error_DXRenderInitialized		(-40)	///< DirectX渲染器已经初始化
-#define		IPC_Error_ParserNotFound			(-41)	///< 找不到匹配的解析器
-#define		IPC_Error_AllocateCodecContextFaled	(-42)	///< 分配编码上下文失败
-#define		IPC_Error_OpenCodecFailed			(-42)	///< 分配编码上下文失败
-#define		IPC_Error_StreamParserExisted		(-43)	///< 流解析器已经存在
-#define		IPC_Error_StreamParserNotStarted	(-44)	///< 流解析器尚未启动
-#define		IPC_Error_DXRenderNotInitialized	(-45)	///< DirectX渲染器已经初始化
-#define		IPC_Error_InsufficentMemory			(-255)	///< 内存不足
+enum IPCPLAY_Status
+{
+	IPC_Succeed							=(0),	///< 操作成功
+	IPC_Error_InvalidParameters			=(-1),	///< 无效的参数
+	IPC_Error_NotVideoFile				=(-2),	///< 非视频录像文件
+	IPC_Error_NotInputStreamHeader		=(-3),	///< 未输入视频录像文件头
+	IPC_Error_InvalidSDKVersion			=(-4),	///< 录像文件头中的的SDK版本无效
+	IPC_Error_PlayerNotStart			=(-5),	///< 播放器尚未启动,无法取得播放过程的信息或属性
+	IPC_Error_PlayerHasStart			=(-6),	///< 播放器已经启动，不能执行初始化或其它设置操作
+	IPC_Error_NotFilePlayer				=(-7),	///< 这不是一个文件播放对象
+	IPC_Error_InvalidFrame				=(-8),	///< 无效的帧
+	IPC_Error_InvalidFrameType			=(-9),	///< 无效的帧类型
+	IPC_Error_SummaryNotReady			=(-10),	///< 文件摘要信息尚未准备好
+	IPC_Error_FrameCacheIsFulled		=(-11),	///< 视频帧缓冲区已经满
+	IPC_Error_FileNotOpened				=(-12),	///< 尚未打开视频文件
+	IPC_Error_MaxFrameSizeNotEnough		=(-13),	///< 最大帧尺寸不足，可能视频文件中存在超过256K的帧数据,应调用SetMaxFrameSize设置新的帧尺寸上限
+	IPC_Error_InvalidPlayRate			=(-14),	///< 无效的播放倍率
+	IPC_Error_BufferSizeNotEnough		=(-15),	///< 提供的缓冲区长度不足
+	IPC_Error_VideoThreadNotRun			=(-16),	///< 视频解码线程尚未启动或已经退出
+	IPC_Error_AudioThreadNotRun			=(-17),	///< 音频频解码线程尚未启动或已经退出
+	IPC_Error_ReadFileFailed			=(-18),	///< 读文件失败
+	IPC_Error_FileNotExist				=(-19),	///< 文件不存在
+	IPC_Error_InvalidTimeOffset			=(-20),	///< 无效的时间偏移或时间超出文件长度范围
+	IPC_Error_DecodeFailed				=(-21),	///< 解码失败
+	IPC_Error_InvalidWindow				=(-22),	///< 无效的窗口句柄
+	IPC_Error_AudioDeviceNotReady		=(-23),	///< 音频播放初始化失败(播放设备未就绪),
+	IPC_Error_DxError					=(-24),	///< DirectX 错误
+	IPC_Error_PlayerIsNotPaused			=(-25),	///< 播放器尚未暂停
+	IPC_Error_VideoThreadStartFailed	=(-26),	///< 播放线程启动失败
+	IPC_Error_VideoThreadAbnormalExit	=(-27),	///< 播放线程异常退出
+	IPC_Error_WindowNotAssigned			=(-28),	///< 未指定显示窗口,无法截图
+	IPC_Error_SnapShotProcessNotRun		=(-29),	///< 截图进程未运行
+	IPC_Error_SnapShotProcessFileMissed	=(-30),	///< 截图程序文件丢失
+	IPC_Error_SnapShotProcessStartFailed =(-31),///< 截图进程启动失败
+	IPC_Error_SnapShotFailed	 		=(-32),	///< 截图进程未运行
+	IPC_Error_PlayerHasStop				=(-33),	///< 播放器已经停止，不能执行初始化或其它设置操作
+	IPC_Error_InvalidCacheSize			=(-34),	///< 播放器已经启动，不能执行初始化或其它设置操作
+	IPC_Error_UnsupportHaccel			=(-35),	///< 当前系统不支持硬解码功能
+	IPC_Error_UnsupportedCodec			=(-36),	///< 不支持的编码格式
+	IPC_Error_RenderWndOverflow			=(-37),	///< 渲染窗口超限
+	IPC_Error_RocateNotWork				=(-38),	///< 图像旋转不适用，可能是启用了硬解码
+	IPC_Error_BufferOverflow			=(-39),	///< 缓存溢出,可能提供的缓存空间不足以容纳所请求的数据
+	IPC_Error_DXRenderInitialized		=(-40),	///< DirectX渲染器已经初始化
+	IPC_Error_ParserNotFound			=(-41),	///< 找不到匹配的解析器
+	IPC_Error_AllocateCodecContextFailed=(-42),	///< 分配编码上下文失败
+	IPC_Error_StreamParserExisted		=(-43),	///< 流解析器已经存在
+	IPC_Error_StreamParserNotStarted	=(-44),	///< 流解析器尚未启动
+	IPC_Error_DXRenderNotInitialized	=(-45),	///< DirectX渲染器尚未初始化
+	IPC_Error_NotAsyncPlayer			=(-46),	///< 当前播放器未启用异步渲染功能
+	IPC_Error_MediaFileHeaderError		=(-47),	///< 文件件头有错误
+	IPC_Error_UnsupportedFormat			=(-48),	///< 不支持的图像格式
+	IPC_Error_OpenCodecFailed			=(-49),	///< 分配编码上下文失败
+	IPC_Error_InvalidSharedMemory		=(-50), ///< 尚未创建共享内存
+	IPC_Error_InsufficentMemory			=(-255)	///< 内存不足
+};
+
+
 
 #define		WM_IPCPLAYER_MESSAGE			WM_USER + 8192	///< 播放器出错时发出的消息 ,消息的LPARAM字段无意义,wparam字段定义如下：
 #define		IPCPLAYER_NOTRECVIFRAME			0		///< 未收到有效的I帧
@@ -170,10 +180,29 @@ typedef enum {
 #define		IPCPLAYER_UNSURPPORTEDSTREAM	4		///< 不支持的视频编码格式
 #define		IPCPLAYER_INVALIDCODER			5		///< 无效的视频编码格式
 
-#define		_Max_RenderWnds					9
+#define		_Max_RenderWnds					4
+
+
+struct AdapterHAccel
+{
+	CHAR	szAdapterGuid[64];
+	int		nMaxHaccel;
+	int		nOpenCount;
+};
+
+
+struct SharedMemory
+{
+	int nAdapterCount;
+	AdapterHAccel	HAccelArray[10];
+};
+
 
 
 /// @brief 播放器即时信息
+#pragma pack(show)
+#pragma pack(push)
+#pragma pack(8)
 struct PlayerInfo
 {
 	IPC_CODEC	nVideoCodec;	///< 视频编码格式,@see IPC_CODEC
@@ -184,6 +213,7 @@ struct PlayerInfo
 	UINT		nTotalFrames;	///< 视频总帧数,只有文件播放时才有效
 	time_t		tTotalTime;		///< 文件总时长(单位:毫秒),只有文件播放时才有效
 	UINT		nCurFrameID;	///< 当前播放视频的帧ID,只有文件播放时才有效,nSDKVersion<IPC_IPC_SDK_VERSION_2015_12_16无效
+	time_t		tFirstFrameTime;///< 收到的第一帧的时间(单位:毫秒)
 	time_t		tCurFrameTime;	///< 返回当前播放视频的帧相对起点的时间(单位:毫秒)
 	time_t		tTimeEplased;	///< 已播放时间(单位:毫秒)
 	USHORT		nFPS;			///< 文件或码流中视频的原始帧率
@@ -196,9 +226,38 @@ struct PlayerInfo
 	byte		nReserver1[3];
 	UINT		nReserver2[2];
 };
+#pragma pack(pop)
 ///	@def	IPC_PLAYHANDLE
 ///	@brief	IPC文件播放句柄
 typedef void* 	IPC_PLAYHANDLE;
+
+
+/// @brief  显卡参数信息，完全复制于D3DADAPTER_IDENTIFIER9结构
+#define MAX_DEVICE_IDENTIFIER_STRING        512
+#pragma pack(push)
+#pragma pack(4)
+struct AdapterInfo
+{
+	char            Driver[MAX_DEVICE_IDENTIFIER_STRING];
+	char            Description[MAX_DEVICE_IDENTIFIER_STRING];
+	char            DeviceName[32];         /* Device name for GDI (ex. \\.\DISPLAY1) */
+
+#ifdef _WIN32
+	LARGE_INTEGER   DriverVersion;          /* Defined for 32 bit components */
+#else
+	DWORD           DriverVersionLowPart;   /* Defined for 16 bit driver components */
+	DWORD           DriverVersionHighPart;
+#endif
+
+	DWORD           VendorId;
+	DWORD           DeviceId;
+	DWORD           SubSysId;
+	DWORD           Revision;
+	GUID            DeviceIdentifier;
+	DWORD           WHQLLevel;
+	//int				nAdapter;			// the adapter NO.
+};
+#pragma pack(pop)
 
 /// @brief		解码后YVU数据回调函数定义
 /// @param [in]		hPlayHandle	由ipcplay_OpenFile或ipcplay_OpenStream返回的播放句柄
@@ -234,6 +293,20 @@ typedef void(__stdcall *CaptureYUVEx)(IPC_PLAYHANDLE hPlayHandle,
 	const unsigned char* pV,
 	int nStrideY,
 	int nStrideUV,
+	int nWidth,
+	int nHeight,
+	INT64 nTime,
+	void *pUserPtr);
+
+/// @brief		解码后YVU数据回调函数定义
+/// @param [in]		hPlayHandle	由ipcplay_OpenFile或ipcplay_OpenStream返回的播放句柄
+/// @param [in]		pRGBBuffer	RGB数据指针
+/// @param [in]		nWidth		图像的宽度
+/// @param [in]		nHeight		图像的高度
+/// @param [in]		nTime		产生YUV数据的时间
+/// @param [in]		pUserPtr	用户自定义指针
+typedef void(__stdcall *CaptureRGB)(IPC_PLAYHANDLE hPlayHandle,
+	const unsigned char* pRGBBuffer,
 	int nWidth,
 	int nHeight,
 	INT64 nTime,
@@ -402,6 +475,19 @@ IPCPLAYSDK_API int ipcplay_InputIPCStream(IN IPC_PLAYHANDLE hPlayHandle, IN byte
 ///					ipcplay_GetHaccelStatus判断是否已经开启硬解码
 IPCPLAYSDK_API int ipcplay_Start(IN IPC_PLAYHANDLE hPlayHandle, IN bool bEnableAudio = false, bool bFitWindow = true, bool bEnableHaccel = false);
 
+/// @brief			开始同步播放
+/// @param [in]		hPlayHandle		由ipcplay_OpenFile或ipcplay_OpenStream返回的播放句柄
+/// @param [in]		bFitWindow		视频是否适应窗口
+/// @param [in]		pSyncSource		同步源，为另一IPCPlaySDK 句柄，若同步源为null,则创建同步时钟，自我同步
+/// @param [in]		nVideoFPS		视频帧率
+/// #- true			视频填满窗口,这样会把图像拉伸,可能会造成图像变形
+/// #- false		只按图像原始比例在窗口中显示,超出比例部分,则以黑色背景显示
+/// @retval			0	操作成功
+/// @retval			1	流缓冲区已满
+/// @retval			-1	输入参数无效
+/// @remark			若pSyncSource为null,当前的播放器成为同步源，nVideoFPS不能为0，否则返回IPC_Error_InvalidParameters错误
+///					若pSyncSource不为null，则当前播放器以pSyncSource为同步源，nVideoFPS值被忽略
+IPCPLAYSDK_API int ipcplay_StartSyncPlay(IN IPC_PLAYHANDLE hPlayHandle, bool bFitWindow = true, void *pSyncSource = nullptr, int nVideoFPS = 25);
 
 /// @brief			设置解码延时
 /// @param [in]		hPlayHandle		由ipcplay_OpenFile或ipcplay_OpenStream返回的播放句柄
@@ -550,6 +636,28 @@ IPCPLAYSDK_API int  ipcplay_SeekFrame(IN IPC_PLAYHANDLE hPlayHandle, IN int nFra
 ///					3.只有在播放暂时,bUpdate参数才有效
 ///					4.用于单帧播放时只能向前移动
 IPCPLAYSDK_API int  ipcplay_SeekTime(IN IPC_PLAYHANDLE hPlayHandle, IN time_t nTimeOffset, bool bUpdate = false);
+
+
+/// @brief			播放指定时间点的一帧画面
+/// @param [in]		hPlayHandle		由ipcplay_OpenFile或ipcplay_OpenStream返回的播放句柄
+/// @param [in]		nTimeOffset		要播放的起始时间(单位:毫秒)
+/// @param [in]		bUpdate			是否更新画面,bUpdate为true则予以更新画面,画面则不更新
+/// @retval			0	操作成功
+/// @retval			-1	输入参数无效
+/// @remark			1.若所指定时间点对应帧为非关键帧，帧自动移动到就近的关键帧进行播放
+///					2.若所指定帧为非关键帧，帧自动移动到就近的关键帧进行播放
+///					3.只有在播放暂时,bUpdate参数才有效
+///					4.用于单帧播放时只能向前移动
+IPCPLAYSDK_API int  ipcplay_AsyncSeekFrame(IN IPC_PLAYHANDLE hPlayHandle, IN time_t nTimeOffset, bool bUpdate = false);
+
+
+/// @brief			启用单帧播放
+/// @param [in]		hPlayHandle		由ipcplay_OpenFile或ipcplay_OpenStream返回的播放句柄
+/// @param [in]		bEnable		要播放的起始时间(单位:毫秒)
+/// @retval			0	操作成功
+/// @retval			-1	输入参数无效
+IPCPLAYSDK_API int  ipcplay_EnablePlayOneFrame(IN IPC_PLAYHANDLE hPlayHandle,  bool bEnable = true);
+
 
 /// @brief 从文件中读取一帧，读取的起点默认值为0,SeekFrame或SeekTime可设定其起点位置
 /// @param [in]		hPlayHandle		由ipcplay_OpenFile或ipcplay_OpenStream返回的播放句柄
@@ -750,17 +858,21 @@ IPCPLAYSDK_API int ipcplay_RemoveLineArray(IN IPC_PLAYHANDLE hPlayHandle, long n
 
 /// @brief			设置背景图片路径，即视频图像出现前，作为背景的图像，若未设置则默认为黑色背景
 /// @param [in]		hPlayHandle		由ipcplay_OpenFile或ipcplay_OpenStream返回的播放句柄
-/// @param [in]		szImageFile		背景图片路径，背景图片可以jpg,png或bmp文件,为null时，则删除背景图片
-IPCPLAYSDK_API int ipcplay_SetBackgroundImageA(IN IPC_PLAYHANDLE hPlayHandle, LPCSTR szImageFile);
+/// @param [in]		szImageFile		背景图片路径，背景图片可以jpg,png或bmp文件
+/// @remark 注意，若之前未调用ipcplay_SetBackgroundImage函数，即使szImageFile为null,SDK仍会启用默认的图像，
+///                若已经调用过SDK，当szImageFile为null时，则禁用背景图片
+IPCPLAYSDK_API int ipcplay_SetBackgroundImageA(IN IPC_PLAYHANDLE hPlayHandle, LPCSTR szImageFile= nullptr);
 
 /// @brief			设置背景图片路径,即视频图像出现前，作为背景的图像，若未设置则默认为黑色背景
 /// @param [in]		hPlayHandle		由ipcplay_OpenFile或ipcplay_OpenStream返回的播放句柄
-/// @param [in]		szImageFile		背景图片路径，背景图片可以jpg,png或bmp文件,为null时，则删除背景图片
-IPCPLAYSDK_API int ipcplay_SetBackgroundImageW(IN IPC_PLAYHANDLE hPlayHandle, LPCWSTR szImageFile);
+/// @param [in]		szImageFile		背景图片路径，背景图片可以jpg,png或bmp文件
+/// @remark 注意，若之前未调用ipcplay_SetBackgroundImage函数，即使szImageFile为null,SDK仍会启用默认的图像，
+///                若已经调用过SDK，当szImageFile为null时，则禁用背景图片
+IPCPLAYSDK_API int ipcplay_SetBackgroundImageW(IN IPC_PLAYHANDLE hPlayHandle, LPCWSTR szImageFile = nullptr);
 
 /// @brief			启用DirectDraw作为渲染器,这将禁用D3D渲染,硬解码时无法启用D3D共享模式，这交大副降低硬解码的效率
 /// @param [in]		hPlayHandle		由ipcplay_OpenFile或ipcplay_OpenStream返回的播放句柄
-/// @param [in]		szImageFile		背景图片路径，背景图片可以jpg,png或bmp文件,为null时，则删除背景图片
+/// @param [in]		bEnable			背景图片路径，背景图片可以jpg,png或bmp文件,为null时，则删除背景图片
 /// @remark			该函数必须在ipcplay_Start前调用，否则可能无效
 IPCPLAYSDK_API int ipcplay_EnableDDraw(IN IPC_PLAYHANDLE hPlayHandle, bool bEnable = true);
 
@@ -775,6 +887,11 @@ IPCPLAYSDK_API int ipcplay_EnableStreamParser(IN IPC_PLAYHANDLE hPlayHandle, IPC
 /// @param [in]		nLength			数据流尺寸
 IPCPLAYSDK_API int ipcplay_InputStream2(IN IPC_PLAYHANDLE hPlayHandle, byte *pData,int nLength);
 
+/// @brief			输入大华视频帧
+/// @param [in]		hPlayHandle		由ipcplay_OpenFile或ipcplay_OpenStream返回的播放句柄
+/// @param [in]		pBuffer			大华视频流
+/// @param [in]		nLength			视频流的长度
+IPCPLAYSDK_API int ipcplay_InputDHStream(IN IPC_PLAYHANDLE hPlayHandle, byte *pBuffer, int nLength);
 
 /// @brief			绘制一个实心多边形
 /// @param [in]		hPlayHandle		由ipcplay_OpenFile或ipcplay_OpenStream返回的播放句柄
@@ -796,6 +913,15 @@ IPCPLAYSDK_API int ipcplay_RemovePolygon(IN IPC_PLAYHANDLE hPlayHandle, long nLi
 /// @param [in]		nCoordinateMode	为0时输入坐标为图形坐标，为1时输入坐标为窗口坐标
 IPCPLAYSDK_API int ipcplay_SetCoordinateMode(IN IPC_PLAYHANDLE hPlayHandle, int nCoordinateMode = 1);
 
+/// @brief			启用/禁用异步渲染
+/// @param [in]		hPlayHandle		由ipcplay_OpenFile或ipcplay_OpenStream返回的播放句柄
+/// @param [in]		bEnable			是否启用异步渲染
+/// -#	true		启用异步渲染
+/// -#	false		禁用异步渲染
+/// @param [in]		nFrameCache		YUV缓存最大帧数
+/// @retval			0	操作成功
+/// @retval			-1	输入参数无效		
+IPCPLAYSDK_API int ipcplay_EnableAsyncRender(IN IPC_PLAYHANDLE hPlayHandle, bool bEnable = true,int nFrameCache = 50);
 /// @brief		把YUV图像转换为RGB24图像
 /// @param [in]		hPlayHandle	由ipcplay_OpenFile或ipcplay_OpenStream返回的播放句柄
 /// @param [in]		pY			YUV数据Y分量指针
@@ -818,3 +944,29 @@ IPCPLAYSDK_API int ipcplay_SetCoordinateMode(IN IPC_PLAYHANDLE hPlayHandle, int 
 	byte **ppRGBBuffer,
 	long &nBufferSize);
 	*/
+
+/// @brief			获取系统中连接显器的数量和所连接显卡的信息
+/// @param [in,out]	pAdapterBuffer	显卡信息接收缓冲区
+/// @param [in,out]	nAdapterNo		输入时，指定pAdapterBuffer最大可保存显卡信息的数量，输出时返回实际显卡的数量
+/// @retval			0	操作成功
+/// @retval			-1	输入参数无效	
+/// @retval			-15	输入缓冲区不足，系统中安装显卡的数量超过nBufferSize指定的数量
+/// @remark	注意    这里获得的显卡数量和系统中实际安装的显卡数量不一定相同，而是所有显卡连接显示器的实际数量,比如系统
+////				中安装了两块显卡，但每块显卡又各连接了两台显示器，则获得的显卡数量则为4
+IPCPLAYSDK_API int ipcplay_GetDisplayAdapterInfo(AdapterInfo *pAdapterBuffer, int &nBufferSize);
+
+
+/// @brief			设置显示图像的显卡编号
+/// @param [in]		hPlayHandle	由ipcplay_OpenFile或ipcplay_OpenStream返回的播放句柄
+/// @param [in]		nAdapterNo			显卡编码，该编号为ipcplay_GetDisplayAdapterInfo返回显卡列表中的序号
+
+IPCPLAYSDK_API int ipcplay_SetDisplayAdapter(IN IPC_PLAYHANDLE hPlayHandle, int nAdapterNo = 0);
+
+#ifdef _UNICODE
+#define ipcplay_GetErrorMessage	ipcplay_GetErrorMessageW
+#else
+#define ipcplay_GetErrorMessage	ipcplay_GetErrorMessageA
+#endif
+IPCPLAYSDK_API int ipcplay_GetErrorMessageA(int nErrorCode, LPSTR szMessage, int nBufferSize);
+IPCPLAYSDK_API int ipcplay_GetErrorMessageW(int nErrorCode, LPWSTR szMessage, int nBufferSize);
+IPCPLAYSDK_API int ipcplay_GetHAccelConfig(AdapterHAccel **pAdapterHAccel, int &nAdapterCount);
