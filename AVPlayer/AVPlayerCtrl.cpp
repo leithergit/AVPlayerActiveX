@@ -2856,7 +2856,7 @@ LONG CAVPlayerCtrl::PlayBack(LONG hWnd,LPCTSTR strDeviceID, LONG nStartTime,LONG
 
 		pConnection->hPlayhandle = ipcplay_OpenRTStream(pConnection->m_hWnd);
 		pConnection->pPlayStatus = pPlayStatus;
-		ipcplay_EnableAsyncRender(pConnection->hPlayhandle,true,50);
+		//ipcplay_EnableAsyncRender(pConnection->hPlayhandle,true,50);
 		if (nSeekFrame)
 			ipcplay_EnablePlayOneFrame(pConnection->hPlayhandle);
 	
@@ -2971,7 +2971,7 @@ LONG CAVPlayerCtrl::QueryRecord(LPCTSTR strDeviceID, LONG nStartTime, LONG nStop
 {
 	AFX_MANAGE_STATE(AfxGetStaticModuleState());
 
-	if (m_bEnableAS300)
+	if (!m_bEnableAS300)
 		return AvError_AS300ServiceIsDisabled;
 	if (!strDeviceID || !nStartTime || !nStopTime || nStopTime <= nStartTime || !pRecordArray || !pRecordCount)
 		return AvError_InvalidParameters;
