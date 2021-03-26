@@ -9,9 +9,12 @@
 #include "Runlog.h"
 #include "TimeUtility.h"
 #include "AutoLock.h"
+#include "CriticalSectionAgent.h"
 #include "SimpleWnd.h"
+#include "decSPS.h"
 #include "../RTSP/rtsp.h"
 #include "VS300ClientSDK.h"
+#include "Stat.h"
 #ifdef _DEBUG
 #pragma comment(lib,"../debug/rtsp.lib")
 #pragma comment(lib,"VS300ClientSDKD")
@@ -25,6 +28,7 @@
 #include <map>
 #include "VideoFrame.h"
 #include "DhStreamParser.h"
+#include "TimeUtility.h"
 
 using namespace  std;
 
@@ -202,7 +206,7 @@ enum Orientation
 
 struct PlayBackStatus
 {
-	long	nSeekFrame;
+	long	nSeekFrame;		// 是否支持单步播放
 	time_t  tStartTime;
 	time_t  tStopTime;
 	time_t	tFrameTimeStamp;
@@ -510,6 +514,9 @@ protected:
 // Dispatch and event IDs
 public:
 	enum {
+#if 0
+		dispidPlayBackPreview = 31L,
+#endif
 		dispidQueryRecord = 30L,
 		dispidAdjustPanels = 29L,
 		dispidCreateFrameWnd = 28L,
@@ -655,13 +662,15 @@ public:
 		}
 	}
 
-	static bool CALLBACK AS300PlayBackCallBack(int nSessionId, char* buf, int len, void* user)
+	/// 这是一个超大的坑
+	/// 返回值类型必须定义为BOOL型，若使用说明文档或函数原因定义的使用bool类型，则无法控制播放速度，操蛋！！！！
+	static BOOL CALLBACK AS300PlayBackCallBack(int nSessionId, char* buf, int len, void* user)
 	{
 		if (!nSessionId)
-			return false;
+			return FALSE;
 		CAVPlayerCtrl *pThis = (CAVPlayerCtrl *)user;
 		if (nSessionId == -1)
-			return false;
+			return FALSE;
 		return pThis->OnAS300PlayBack(nSessionId, buf, len);
 	}
 	static void CALLBACK DevStatusCallBack(long login_id, char* szDevId, int nStatus, void* user)
@@ -688,7 +697,7 @@ public:
 	void   OnRespondCallback(int nSessionId);	
 	void   OnDevStatus(char* szDevId, int nStatus);
 	void   OnAS300LiveData(LONG nSessionId, char* buf, int nLen);
-	bool   OnAS300PlayBack(LONG nSessionId, char* buf, int nLen);
+	BOOL   OnAS300PlayBack(LONG nSessionId, char* buf, int nLen);
 
 	//////////////////////////////////////////////////////////////////////////
 	// OnAS300PlayBackPos
@@ -805,11 +814,37 @@ protected:
 	LONG AdjustPanels(LONG nWndCount, LONG nFrameStyle);
 	LONG QueryRecord(LPCTSTR szDeviceID, LONG nStartTime, LONG nStopTime, LONG pRecordArray,LONG nBufferCount, LONG* nRecordCount);
 	LONG GetErrorMessage(LONG nErrorCode, LPCTSTR strErrorMessage, LONG nBufferSize);
+#if 0
+	LONG PlayBackPreview(LONG hWnd, LPCTSTR strDeviceID, LONG nStartTime, LONG nStopTime, LONG nCacheFPS, LONG nCacheTime);
+#endif
 public:
-	static CCriticalSectionProxy m_csMapDecoderPool;
+	static CCriticalSectionAgent m_csMapDecoderPool;
 	static map<string, ItemStatusList> m_mapDecoderPool;
+
+	
 };
 
+struct FrameBuffer
+{
+	byte *pBuffer;
+	int	 nLength;
+	FrameBuffer(byte *pData, int nLen)
+	{
+		pBuffer = new byte[nLen];
+		memcpy(pBuffer, pData, nLen);
+		nLength = nLen;
+	}
+	~FrameBuffer()
+	{
+		if (pBuffer)
+		{
+			delete[]pBuffer;
+			pBuffer = nullptr;
+			nLength = 0;
+		}
+	}
+};
+typedef shared_ptr<FrameBuffer> FrameBufferPtr;
 struct _IPCConnection
 {
 	IPC_PLAYHANDLE hPlayhandle;
@@ -839,12 +874,26 @@ struct _IPCConnection
 	HANDLE	hThread;
 	// AS300转发变量
 	bool	m_bIPCStart;
-	long	m_nPlaySession;	// 回放和转发播放的session
-	bool	m_bPlayBack;	// 回放标志，回放时为TRUE
+	
+	MMRESULT hInputTimer = 0;
+	int		nPlayBackFps = 25;
+	time_t	nLastPlayBackFrameTime = 0;
+	int		nElapsFrames = 0;
+	DWORD	nTimeStart = 0;
+	
+	long	m_nPlaySession;		// 回放和转发播放的session
+	bool	m_bPlayBackPrewiew;	// 回放预览，可单帧查看
 	long	m_nLoginID;
 	CHAR	m_strDeviceID[64];
 	PlayBackStatusPtr	pPlayStatus;
+	CCriticalSectionAgent csListFrame;
+	shared_ptr<CStat> pStat = nullptr;
+	double	dfLastStatTime = 0;
+	
 	list<SimpleStream*> listSimpleStream;
+	list<FrameBufferPtr> listFrame;
+	shared_ptr<VSRecord_Info_t> m_pRecordInfo = nullptr;
+	
 #ifdef _DEBUG
 	static volatile LONG  nRefCount;
 #endif
@@ -859,6 +908,7 @@ struct _IPCConnection
 		nReConnectInterval = 15000;
 		dfReConnectTime = 0.0f;
 		m_nLoginID = -1;
+		nPlayBackFps = 25;
 #ifdef _DEBUG
 		InterlockedIncrement(&nRefCount);
 #endif
@@ -929,7 +979,7 @@ struct _IPCConnection
 #define _FPSOffset		5
 #define _WidthOffset	6
 #define _HeightOffset	7
-	void OnCalBack(char *pBuffer, int nParam)
+	void OnRtspCallBack(char *pBuffer, int nParam)
 	{
 		_RTSPParam *pRTSPParam = (_RTSPParam *)nParam;
 		int nBufferLen = pRTSPParam->nLength;
@@ -954,41 +1004,24 @@ struct _IPCConnection
 					MediaHeader.nVideoHeight = m_nHeight;
 					MediaHeader.nFps = m_nFPS;
 
-					// 	ipcplay_SetStreamHeader(hPlayhandle, (byte *)&MediaHeader, sizeof(MediaHeader));
-					// 	ipcplay_SetMaxFrameSize(hPlayhandle, 1024 * 1024);
+					if (!hPlayhandle)
 					{
-						if (!hPlayhandle)
+						char szResolution[16] = { 0 };
+						sprintf_s(szResolution, 16, "%d*%d", m_nWidth, m_nHeight);
+						string strResolutoin = szResolution;
+						EnterCriticalSection(CAVPlayerCtrl::m_csMapDecoderPool.Get());
+						map<string, ItemStatusList>::iterator itFind = CAVPlayerCtrl::m_mapDecoderPool.find(strResolutoin);
+						if (itFind != CAVPlayerCtrl::m_mapDecoderPool.end())
 						{
-							char szResolution[16] = { 0 };
-							sprintf_s(szResolution, 16, "%d*%d", m_nWidth, m_nHeight);
-							string strResolutoin = szResolution;
-							EnterCriticalSection(CAVPlayerCtrl::m_csMapDecoderPool.Get());
-							map<string, ItemStatusList>::iterator itFind = CAVPlayerCtrl::m_mapDecoderPool.find(strResolutoin);
-							if (itFind != CAVPlayerCtrl::m_mapDecoderPool.end())
+							ItemStatusList &HandleList = itFind->second;
+							ItemStatusList::iterator itFind2 = find_if(HandleList.begin(), HandleList.end(), CFreeFinder());
+							if (itFind2 != HandleList.end())
 							{
-								ItemStatusList &HandleList = itFind->second;
-								ItemStatusList::iterator itFind2 = find_if(HandleList.begin(), HandleList.end(), CFreeFinder());
-								if (itFind2 != HandleList.end())
-								{
-									TraceMsgA("%s Matched a ipcplay Handle for %s(%s)", __FUNCTION__, szIP, szResolution);
-									hPlayhandle = (*itFind2)->pItemValue;
-									ClearRenderWndow(hPlayhandle);
-									ipcplay_AddWindow((*itFind2)->pItemValue, m_hWnd);
-									(*itFind2)->bItemStatus = true;
-								}
-								else
-								{
-									IPC_PLAYHANDLE hTempHandle = ipcplay_OpenStream(m_hWnd, NULL, 0);
-									TraceMsgA("%s Create New ipcplay Handle for %s(%s)", __FUNCTION__, szIP, szResolution);
-									ipcplay_SetStreamHeader(hTempHandle, (byte *)&MediaHeader, sizeof(IPC_MEDIAINFO));
-									ipcplay_SetMaxFrameSize(hTempHandle, 1024 * 1024);
-									ipcplay_SetD3dShared(hTempHandle, m_bEnableHWAccel);
-									ipcplay_Start(hTempHandle, false, true, m_bEnableHWAccel);
-									ipcplay_EnableStreamParser(hTempHandle, CODEC_H264);
-									HandleList.push_back(shared_ptr<CItemStatus>(new CItemStatus(hTempHandle)));
-									hPlayhandle = hTempHandle;
-
-								}
+								TraceMsgA("%s Matched a ipcplay Handle for %s(%s)", __FUNCTION__, szIP, szResolution);
+								hPlayhandle = (*itFind2)->pItemValue;
+								ClearRenderWndow(hPlayhandle);
+								ipcplay_AddWindow((*itFind2)->pItemValue, m_hWnd);
+								(*itFind2)->bItemStatus = true;
 							}
 							else
 							{
@@ -999,14 +1032,28 @@ struct _IPCConnection
 								ipcplay_SetD3dShared(hTempHandle, m_bEnableHWAccel);
 								ipcplay_Start(hTempHandle, false, true, m_bEnableHWAccel);
 								ipcplay_EnableStreamParser(hTempHandle, CODEC_H264);
-								ItemStatusList HandleList;
 								HandleList.push_back(shared_ptr<CItemStatus>(new CItemStatus(hTempHandle)));
-								CAVPlayerCtrl::m_mapDecoderPool.insert(pair<string, list<ItemStatusPtr>>(strResolutoin, HandleList));
 								hPlayhandle = hTempHandle;
+
 							}
-							LeaveCriticalSection(CAVPlayerCtrl::m_csMapDecoderPool.Get());
 						}
+						else
+						{
+							IPC_PLAYHANDLE hTempHandle = ipcplay_OpenStream(m_hWnd, NULL, 0);
+							TraceMsgA("%s Create New ipcplay Handle for %s(%s)", __FUNCTION__, szIP, szResolution);
+							ipcplay_SetStreamHeader(hTempHandle, (byte *)&MediaHeader, sizeof(IPC_MEDIAINFO));
+							ipcplay_SetMaxFrameSize(hTempHandle, 1024 * 1024);
+							ipcplay_SetD3dShared(hTempHandle, m_bEnableHWAccel);
+							ipcplay_Start(hTempHandle, false, true, m_bEnableHWAccel);
+							ipcplay_EnableStreamParser(hTempHandle, CODEC_H264);
+							ItemStatusList HandleList;
+							HandleList.push_back(shared_ptr<CItemStatus>(new CItemStatus(hTempHandle)));
+							CAVPlayerCtrl::m_mapDecoderPool.insert(pair<string, list<ItemStatusPtr>>(strResolutoin, HandleList));
+							hPlayhandle = hTempHandle;
+						}
+						LeaveCriticalSection(CAVPlayerCtrl::m_csMapDecoderPool.Get());
 					}
+					
 
 					m_bFillHeader = true;
 					m_nFrameLength = 0;
@@ -1066,12 +1113,146 @@ struct _IPCConnection
 			break;
 		}
 	}
+	// 10 ms
+	static void CALLBACK InputTimer(UINT  uTimerID,
+		UINT      uMsgReserved,
+		DWORD_PTR dwUser,
+		DWORD_PTR dwReserved1,
+		DWORD_PTR dwReserved2)
+	{
+		_IPCConnection *pThis = (_IPCConnection *)dwUser;
+		if (!pThis->m_bIPCStart || !pThis->hPlayhandle)
+			return;
+		//if (!pThis->pStat)
+		//{
+		//	CHAR szTitle[256] = { 0 };
+		//	sprintf_s(szTitle, 256, "InputTimer Interval");
+		//	pThis->pStat = make_shared<CStat>(szTitle, 0,30*25);
+		//	//_tprintf(_T("Start Stat:%s.\n"),pThis->szIP);
+		//	pThis->dfLastStatTime = GetPerfTime();
+		//}
+		//else
+		//{
+		//	pThis->pStat->Stat(PerfTimeSpan(pThis->dfLastStatTime));
+		//	pThis->dfLastStatTime = GetPerfTime();
+		//	if (pThis->pStat->IsFull())
+		//	{
+		//		pThis->pStat->OutputStat();
+		//		pThis->pStat->Reset();
+		//	}
+		//}
+
+		AutoLockAgent(pThis->csListFrame);
+		if (pThis->listFrame.size())
+		{
+			FrameBufferPtr pFrame = pThis->listFrame.front();
+			pThis->listFrame.pop_front();
+			ipcplay_InputStream2(pThis->hPlayhandle, pFrame->pBuffer, pFrame->nLength);
+		}
+	}
+	time_t GetFrameUTC(DH_FRAME_INFO *pFrame)
+	{
+		if (!pFrame)
+			return 0;
+		SYSTEMTIME systime;
+		systime.wYear = pFrame->nYear;
+		systime.wMonth = pFrame->nMonth;
+		systime.wDay = pFrame->nDay;
+		systime.wHour = pFrame->nHour;
+		systime.wMinute = pFrame->nMinute;
+		systime.wSecond = pFrame->nSecond;
+		time_t tUTC = 0;
+		SystemTime2UTC(&systime, (UINT64 *)&tUTC);
+		return tUTC;
+	}
+	// 
+	BOOL InputStream(int nSessionId, byte *pData, int nLength)
+	{
+		if (nLength)
+		{
+			LineLockAgent(csListFrame);
+			if (listFrame.size() >= 25)
+				return FALSE;
+		}
+		
+		DhStreamParser* pDHStreamParser = pPlayStatus->pStreamParser;
+		pDHStreamParser->InputData(pData, nLength);
+		while (true)
+		{
+			DH_FRAME_INFO *pFrame = pDHStreamParser->GetNextFrame();
+			if (!pFrame)
+				break;
+
+			if (pFrame->nType == DH_FRAME_TYPE_VIDEO)
+			{
+				if (pFrame->nYear)
+				{
+					time_t nNewFrameTime = GetFrameUTC(pFrame);
+					if (nLastPlayBackFrameTime && nLastPlayBackFrameTime > nNewFrameTime)
+					{
+						nPlayBackFps = nElapsFrames / (nNewFrameTime - nLastPlayBackFrameTime) ;
+						nElapsFrames = 0;
+					}
+					nLastPlayBackFrameTime = nNewFrameTime;
+					nTimeStart = timeGetTime();
+					nElapsFrames++;
+				}
+				try
+				{
+					if (!m_bIPCStart)
+					{
+						IPC_MEDIAINFO MediaHeader;
+						MediaHeader.nVideoCodec = CODEC_H264;
+						MediaHeader.nAudioCodec = CODEC_UNKNOWN;
+						MediaHeader.nVideoWidth = pFrame->nWidth;
+						MediaHeader.nVideoHeight = pFrame->nHeight;
+						MediaHeader.nFps = pFrame->nFrameRate;
+						ipcplay_SetStreamHeader(hPlayhandle, (byte *)&MediaHeader, sizeof(IPC_MEDIAINFO));
+						ipcplay_EnableStreamParser(hPlayhandle, CODEC_H264);
+						ipcplay_Start(hPlayhandle);
+						int nFrameRate = pFrame->nFrameRate;
+						if (!nFrameRate)
+							nFrameRate = 25;
+
+						m_bIPCStart = true;
+						//if (!m_bPlayBackPrewiew)	// 非预览播放，则按预设帧率播放				
+							hInputTimer = timeSetEvent(40, 10, InputTimer, DWORD_PTR(this), TIME_PERIODIC | TIME_KILL_SYNCHRONOUS | TIME_CALLBACK_FUNCTION);
+					}
+					if (pFrame->nFrameLength > 0)
+					{
+						//if (!m_bPlayBackPrewiew)
+						{
+							AutoLockAgent(csListFrame);
+							listFrame.push_back(make_shared<FrameBuffer>(pFrame->pContent, pFrame->nFrameLength));
+						}
+						/*else
+						{
+							ipcplay_InputIPCStream(hPlayhandle, pFrame->pContent, pFrame->nType == DH_FRAME_TYPE_VIDEO_I_FRAME ? IPC_IDR_FRAME : IPC_P_FRAME, pFrame->nLength, 0, GetFrameUTC(pFrame));
+						}*/
+					}
+					
+				}
+				catch (std::exception &e)
+				{
+					TraceMsgA("%s Catch a exception:%s.\n", __FUNCTION__, e.what());
+					return TRUE;
+				}
+			}
+		}
+		return TRUE;
+
+	}
 	~_IPCConnection()
 	{
 		bRunning = false;
 #ifdef _DEBUG
 		InterlockedDecrement(&nRefCount);
 #endif
+		if (hInputTimer)
+		{
+			timeKillEvent(hInputTimer);
+			hInputTimer = 0;
+		}
 		if (hThread)
 		{
 			WaitForSingleObject(hThread, INFINITE);
@@ -1199,11 +1380,13 @@ struct _IPCConnection
 		else
 			return AvError_Succeed;
 	}
+
 	void StartCheckThread()
 	{
 		bRunning = true;
 		hThread = (HANDLE)_beginthreadex(NULL, 128, ThreadCheckRecvTime, this, 0, 0);
 	}
+
 	static  UINT _stdcall ThreadCheckRecvTime(void *p)
 	{
 		_IPCConnection *pConnection = (_IPCConnection *)p;

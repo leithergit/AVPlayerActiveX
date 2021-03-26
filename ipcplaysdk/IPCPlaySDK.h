@@ -147,7 +147,7 @@ enum IPCPLAY_Status
 	IPC_Error_WindowNotAssigned			=(-28),	///< 未指定显示窗口,无法截图
 	IPC_Error_SnapShotProcessNotRun		=(-29),	///< 截图进程未运行
 	IPC_Error_SnapShotProcessFileMissed	=(-30),	///< 截图程序文件丢失
-	IPC_Error_SnapShotProcessStartFailed =(-31),///< 截图进程启动失败
+	IPC_Error_SnapShotProcessStartFailed=(-31), ///< 截图进程启动失败
 	IPC_Error_SnapShotFailed	 		=(-32),	///< 截图进程未运行
 	IPC_Error_PlayerHasStop				=(-33),	///< 播放器已经停止，不能执行初始化或其它设置操作
 	IPC_Error_InvalidCacheSize			=(-34),	///< 播放器已经启动，不能执行初始化或其它设置操作

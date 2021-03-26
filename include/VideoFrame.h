@@ -17,7 +17,7 @@ using namespace boost;
 #include <math.h>
 #include "AutoLock.h"
 #include "Utility.h"
-#include "CriticalSectionProxy.h"
+#include "CriticalSectionAgent.h"
 
 using namespace  std;
 
@@ -139,7 +139,7 @@ public:
 	CVideoFrame();
 	virtual ~CVideoFrame();
 	static map<HWND, HWND> m_PanelMap;
-	static CCriticalSectionProxyPtr m_csPannelMap;
+	static CCriticalSectionAgentPtr m_csPannelMap;
 	
 protected:
 	DECLARE_MESSAGE_MAP()
@@ -149,9 +149,9 @@ private:
 	UINT	m_nCols /*= 1*/, m_nRows/* = 1*/;
 	UINT	m_nNewCols,m_nNewRows;
 	vector	<PanelInfoPtr>m_vecPanel;
-	CCriticalSectionProxyPtr m_csvecPanel;
+	CCriticalSectionAgentPtr m_csvecPanel;
 	list	<PanelInfoPtr>m_listRecyclePanel;
-	CCriticalSectionProxyPtr m_cslistRecyclePanel;
+	CCriticalSectionAgentPtr m_cslistRecyclePanel;
 	int		m_nPannelUsed/* = 0*/;		//  已用空格数量
 	LPRECT  m_pCurSelectRect;
 	LPRECT  m_pLastSelectRect;

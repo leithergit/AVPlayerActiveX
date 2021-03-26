@@ -61,6 +61,8 @@ BOOL NTPTiming(const char* szTimeServer);
 
 #define TimeSpan(t)		(time(NULL) - (time_t)t)
 #define TimeSpanEx(t)	(GetExactTime() - t)
+#define PerfTimeSpan(t)  (GetPerfTime() - t)
+#define MMTimeSpan(t)	(timeGetTime() - t)
 typedef struct __ExactTimeBase
 {
 	LONGLONG	dfFreq;
@@ -145,6 +147,7 @@ extern ETB g_etb;
 
 /// @brief 取系统精确时间,单位秒,精度为25微秒左右
 double  GetExactTime();
+double  GetPerfTime();
 
 /// @brief 线程休眠方式
 // struct CThreadSleep

@@ -163,22 +163,22 @@ public:
 		double dfLastTime = GetExactTime() - 0.2f;
 		while (pThis->m_bThreadSeekRun)
 		{
-			if (TimeSpanEx(dfLastTime) * 1000 >= 200.f)
+			if (TimeSpanEx(dfLastTime)  >= 5.f)
 			{
 				if (pThis->m_tSeekOffset)
 				{
 					int nStatus = pThis->m_AvPlayer.SeekTime(pThis->m_strCurPlayBackDevice, pThis->m_tSeekOffset);
 					if (nStatus)
 						TraceMsgA("%s SeekTime(%d).\n", __FUNCTION__, nStatus);
-					pThis->m_tSeekOffset += 200;
+					pThis->m_tSeekOffset += 60;
 				}
 				dfLastTime = GetExactTime();
 			}
 			Sleep(20);
 		}
-		return 0;
-		
+		return 0;	
 	}
+
 	static void  MMTIMECALLBACK(UINT uTimerID, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2)
 	{
 		CSampleCPPDlg* pThis = (CSampleCPPDlg *)dwUser;
@@ -191,4 +191,5 @@ public:
 		}
 	}
 	afx_msg void OnClose();
+	afx_msg void OnBnClickedButtonSeekrecord();
 };

@@ -21,6 +21,18 @@ double  GetExactTime()
 	return dfReturn;
 }
 
+double GetPerfTime()
+{
+	assert(g_etb.dfFreq != 0);
+	assert(g_etb.dfCounter != 0);
+	LONGLONG dfCounter1;
+	LARGE_INTEGER LarInt;
+	QueryPerformanceCounter(&LarInt);
+	dfCounter1 = LarInt.QuadPart;
+	return (double)((double)(dfCounter1 - g_etb.dfCounter) / g_etb.dfFreq);
+}
+
+
 //取得精确时间,单位秒
 // double  GetExactTime()
 // {

@@ -51,6 +51,8 @@
 #define IDC_BUTTON_SHOW3                1028
 #define IDC_BUTTON_PLAYRECORD           1028
 #define IDC_EDIT_PTZVALUE1              1029
+#define IDC_BUTTON_PLAYRECORD2          1029
+#define IDC_BUTTON_SEEKRECORD           1029
 #define IDC_EDIT_PTZVALUE2              1030
 #define IDC_EDIT_PTZVALUE3              1031
 #define IDC_RADIO_RELATVIE              1032

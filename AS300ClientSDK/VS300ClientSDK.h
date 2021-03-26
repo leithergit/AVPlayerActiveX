@@ -97,8 +97,6 @@ typedef unsigned int uint32;
 #define		SDK_Error_Playback_Limit			 _EC(45)			//达到回放限制
 #define		SDK_Error_OtherUser_Playback		 _EC(46)			//其他用户正在回放
 #define     SDK_Error_SSPlayback_Failed			 _EC(47)			//回放失败
-#define		SDK_Error_Rtsp_Over_Capability		 _EC(48)			//转发服务器超过路数
-#define		SDK_Error_Rtsp_Be_Kicked			 _EC(49)			//被高权限用户占用
 
 
 //录像查询返回结果----------------------------------------------------------------
@@ -247,10 +245,7 @@ typedef enum
 typedef enum
 {
 	Record_Source_Device =2,			//设备录像
-	Record_Source_SS =3,				//平台录像
-	Record_Source_CORE =7,		//核心节点
-	Record_Source_REGN,		//区域节点
-	Record_Source_JOIN		//接入节点
+	Record_Source_SS				//平台录像
 }VSEnumRecordSource;
 
 //1全部，2报警录像，3移动侦测，4手动录像，5卡号录像，6定时录像
@@ -278,7 +273,7 @@ typedef struct  VSGroup_Info
 {
 	int				nID;	//ID
 	int				nParentID;
-	char			sztitle[SDK_MAX_NAME_LEN];	//设备名称
+	char				sztitle[SDK_MAX_NAME_LEN];	//设备名称
 }VSGroup_Info_t;
 typedef struct  VSDevice_Info
 {
@@ -293,9 +288,6 @@ typedef struct  VSDevice_Info
 	char				szChannelIDs[MAX_CHANNEL_DEVICE][MAX_ID_LENGTH];//该设备下所有的通道ID
 	char				szIP[16];
 	int					nPort;
-	char				szUser[64];
-	char				szPassword[64];
-	char				szLocation[256];
 }VSDevice_Info_t;
 
 typedef struct VSChannel_Info
@@ -320,13 +312,14 @@ typedef struct VSQuery_Record_Info
 
 typedef struct VSRecord_Info
 {
-	unsigned char	source;							//来源类型：1未知，2设备，3中心，7核心节点，8区域节点，9接入节点
+	unsigned char	source;							//来源类型：1未知，2设备，3中心
 	unsigned char	recordType;						//录像类型。1全部，2报警录像，3移动侦测，4手动录像，5卡号录像，6定时录像,VSEnumRecordType
 	bool			bDownloadByTime;				//是否按时间下载
-	uint32			startTime;						//起始时间
-	uint32			endTime;						//结束时间
-	char			name[MAX_RECORD_NAME_LEN];		//录像名字（不同厂家对文件的标识不同）
+	uint32			startTime;							//起始时间
+	uint32			endTime;							//结束时间
+	char			name[MAX_RECORD_NAME_LEN];			//录像名字（不同厂家对文件的标识不同）
 	uint32			length;							//文件长度
+
 	//下面是中心录像所需要的信息
 	uint32			planId;							//录像计划ID
 	uint32			ssId;							//存储服务ID
@@ -431,9 +424,17 @@ typedef struct
 //end
 #endif   
 
+//回调函数指针的定义-------------------------------------------------
+typedef int (CALLBACK *loginCallBack)(long login_id, long res, void* pUser);
+
+//add xwy
+//结果回调
+typedef void (CALLBACK *ResCallBack)(uint32 nSequence,long res,VSParamInfo *paramInfo,void* pUser);
+//end
+
 //事件通知，如服务器断线等-----------------------------------------------------
 //详见EventCallbackType
-typedef void (CALLBACK *EventCallBack)(long login_id, long res, char*szID, int nParam1,int nParam2, void* pUser);	
+typedef void (CALLBACK *EventCallBack)(long login_id, long res, char*szID, int nParam1,int nParam2,void* pUser);	
 
 //通知外部设备状态信息----------------------------------
 typedef void (CALLBACK *DeviceStatusCallback)(long login_id, char* szDevId, int nStatus,void* pUser);
@@ -456,6 +457,13 @@ DLL_API long SDK_CUInit();
 *清理
 ************************************/
 DLL_API long SDK_CUClear();
+
+//add xwy
+/***********************************
+*设置响应回调函数
+************************************/
+DLL_API int SDK_CUSetResCallback(long login_id,ResCallBack cb,void* user);
+//end
 
 /***********************************
 *设置设备状态回调函数
@@ -564,7 +572,7 @@ DLL_API long SDK_CUDownloadByFile(long login_id, PVSRecord_Info_t recordInfo, ch
 *按时间回放
 *返回播放句柄
 ************************************/
-//DLL_API long SDK_CUPlaybackByTime(char *szCamerID, uint64 lStartTime, uint64 lEndTime,VSEnumRecordSource nSource,int nWaiteTime);
+DLL_API long SDK_CUPlaybackByTime(char *szCamerID, uint64 lStartTime, uint64 lEndTime,VSEnumRecordSource nSource,int nWaiteTime);
 /***********************************
 *停止回放，通过句柄关闭回放
 *nType 0：按文件回放， 1表示按时间回放
@@ -667,8 +675,3 @@ DLL_API long SDK_CUGetConfig(const VSConfigInfo* input, const char *querystr, ch
 //!param 1 : input: 字符串，输入参数, VSConfigInfo, 格式见SDK_CUGetConfig input描述
 //!param 2 : config: 字符串，输入参数, json格式, 具体格式和具体配置内容有关
 DLL_API long SDK_CUSetConfig(const VSConfigInfo* input, const char *querystr, const char* config);
-
-//!param 2 : 输入透传
-//!param 3 : deviceid
-//!param 5 : 透传输出
-DLL_API long SDK_CUGetTranInfo(long login_id, char* inbody, char* szDevId, int nWaitTime, char* outbody);

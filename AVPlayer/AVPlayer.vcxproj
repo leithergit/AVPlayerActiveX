@@ -19,14 +19,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v120_xp</PlatformToolset>
-    <UseOfMfc>Dynamic</UseOfMfc>
+    <UseOfMfc>Static</UseOfMfc>
     <CharacterSet>Unicode</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v120_xp</PlatformToolset>
-    <UseOfMfc>Dynamic</UseOfMfc>
+    <UseOfMfc>Static</UseOfMfc>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -62,11 +62,11 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\Include;..\MySQL\include;..\libcurl\include;..\AS300ClientSDK;.\svacparser;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_USRDLL;_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;_STD_SMARTPTR;_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\Include;..\MySQL\include;..\libcurl\include;..\AS300ClientSDK;..\DhStreamParser;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;_STD_SMARTPTR;_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
@@ -85,6 +85,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>uafxcwd.lib;LIBCMTD.lib;</AdditionalDependencies>
+      <IgnoreSpecificDefaultLibraries>uafxcwd.lib;LIBCMTD.lib;</IgnoreSpecificDefaultLibraries>
     </Link>
     <Bscmake>
       <PreserveSbr>true</PreserveSbr>
@@ -101,10 +103,10 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\Include;..\MySQL\include;..\libcurl\include;..\AS300ClientSDK;.\svacparser;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_USRDLL;_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;_STD_SMARTPTR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\Include;..\MySQL\include;..\libcurl\include;..\AS300ClientSDK;..\DhStreamParser;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;_STD_SMARTPTR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
@@ -125,9 +127,10 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>uafxcw.lib;LIBCMT.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ForceSymbolReferences>
       </ForceSymbolReferences>
+      <IgnoreSpecificDefaultLibraries>uafxcw.lib;LIBCMT.lib;</IgnoreSpecificDefaultLibraries>
     </Link>
     <PostBuildEvent>
       <Command>%40echo copy $(TargetPath) $(SolutionDir)public
@@ -138,6 +141,15 @@ copy $(TargetDir)$(TargetName).pdb  $(SolutionDir)public\pdb /y
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\DhStreamParser\avistream.cpp" />
+    <ClCompile Include="..\DhStreamParser\decSPS.cpp" />
+    <ClCompile Include="..\DhStreamParser\dhstdstream.cpp" />
+    <ClCompile Include="..\DhStreamParser\DhStreamParser.cpp" />
+    <ClCompile Include="..\DhStreamParser\newstream.cpp" />
+    <ClCompile Include="..\DhStreamParser\psstream.cpp" />
+    <ClCompile Include="..\DhStreamParser\StreamParser.cpp" />
+    <ClCompile Include="..\DhStreamParser\svacstream.cpp" />
+    <ClCompile Include="..\DhStreamParser\xmstream.cpp" />
     <ClCompile Include="..\include\Markup.cpp" />
     <ClCompile Include="..\Include\Runlog.cpp" />
     <ClCompile Include="..\Include\TimeUtility.cpp" />
@@ -147,15 +159,11 @@ copy $(TargetDir)$(TargetName).pdb  $(SolutionDir)public\pdb /y
     <ClCompile Include="AVPlayerCtrl.cpp" />
     <ClCompile Include="AVPlayerPropPage.cpp" />
     <ClCompile Include="ConfigScreenMode.cpp" />
-    <ClCompile Include="decSPS.cpp" />
     <ClCompile Include="ModePreview.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="svacparser\DhStreamParser.cpp" />
-    <ClCompile Include="svacparser\StreamParser.cpp" />
-    <ClCompile Include="svacparser\svacstream.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="AVPlayer.def" />
@@ -164,9 +172,21 @@ copy $(TargetDir)$(TargetName).pdb  $(SolutionDir)public\pdb /y
     <Midl Include="AVPlayer.idl" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\CriticalSectionProxy.h" />
+    <ClInclude Include="..\DhStreamParser\avistream.h" />
+    <ClInclude Include="..\DhStreamParser\decSPS.h" />
+    <ClInclude Include="..\DhStreamParser\dhstdstream.h" />
+    <ClInclude Include="..\DhStreamParser\DhStreamParser.h" />
+    <ClInclude Include="..\DhStreamParser\FrameList.h" />
+    <ClInclude Include="..\DhStreamParser\newstream.h" />
+    <ClInclude Include="..\DhStreamParser\psstream.h" />
+    <ClInclude Include="..\DhStreamParser\StreamParser.h" />
+    <ClInclude Include="..\DhStreamParser\svacstream.h" />
+    <ClInclude Include="..\DhStreamParser\xmstream.h" />
+    <ClInclude Include="..\include\AutoLock.h" />
+    <ClInclude Include="..\include\CriticalSectionAgent.h" />
     <ClInclude Include="..\include\Markup.h" />
     <ClInclude Include="..\Include\Runlog.h" />
+    <ClInclude Include="..\include\Stat.h" />
     <ClInclude Include="..\Include\TimeUtility.h" />
     <ClInclude Include="..\Include\Utility.h" />
     <ClInclude Include="..\include\VideoFrame.h" />
@@ -174,15 +194,10 @@ copy $(TargetDir)$(TargetName).pdb  $(SolutionDir)public\pdb /y
     <ClInclude Include="AVPlayerCtrl.h" />
     <ClInclude Include="AVPlayerPropPage.h" />
     <ClInclude Include="ConfigScreenMode.h" />
-    <ClInclude Include="decSPS.h" />
     <ClInclude Include="ModePreview.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SimpleWnd.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="svacparser\DhStreamParser.h" />
-    <ClInclude Include="svacparser\FrameList.h" />
-    <ClInclude Include="svacparser\StreamParser.h" />
-    <ClInclude Include="svacparser\svacstream.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>

@@ -21,7 +21,7 @@ extern CAVPlayerApp theApp;
 volatile LONG _IPCConnection::nRefCount = 0;
 #endif
 
-CCriticalSectionProxy  CAVPlayerCtrl::m_csMapDecoderPool;
+CCriticalSectionAgent  CAVPlayerCtrl::m_csMapDecoderPool;
 map<string, ItemStatusList> CAVPlayerCtrl::m_mapDecoderPool;
 
 IMPLEMENT_DYNCREATE(CAVPlayerCtrl, COleControl)
@@ -79,6 +79,9 @@ BEGIN_DISPATCH_MAP(CAVPlayerCtrl, COleControl)
 	DISP_FUNCTION_ID(CAVPlayerCtrl, "AdjustPanels", dispidAdjustPanels, AdjustPanels, VT_I4, VTS_I4 VTS_I4)
 	DISP_FUNCTION_ID(CAVPlayerCtrl, "QueryRecord", dispidQueryRecord, QueryRecord, VT_I4, VTS_BSTR VTS_I4 VTS_I4 VTS_I4 VTS_I4 VTS_PI4)
 	DISP_FUNCTION_ID(CAVPlayerCtrl, "GetErrorMessage", dispidGetErrorMessage, GetErrorMessage, VT_I4, VTS_I4 VTS_BSTR VTS_I4)
+#if 0
+	DISP_FUNCTION_ID(CAVPlayerCtrl, "PlayBackPreview", dispidPlayBackPreview, PlayBackPreview, VT_I4, VTS_I4 VTS_BSTR VTS_I4 VTS_I4 VTS_I4 VTS_I4)
+#endif
 END_DISPATCH_MAP()
 
 
@@ -392,7 +395,9 @@ LONG CAVPlayerCtrl::Login(LPCTSTR strServerIP, USHORT nServerPort, LPCTSTR strAc
 				if (nStatus == 0)
 				{
 					SDK_CUSetRealPlayCallBack(m_nLoginID, AS300LiveCallBack, this);
-					SDK_CUSetPlaybackCallBack(m_nLoginID, AS300PlayBackCallBack, this);
+					/// 这是一个超大的坑
+					/// AS300PlayBackCallBack回调函数返回值类型必须定义为BOOL型，若使用说明文档或函数PlayBackCallback原型定义的使用bool类型，则无法控制播放速度，操蛋！！！！
+					SDK_CUSetPlaybackCallBack(m_nLoginID, (PlayBackCallback)AS300PlayBackCallBack, this);
 					SDK_CUSetPlaybackPos(m_nLoginID, PlayBackPosCallBack, this);
 					//SDK_CUSetResCallback(m_nLoginID, RespondCallBack, this);
 				}
@@ -617,22 +622,6 @@ void CAVPlayerCtrl::Logout(void)
 }
 
 
-void   CAVPlayerCtrl::OnAS300PlayBackPos(int nSessionID, int nPos, int nTotal)
-{
-	//TraceMsgA("%s nSessionID = %d\tnPos = %d\tnTotal = %d.\n", __FUNCTION__, nSessionID, nPos, nTotal);
-	if (nPos == -1)
-	{
-		TCHAR szDeviceID[32] = { 0 };
-		EnterCriticalSection(&m_csMapSession);
-		auto itFind = m_MapSession.find((long)nSessionID);
-		if (itFind != m_MapSession.end())
-			_tcscpy_s(szDeviceID, 32, _UnicodeString(itFind->second->m_strDeviceID, CP_ACP));
-		LeaveCriticalSection(&m_csMapSession);
-		if (_tcslen(szDeviceID))
-			StopPlayBack(szDeviceID);
-	}
-}
-
 UINT CAVPlayerCtrl::ThreadCheckRecvTimeRun()
 {
 	double dfTFirst = GetExactTime();
@@ -677,7 +666,7 @@ UINT CAVPlayerCtrl::ThreadCheckRecvTimeRun()
 void RtspDataCallBack(long lHandle, char *pBuffer, int nParam, int nUser)
 {
 	_IPCConnection *pThis = (_IPCConnection *)nUser;
-	pThis->OnCalBack(pBuffer, nParam);
+	pThis->OnRtspCallBack(pBuffer, nParam);
 }
 
 // LRESULT CAVPlayerCtrl::SubClassProc(HWND hWnd, UINT nMessage, WPARAM wParam, LPARAM lParam)
@@ -2017,16 +2006,15 @@ void   CAVPlayerCtrl::OnAS300LiveData(LONG nSessionId, char* pBuffer, int nLen)
 			if (pConnection->m_nFrameLength >= 64)
 			{
 				int nWidth = 0, nHeight = 0, nFramerate = 0;
-				int nOffsetStart = 0;
-				int nOffsetMatched = 0;
-				if (Stream_Analyse(&pConnection->m_pFrameBuffer[nOffsetStart], pConnection->m_nFrameLength, &nWidth, &nHeight, &nFramerate, &nOffsetMatched) != -1)
+				IPC_CODEC nCodec = CODEC_H264;
+				if (Stream_Parser(pConnection->m_pFrameBuffer, pConnection->m_nFrameLength, (int&)nCodec, &nWidth, &nHeight, &nFramerate) != -1)
 				{
 					IPC_MEDIAINFO MediaHeader;
-					MediaHeader.nVideoCodec = CODEC_H264;
+					MediaHeader.nVideoCodec = nCodec;
 					MediaHeader.nAudioCodec = CODEC_UNKNOWN;
 					MediaHeader.nVideoWidth = nWidth;
 					MediaHeader.nVideoHeight = nHeight;
-					MediaHeader.nFps = 25;
+					MediaHeader.nFps = nFramerate;
 					ipcplay_SetStreamHeader(pConnection->hPlayhandle, (byte *)&MediaHeader, sizeof(IPC_MEDIAINFO));
 					ipcplay_EnableStreamParser(pConnection->hPlayhandle, CODEC_H264);
 					ipcplay_Start(pConnection->hPlayhandle);
@@ -2039,81 +2027,118 @@ void   CAVPlayerCtrl::OnAS300LiveData(LONG nSessionId, char* pBuffer, int nLen)
 	}
 }
 
-bool   CAVPlayerCtrl::OnAS300PlayBack(LONG nSessionId, char* pBuffer, int nLength)
+//bool   CAVPlayerCtrl::OnAS300PlayBack(LONG nSessionId, char* pBuffer, int nLength)
+//{
+//	IPCConnectionPtr pConnection = m_MapSession[nSessionId];
+//	int nResult = -1;
+//	
+//	if (pConnection)
+//	{
+//		if (!pConnection->pPlayStatus)
+//			return false;
+//		
+//		if (!pConnection->pPlayStatus->pStreamParser)
+//			return false;
+//		PlayBackStatusPtr pPlayStatus = pConnection->pPlayStatus;
+//		DhStreamParser* pParser = pPlayStatus->pStreamParser;
+//		if (pParser->InputData((byte *)pBuffer, nLength) == 0)
+//		{
+//			while (true)
+//			{
+//				DH_FRAME_INFO *pFrame = pParser->GetNextFrame();
+//				if (!pFrame)
+//					break;
+//				else if (!pConnection->m_bIPCStart)
+//				{
+//
+//					IPC_MEDIAINFO MediaHeader;
+//					MediaHeader.nVideoCodec = CODEC_H264;
+//					MediaHeader.nAudioCodec = CODEC_UNKNOWN;
+//					MediaHeader.nVideoWidth = pFrame->nWidth;
+//					MediaHeader.nVideoHeight = pFrame->nHeight;
+//					MediaHeader.nFps = pFrame->nFrameRate;
+//					ipcplay_SetStreamHeader(pConnection->hPlayhandle, (byte *)&MediaHeader, sizeof(IPC_MEDIAINFO));
+//					//ipcplay_EnableAsyncRender(pConnection->hPlayhandle);
+//					//ipcplay_EnablePlayOneFrame(pConnection->hPlayhandle);
+//					ipcplay_Start(pConnection->hPlayhandle);
+//					pConnection->m_bIPCStart = true;
+//
+//				}
+//				
+//				if (pFrame->nType == DH_FRAME_TYPE_VIDEO)
+//				{
+//					time_t tTimeStamp = pFrame->nTimeStamp;
+//					
+//					int nFrameInterval = 40;
+//					tTimeStamp *= 1000;
+//					if (pFrame->nFrameRate)
+//						nFrameInterval = 1000 / pFrame->nFrameRate;
+//					else
+//						nFrameInterval = 40;
+//					
+//					if (pFrame->nSubType == DH_FRAME_TYPE_VIDEO_I_FRAME)
+//						pPlayStatus->tFrameTimeStamp = tTimeStamp;
+//					else
+//						pPlayStatus->tFrameTimeStamp += nFrameInterval;
+//
+//					do
+//					{
+//						nResult = ipcplay_InputIPCStream(pConnection->hPlayhandle, pFrame->pContent,
+//							pFrame->nSubType == DH_FRAME_TYPE_VIDEO_I_FRAME ? IPC_I_FRAME : IPC_P_FRAME,
+//							pFrame->nLength,
+//							pFrame->nRequence,
+//							pPlayStatus->tFrameTimeStamp);
+//						if (IPC_Succeed == nResult)
+//							break;
+//						else if (IPC_Error_FrameCacheIsFulled == nResult)
+//						{
+//							Sleep(10);
+//							continue;
+//						}
+//					} while (true);
+//				}
+//			}
+//		}
+//
+//	}
+//	return (IPC_Succeed ==nResult);
+//}
+
+/// 这是一个超大的坑
+/// 返回值类型必须定义为BOOL型，若使用说明文档或函数原型定义的使用bool类型，则无法控制播放速度，操蛋！！！！
+BOOL   CAVPlayerCtrl::OnAS300PlayBack(LONG nSessionId, char* pBuffer, int nLength)
 {
 	IPCConnectionPtr pConnection = m_MapSession[nSessionId];
 	int nResult = -1;
-	
+
 	if (pConnection)
 	{
 		if (!pConnection->pPlayStatus)
-			return false;
-		
+			return FALSE;
+
 		if (!pConnection->pPlayStatus->pStreamParser)
-			return false;
-		PlayBackStatusPtr pPlayStatus = pConnection->pPlayStatus;
-		DhStreamParser* pParser = pPlayStatus->pStreamParser;
-		if (pParser->InputData((byte *)pBuffer, nLength) == 0)
-		{
-			while (true)
-			{
-				DH_FRAME_INFO *pFrame = pParser->GetNextFrame();
-				if (!pFrame)
-					break;
-				else if (!pConnection->m_bIPCStart)
-				{
-
-					IPC_MEDIAINFO MediaHeader;
-					MediaHeader.nVideoCodec = CODEC_H264;
-					MediaHeader.nAudioCodec = CODEC_UNKNOWN;
-					MediaHeader.nVideoWidth = pFrame->nWidth;
-					MediaHeader.nVideoHeight = pFrame->nHeight;
-					MediaHeader.nFps = pFrame->nFrameRate;
-					ipcplay_SetStreamHeader(pConnection->hPlayhandle, (byte *)&MediaHeader, sizeof(IPC_MEDIAINFO));
-					//ipcplay_EnableAsyncRender(pConnection->hPlayhandle);
-					//ipcplay_EnablePlayOneFrame(pConnection->hPlayhandle);
-					ipcplay_Start(pConnection->hPlayhandle);
-					pConnection->m_bIPCStart = true;
-
-				}
-				
-				if (pFrame->nType == DH_FRAME_TYPE_VIDEO)
-				{
-					time_t tTimeStamp = pFrame->nTimeStamp;
-					
-					int nFrameInterval = 40;
-					tTimeStamp *= 1000;
-					if (pFrame->nFrameRate)
-						nFrameInterval = 1000 / pFrame->nFrameRate;
-					else
-						nFrameInterval = 40;
-					
-					if (pFrame->nSubType == DH_FRAME_TYPE_VIDEO_I_FRAME)
-						pPlayStatus->tFrameTimeStamp = tTimeStamp;
-					else
-						pPlayStatus->tFrameTimeStamp += nFrameInterval;
-
-					do
-					{
-						nResult = ipcplay_InputIPCStream(pConnection->hPlayhandle, pFrame->pContent,
-							pFrame->nSubType == DH_FRAME_TYPE_VIDEO_I_FRAME ? IPC_I_FRAME : IPC_P_FRAME,
-							pFrame->nLength,
-							pFrame->nRequence,
-							pPlayStatus->tFrameTimeStamp);
-						if (IPC_Succeed == nResult)
-							break;
-						else if (IPC_Error_FrameCacheIsFulled == nResult)
-						{
-							Sleep(10);
-							continue;
-						}
-					} while (true);
-				}
-			}
-		}
-
+			return FALSE;
+		
+		return pConnection->InputStream(nSessionId, (byte *)pBuffer, nLength);
 	}
-	return (IPC_Succeed ==nResult);
+	else
+		return FALSE;
+}
+
+void   CAVPlayerCtrl::OnAS300PlayBackPos(int nSessionID, int nPos, int nTotal)
+{
+	// TraceMsgA("%s nSessionID = %d\tnPos = %d\tnTotal = %d.\n", __FUNCTION__, nSessionID, nPos, nTotal);
+	if (nPos == -1)
+	{
+		TCHAR szDeviceID[32] = { 0 };
+		EnterCriticalSection(&m_csMapSession);
+		auto itFind = m_MapSession.find((long)nSessionID);
+		if (itFind != m_MapSession.end())
+			_tcscpy_s(szDeviceID, 32, _UnicodeString(itFind->second->m_strDeviceID, CP_ACP));
+		LeaveCriticalSection(&m_csMapSession);
+		if (_tcslen(szDeviceID))
+			StopPlayBack(szDeviceID);
+	}
 }
 
 void   CAVPlayerCtrl::OnAS300Event(long nEventType, char* szId, int nParam1, int nParam2)
@@ -2251,12 +2276,12 @@ void   CAVPlayerCtrl::OnAS300Event(long nEventType, char* szId, int nParam1, int
 		case SDK_Error_SSPlayback_Failed:		//	_EC(47)			//回放失败
 			strErrorMsg = _T("Playback failed.");
 			break;
-		case SDK_Error_Rtsp_Over_Capability:	//	_EC(48)			//转发服务器超过路数
-			strErrorMsg = _T("The connections of MTS is out of ranage.");
-			break;
-		case SDK_Error_Rtsp_Be_Kicked:			//	_EC(49)			//被高权限用户占用
-			strErrorMsg = _T("Kicked by other use who owned higher privilege.");
-			break;
+		//case SDK_Error_Rtsp_Over_Capability:	//	_EC(48)			//转发服务器超过路数
+		//	strErrorMsg = _T("The connections of MTS is out of ranage.");
+		//	break;
+		//case SDK_Error_Rtsp_Be_Kicked:			//	_EC(49)			//被高权限用户占用
+		//	strErrorMsg = _T("Kicked by other use who owned higher privilege.");
+		//	break;
 		default:
 			strErrorMsg = _T("Unkonw Error.");
 			break;
@@ -2822,8 +2847,8 @@ LONG CAVPlayerCtrl::PlayBack(LONG hWnd,LPCTSTR strDeviceID, LONG nStartTime,LONG
 		}
 		lock.Unlock();
 		long nTimeSpan = nStopTime - nStartTime;
-		int nMaxRecordCount = nTimeSpan % 1800;
-		if (nMaxRecordCount * 1800 < nTimeSpan)
+		int nMaxRecordCount = nTimeSpan % 60;
+		if (nMaxRecordCount * 60 < nTimeSpan)
 			nMaxRecordCount++;
 		VSRecord_Info_t *pRecordArray = new VSRecord_Info_t[nMaxRecordCount];
 		unique_ptr<VSRecord_Info_t[]> RecordArrayPtr(pRecordArray);
@@ -2840,25 +2865,18 @@ LONG CAVPlayerCtrl::PlayBack(LONG hWnd,LPCTSTR strDeviceID, LONG nStartTime,LONG
 		if (nResult< 0)
 			return (AvError_AS300_Error + nResult);
 
-// 		pRecordArray[0].startTime = nStartTime;
-// 		pRecordArray[0].endTime = nStopTime;
+
 		IPCConnectionPtr pConnection = make_shared<_IPCConnection>();
 		pConnection->pRunlog = m_pRunlog;
 		pConnection->m_hWnd = (HWND)hWnd;
-// 		pConnection->nSeekFrame = nSeekFrame;
-// 		pConnection->tStartTime = nStartTime;
-// 		pConnection->tStopTime = nStopTime;
 
 		PlayBackStatusPtr pPlayStatus = make_shared<PlayBackStatus>();
-		pPlayStatus->nSeekFrame = nSeekFrame;
-		pPlayStatus->tStartTime = nStartTime;
-		pPlayStatus->tStopTime = nStopTime;
+		//pPlayStatus->nSeekFrame = nSeekFrame;
+		pPlayStatus->tStartTime = (time_t)nStartTime ;
+		pPlayStatus->tStopTime = (time_t)nStopTime ;
 
 		pConnection->hPlayhandle = ipcplay_OpenRTStream(pConnection->m_hWnd);
 		pConnection->pPlayStatus = pPlayStatus;
-		//ipcplay_EnableAsyncRender(pConnection->hPlayhandle,true,50);
-		if (nSeekFrame)
-			ipcplay_EnablePlayOneFrame(pConnection->hPlayhandle);
 	
 		ipcplay_SetD3dShared(pConnection->hPlayhandle,false);
 
@@ -2868,8 +2886,13 @@ LONG CAVPlayerCtrl::PlayBack(LONG hWnd,LPCTSTR strDeviceID, LONG nStartTime,LONG
 
 		long hPlaySession = SDK_CUPlaybackByFile(m_nLoginID, &pRecordArray[0], nTimeout, "", 0);
 		if (hPlaySession < 0)
-			return (AvError_AS300_Error + hPlaySession);
+			return AvError_AS300_Error ;
+
 		pConnection->m_nPlaySession = hPlaySession;
+		if (!pConnection->m_pRecordInfo)
+			pConnection->m_pRecordInfo = make_shared<VSRecord_Info_t>();
+		memcpy(pConnection->m_pRecordInfo.get(), &pRecordArray[0], sizeof(VSRecord_Info_t));
+
 		pConnection->m_nLoginID = m_nLoginID;
 		EnterCriticalSection(&m_csMapConnection);
 		m_MapConnection.insert(pair<string, IPCConnectionPtr>(szDeviceID, pConnection));
@@ -2913,7 +2936,7 @@ void CAVPlayerCtrl::StopPlayBack(LPCTSTR strDeviceID)
 	TCHAR szDeviceID[64] = { 0 };
 	_tcscpy_s(szDeviceID, 64, strDeviceID);
 	_tcscat_s(szDeviceID, 64, _T("01"));
-	StopPlay(szDeviceID, nullptr);
+	StopPlay(szDeviceID, 0);
 }
 
 
@@ -2923,29 +2946,36 @@ LONG CAVPlayerCtrl::SeekTime(LPCTSTR strDeviceID, LONGLONG nTime)
 	if (!strDeviceID || !nTime)
 		return AvError_InvalidParameters;
 
-	TCHAR szDeviceID[32] = { 0 };
-	
+	TCHAR szDeviceID[32] = { 0 };	
 	_tcscpy_s(szDeviceID, 32, strDeviceID);
 	_tcscat_s(szDeviceID, 32, _T("01"));
 	
 	CAutoLock lock(&m_csMapConnection);
 	map<string, IPCConnectionPtr>::iterator itFind = m_MapConnection.find(_AnsiString(szDeviceID,CP_ACP));
-	if (itFind != m_MapConnection.end())
+	if (itFind == m_MapConnection.end())
+		return AvError_DeviceNotInPlaying;
+	auto pConnection = itFind->second;
+	if (!pConnection->hPlayhandle)
+		return AvError_DeviceNotInPlaying;
+
+	if (!pConnection->pPlayStatus)
+		return AvError_NotSingleFramePlayer;
+	
+	if (pConnection->pPlayStatus->tStartTime <= nTime && itFind->second->pPlayStatus->tStopTime >= nTime)
 	{
-		if (!itFind->second->hPlayhandle)
-			return AvError_DeviceNotInPlaying;
-		
-		if (itFind->second->pPlayStatus)
-		{
-			if (itFind->second->pPlayStatus->tStartTime <= nTime && itFind->second->pPlayStatus->tStopTime >= nTime)
-				return ipcplay_AsyncSeekFrame(itFind->second->hPlayhandle, nTime);
-			else
-				return AvError_OutofPlayingRange;
-		}
-		else
-			return AvError_NotSingleFramePlayer;
+		LONG nTimeout = 5;
+		SDK_CUStopPlayback(m_nLoginID, pConnection->m_nPlaySession);
+		m_nLoginID, pConnection->m_nPlaySession = -1;
+		pConnection->m_pRecordInfo->startTime = nTime;
+		long hPlaySession = SDK_CUPlaybackByFile(m_nLoginID, pConnection->m_pRecordInfo.get(), nTimeout, "", 0);
+		if (hPlaySession < 0)
+		return AvError_AS300_Error;
+		pConnection->m_nPlaySession = hPlaySession;
+		//SDK_CUSeekPlayPose(m_nLoginID, pConnection->m_nPlaySession, nTime);
+		return AvError_Succeed;
 	}
-	return 0;
+	else
+		return AvError_OutofPlayingRange;
 }
 
 
@@ -2960,8 +2990,6 @@ LONG CAVPlayerCtrl::CreateFrameWnd(LONG hWnd,LONG nWndCount, LONG nFrameStyle, L
 LONG CAVPlayerCtrl::AdjustPanels(LONG nWndCount, LONG nFrameStyle)
 {
 	AFX_MANAGE_STATE(AfxGetStaticModuleState());
-
-	// TODO: Add your dispatch handler code here
 
 	return 0;
 }
@@ -3005,4 +3033,115 @@ LONG CAVPlayerCtrl::QueryRecord(LPCTSTR strDeviceID, LONG nStartTime, LONG nStop
 	return 0;
 }
 
+#if 0
+LONG CAVPlayerCtrl::PlayBackPreview(LONG hWnd, LPCTSTR strDeviceID, LONG nStartTime, LONG nStopTime, LONG nCacheFPS, LONG nCacheTime)
+{
+	AFX_MANAGE_STATE(AfxGetStaticModuleState());
+	TraceFunction();
+	if (!m_bEnableAS300)
+		return AvError_AS300ServiceIsDisabled;
+	if (!strDeviceID || !hWnd || !nStartTime || !nStopTime || !nCacheFPS || !nCacheTime || nStartTime >= nStopTime)
+		return AvError_InvalidParameters;
+	if (m_nLoginID == -1)
+		return AvError_NotLogintoServer;
 
+	try
+	{
+		// 330106 100 0052
+		char szChannelID[32] = { 0 };
+		char szDeviceID[32] = { 0 };
+		if (!::IsWindow((HWND)hWnd))
+		{
+			if (m_pRunlog)
+				m_pRunlog->Runlog(_T("%s Specialfied a invalid window!\n"), __FUNCTIONW__);
+			return AvError_InvalidWindow;
+		}
+		strcpy_s(szDeviceID, 32, _AnsiString(strDeviceID, CP_ACP));
+		strcat_s(szDeviceID, 32, "01");
+
+		RECT rt;
+		::GetWindowRect((HWND)hWnd, &rt);
+		if (m_pRunlog)
+			m_pRunlog->Runlog(_T("%s Windows %08X Postion(%d,%d,%d,%d).\n"), __FUNCTIONW__, hWnd, rt.left, rt.right, rt.top, rt.bottom);
+		CAutoLock lock(&m_csMapConnection);
+
+		map<string, IPCConnectionPtr>::iterator itFind = m_MapConnection.find(szDeviceID);
+		if (itFind != m_MapConnection.end())
+		{
+			return AvError_DeviceInPlaying;
+		}
+		lock.Unlock();
+		long nTimeSpan = nStopTime - nStartTime;
+		int nMaxRecordCount = nTimeSpan % 60;
+		if (nMaxRecordCount * 60 < nTimeSpan)
+			nMaxRecordCount++;
+		VSRecord_Info_t *pRecordArray = new VSRecord_Info_t[nMaxRecordCount];
+		unique_ptr<VSRecord_Info_t[]> RecordArrayPtr(pRecordArray);
+
+		VSQuery_Record_Info_t QueryInfo;
+		QueryInfo.nChannelNo = 1;
+		QueryInfo.nSource = Record_Source_SS;
+		QueryInfo.nRecordType = Record_all;
+		QueryInfo.nStartTime = nStartTime;
+		QueryInfo.nEndTime = nStopTime;
+		strcpy_s((char *)QueryInfo.szCameraId, MAX_ID_LENGTH, (char *)szDeviceID);
+		int nRecordCount = 0;
+		long nResult = SDK_CUQueryRecord(m_nLoginID, QueryInfo, pRecordArray, (int &)nRecordCount, nMaxRecordCount, 5000);
+		if (nResult < 0)
+			return (AvError_AS300_Error + nResult);
+
+		IPCConnectionPtr pConnection = make_shared<_IPCConnection>();
+		pConnection->pRunlog = m_pRunlog;
+		pConnection->m_hWnd = (HWND)hWnd;
+
+		PlayBackStatusPtr pPlayStatus = make_shared<PlayBackStatus>();
+		pPlayStatus->tStartTime = (time_t)nStartTime * 1000;
+		pPlayStatus->tStopTime = (time_t)nStopTime * 1000;
+
+		pConnection->hPlayhandle = ipcplay_OpenRTStream(pConnection->m_hWnd);
+		pConnection->pPlayStatus = pPlayStatus;
+
+		ipcplay_SetD3dShared(pConnection->hPlayhandle, false);
+
+		pRecordArray[0].startTime = nStartTime;
+		if (nStopTime <= pRecordArray[0].endTime)
+			pRecordArray[0].endTime = nStopTime;
+		long nTimeout = 5000;
+		long hPlaySession = SDK_CUPlaybackByFile(m_nLoginID, &pRecordArray[0], nTimeout, "", 0);
+		if (hPlaySession < 0)
+			return (AvError_AS300_Error + hPlaySession);
+		pConnection->m_nPlaySession = hPlaySession;
+		pConnection->m_nLoginID = m_nLoginID;
+		pConnection->m_bPlayBackPrewiew = true;
+		EnterCriticalSection(&m_csMapConnection);
+		m_MapConnection.insert(pair<string, IPCConnectionPtr>(szDeviceID, pConnection));
+		LeaveCriticalSection(&m_csMapConnection);
+
+		EnterCriticalSection(&m_csMapSession);
+		m_MapSession.insert(pair<LONG, IPCConnectionPtr>(hPlaySession, pConnection));
+		LeaveCriticalSection(&m_csMapSession);
+
+		if (m_pRunlog)
+		{
+			m_pRunlog->Runlog(_T("%s Device %s (%08X) is playing on Window %08X.\n"), __FUNCTIONW__, strDeviceID, (long)pConnection->hPlayhandle, hWnd);
+			m_pRunlog->Runlog(_T("%s MapSession size = %d.\n"), __FUNCTIONW__, m_MapSession.size());
+		}
+
+		return S_OK;
+	}
+	catch (CMySQLException& e)
+	{
+		if (m_pRunlog)
+			m_pRunlog->Runlog(_T("%s A DB Exception occured when playing device %s:%s.\n"), __FUNCTIONW__, strDeviceID, e.whatW());
+		return AvError_DBException;
+	}
+	catch (std::exception &e)
+	{
+		if (m_pRunlog)
+			m_pRunlog->Runlog(_T("%s A Unknown Exception occured when playing device %s:%s.\n"), __FUNCTIONW__, strDeviceID, _UnicodeString(e.what(), CP_ACP));
+		return AvError_UnknownException;
+	}
+
+	return 0;
+}
+#endif

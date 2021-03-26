@@ -16,8 +16,8 @@
     <Filter Include="Public.inc">
       <UniqueIdentifier>{ba05a5b2-4cac-47fd-973b-0a0ee2d45937}</UniqueIdentifier>
     </Filter>
-    <Filter Include="svacParser">
-      <UniqueIdentifier>{facf85b5-a461-448d-ac70-2c93d6467ec2}</UniqueIdentifier>
+    <Filter Include="Public.inc\DHStreamParser">
+      <UniqueIdentifier>{eff6938f-02b1-4a29-bb24-88199655d9a9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -42,9 +42,6 @@
     <ClCompile Include="..\Include\Utility.cpp">
       <Filter>Public.inc</Filter>
     </ClCompile>
-    <ClCompile Include="decSPS.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ConfigScreenMode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -57,14 +54,32 @@
     <ClCompile Include="..\Include\TimeUtility.cpp">
       <Filter>Public.inc</Filter>
     </ClCompile>
-    <ClCompile Include="svacparser\DhStreamParser.cpp">
-      <Filter>svacParser</Filter>
+    <ClCompile Include="..\DhStreamParser\avistream.cpp">
+      <Filter>Public.inc\DHStreamParser</Filter>
     </ClCompile>
-    <ClCompile Include="svacparser\StreamParser.cpp">
-      <Filter>svacParser</Filter>
+    <ClCompile Include="..\DhStreamParser\decSPS.cpp">
+      <Filter>Public.inc\DHStreamParser</Filter>
     </ClCompile>
-    <ClCompile Include="svacparser\svacstream.cpp">
-      <Filter>svacParser</Filter>
+    <ClCompile Include="..\DhStreamParser\dhstdstream.cpp">
+      <Filter>Public.inc\DHStreamParser</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DhStreamParser\DhStreamParser.cpp">
+      <Filter>Public.inc\DHStreamParser</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DhStreamParser\newstream.cpp">
+      <Filter>Public.inc\DHStreamParser</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DhStreamParser\psstream.cpp">
+      <Filter>Public.inc\DHStreamParser</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DhStreamParser\StreamParser.cpp">
+      <Filter>Public.inc\DHStreamParser</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DhStreamParser\svacstream.cpp">
+      <Filter>Public.inc\DHStreamParser</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DhStreamParser\xmstream.cpp">
+      <Filter>Public.inc\DHStreamParser</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -108,17 +123,11 @@
     <ClInclude Include="..\Include\Utility.h">
       <Filter>Public.inc</Filter>
     </ClInclude>
-    <ClInclude Include="decSPS.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ConfigScreenMode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ModePreview.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\CriticalSectionProxy.h">
-      <Filter>Public.inc</Filter>
     </ClInclude>
     <ClInclude Include="..\include\VideoFrame.h">
       <Filter>Public.inc</Filter>
@@ -126,17 +135,44 @@
     <ClInclude Include="..\Include\TimeUtility.h">
       <Filter>Public.inc</Filter>
     </ClInclude>
-    <ClInclude Include="svacparser\DhStreamParser.h">
-      <Filter>svacParser</Filter>
+    <ClInclude Include="..\include\AutoLock.h">
+      <Filter>Public.inc</Filter>
     </ClInclude>
-    <ClInclude Include="svacparser\FrameList.h">
-      <Filter>svacParser</Filter>
+    <ClInclude Include="..\include\CriticalSectionAgent.h">
+      <Filter>Public.inc</Filter>
     </ClInclude>
-    <ClInclude Include="svacparser\StreamParser.h">
-      <Filter>svacParser</Filter>
+    <ClInclude Include="..\DhStreamParser\avistream.h">
+      <Filter>Public.inc\DHStreamParser</Filter>
     </ClInclude>
-    <ClInclude Include="svacparser\svacstream.h">
-      <Filter>svacParser</Filter>
+    <ClInclude Include="..\DhStreamParser\decSPS.h">
+      <Filter>Public.inc\DHStreamParser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DhStreamParser\dhstdstream.h">
+      <Filter>Public.inc\DHStreamParser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DhStreamParser\DhStreamParser.h">
+      <Filter>Public.inc\DHStreamParser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DhStreamParser\FrameList.h">
+      <Filter>Public.inc\DHStreamParser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DhStreamParser\newstream.h">
+      <Filter>Public.inc\DHStreamParser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DhStreamParser\psstream.h">
+      <Filter>Public.inc\DHStreamParser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DhStreamParser\StreamParser.h">
+      <Filter>Public.inc\DHStreamParser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DhStreamParser\svacstream.h">
+      <Filter>Public.inc\DHStreamParser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DhStreamParser\xmstream.h">
+      <Filter>Public.inc\DHStreamParser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Stat.h">
+      <Filter>Public.inc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "VideoFrame.h"
 #include <algorithm>
+#include "CriticalSectionAgent.h"
 // #include "..\MgMonitor\MgMonitorDlg.h"
 // #include "..\MgMonitor\Resource.h"
 //#include "..\MgMonitor\Redraw.h"
@@ -14,7 +15,7 @@
 IMPLEMENT_DYNAMIC(CVideoFrame, CWnd)
 
 map<HWND, HWND>CVideoFrame::m_PanelMap;
-CCriticalSectionProxyPtr CVideoFrame::m_csPannelMap = make_shared<CCriticalSectionProxy>();
+CCriticalSectionAgentPtr CVideoFrame::m_csPannelMap = make_shared<CCriticalSectionAgent>();
 CVideoFrame *CVideoFrame::m_pCurrentFrame = nullptr;
 
 //int PanelInfo::nPanelCount = 0;
@@ -46,8 +47,8 @@ CVideoFrame::CVideoFrame()
 	m_pLastSelectRect =  nullptr;
 	m_nCurPanel = -1;
 	m_nFrameStyle = StyleNormal;
-	m_csvecPanel = make_shared<CCriticalSectionProxy>();
-	m_cslistRecyclePanel = make_shared<CCriticalSectionProxy>();
+	m_csvecPanel = make_shared<CCriticalSectionAgent>();
+	m_cslistRecyclePanel = make_shared<CCriticalSectionAgent>();
 
 }
 

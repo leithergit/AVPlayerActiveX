@@ -2,8 +2,8 @@
 ; 有关创建 Inno Setup 脚本文件的详细资料请查阅帮助文档！
 
 #define MyAppName "迈高视频播放控件"
-#define MyAppVersion "1.0.2.7"
-#define PackageName "MagoAvPlayer.ver1.0.2.7"
+#define MyAppVersion "1.0.2.9"
+#define PackageName "MagoAvPlayer.ver1.0.2.9"
 #define MyAppPublisher "上海迈高网络技术有限公司"
 #define MyAppURL "http://www.shmgwl.com/"
 
@@ -26,9 +26,9 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={pf}\MagoAVPlayer
 DisableDirPage=yes
 DefaultGroupName={cm:MyAppName}
-OutputDir=D:\Git\AVPlayer.zpmc\AvPlayer.V1.0.0.24\Setup
+OutputDir=E:\git\AVPlayerActiveX\Setup\Setup
 OutputBaseFilename={#PackageName}
-SetupIconFile=D:\Git\AVPlayer.zpmc\AvPlayer.V1.0.0.24\Setup\Mago.ico
+SetupIconFile=E:\git\AVPlayerActiveX\Setup\Mago.ico
 Compression=lzma
 SolidCompression=yes
 
@@ -54,9 +54,9 @@ english.MyAppPublisher = {#MyAppPublisher_EN}
 
 [Files]
 
-Source: "D:\Git\AVPlayer.zpmc\AvPlayer.V1.0.0.24\Setup\AvPlayerActiveX\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "D:\Git\AVPlayer.zpmc\AvPlayer.V1.0.0.24\Setup\vc2008redist_x86.exe"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "D:\Git\AVPlayer.zpmc\AvPlayer.V1.0.0.24\Setup\vc2013redist_x86.exe"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "E:\git\AVPlayerActiveX\Setup\AvPlayerActiveX\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "E:\git\AVPlayerActiveX\Setup\vc2008redist_x86.exe"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "E:\git\AVPlayerActiveX\Setup\vc2013redist_x86.exe"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; 注意: 不要在任何共享系统文件上使用“Flags: ignoreversion”
 

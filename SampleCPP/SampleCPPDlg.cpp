@@ -105,6 +105,7 @@ BEGIN_MESSAGE_MAP(CSampleCPPDlg, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_QUERYRECORD, &CSampleCPPDlg::OnBnClickedButtonQueryrecord)
 	ON_BN_CLICKED(IDC_BUTTON_PLAYRECORD, &CSampleCPPDlg::OnBnClickedButtonPlayrecord)
 	ON_WM_CLOSE()
+	ON_BN_CLICKED(IDC_BUTTON_SEEKRECORD, &CSampleCPPDlg::OnBnClickedButtonSeekrecord)
 END_MESSAGE_MAP()
 
 struct HotKeyInfo
@@ -237,7 +238,7 @@ BOOL CSampleCPPDlg::OnInitDialog()
 		IDC_BUTTON_STOPEXTEND3, IDC_STATIC_SWITCHMODE, IDC_COMBO_SWITCH, IDC_CHECK_DCDRAW, IDC_CHECK_ENABLETRANLATE, IDC_BUTTON_UPDATEAssist };
 	UINT nIDArrayRight[] = { IDC_STATIC_DEV };
 	UINT nIDArrayRightTopBottom[] = {  IDC_LIST_DEVICE };
-	UINT nIDArrayRightBottom[] = { IDC_LIST_RECORD, IDC_DATEPICKER, IDC_TIMEPICKER1, IDC_TIMEPICKER2, IDC_BUTTON_QUERYRECORD, IDC_BUTTON_PLAYRECORD, IDC_CHECK_SEEKFRAME };
+	UINT nIDArrayRightBottom[] = { IDC_LIST_RECORD, IDC_DATEPICKER, IDC_TIMEPICKER1, IDC_TIMEPICKER2, IDC_BUTTON_QUERYRECORD, IDC_BUTTON_PLAYRECORD, IDC_CHECK_SEEKFRAME,IDC_BUTTON_SEEKRECORD };
 	UINT nIDArrayCenter[] = { IDC_STATIC_FRAME };
 
 	RECT rtDialog;
@@ -1574,7 +1575,6 @@ void CSampleCPPDlg::OnBnClickedButtonPlayrecord()
 		//pRec->startTime = pRec->endTime - 30;
 		if (m_AvPlayer.PlayBack((long)hVideoWnd, szDeviceID, pRec->startTime , pRec->endTime, nSeekFrame, 5000) == 0)
 		{
-
 			HWND hWndArray[16] = { 0 };
 			long nArraySize = 16;
 			int nErrorCode = m_AvPlayer.GetDeviceWindow(szDeviceID, (long *)hWndArray, &nArraySize);
@@ -1585,18 +1585,18 @@ void CSampleCPPDlg::OnBnClickedButtonPlayrecord()
 		if (nSeekFrame)
 		{
 			m_tSeekOffset = pRec->startTime; // 使用起始时间作为第一个播放点，每个100毫秒调整一次，每调整一次，时间增加200毫秒
-			m_tSeekOffset *= 1000;			 // 时间放大1000倍
+			//m_tSeekOffset *= 1000;			 // 时间放大1000倍
 			//m_nTimeEvent = timeSetEvent(100, 1, (LPTIMECALLBACK)MMTIMECALLBACK, (DWORD_PTR)this, TIME_PERIODIC | TIME_CALLBACK_FUNCTION);
 			m_bThreadSeekRun = true;
 			m_hThreadSeek = (HANDLE)_beginthreadex(nullptr, 0, ThreadSeek, this, 0, 0);
 		}
 
 		m_bPlayRecord = true;
-		strButtonText = _T("&Stop Play");
+		strButtonText = _T("&Stop");
 	}
 	else
 	{
-		strButtonText = _T("&Play Record"); 
+		strButtonText = _T("&Play"); 
 		m_AvPlayer.StopPlayBack(szDeviceID);
 		m_bPlayRecord = false;
 	}
@@ -1613,4 +1613,10 @@ void CSampleCPPDlg::OnClose()
 	WaitForSingleObject(m_hThreadSeek, INFINITE);
 
 	CDialog::OnClose();
+}
+
+
+void CSampleCPPDlg::OnBnClickedButtonSeekrecord()
+{
+	
 }
