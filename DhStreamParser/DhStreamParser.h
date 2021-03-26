@@ -69,6 +69,7 @@
 #define STREAMPARSER_RESET_REFIND       0
 #define STREAMPARSER_RESET_CONTINUE     1
 
+#include "TimeUtility.h"
 typedef struct 
 {
 	unsigned char* pHeader;
@@ -102,6 +103,19 @@ typedef struct
 	unsigned long nParam2;		// 扩展用
 	long nDiscardFrame;			//0:解码显示;1:不解码不显示（用于标示帧序号不正确的P帧）;解码时用于标示是否丢弃不解码该帧
 	long nSerial;				//帧序号，用于bell平台
+	time_t GetFrameUTCTime()
+	{
+		SYSTEMTIME systime;
+		systime.wYear = nYear;
+		systime.wMonth = nMonth;
+		systime.wDay = nDay;
+		systime.wHour = nHour;
+		systime.wMinute = nMinute;
+		systime.wSecond = nSecond;
+		time_t tUTC = 0;
+		SystemTime2UTC(&systime, (UINT64 *)&tUTC);
+		return tUTC ;
+	}
 } DH_FRAME_INFO;
 
 class StreamParser ;

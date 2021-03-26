@@ -1533,19 +1533,19 @@ void CSampleCPPDlg::OnBnClickedButtonPlayrecord()
 	int nCount = m_ctlDeviceList.GetItemCount();
 	HWND hVideoWnd = nullptr;
 	TCHAR szDeviceID[32] = { 0 };
+	hVideoWnd = m_pVideoFrame->GetPanelWnd(m_pVideoFrame->GetCurPanel());
 	for (int i = 0; i < nCount; i++)
 	{
 		if (m_ctlDeviceList.GetCheck(i) && m_vecDevicePlaying.size() < 4)
 		{
-			hVideoWnd = m_pVideoFrame->GetPanelWnd(m_pVideoFrame->GetCurPanel());
 			m_ctlDeviceList.GetItemText(i, 1, szDeviceID, 32);
 			break;
-
 		}
 	}
 	CString strButtonText;
 	if (!m_bPlayRecord)
 	{
+		
 		
 		if (!hVideoWnd)
 		{
@@ -1598,6 +1598,19 @@ void CSampleCPPDlg::OnBnClickedButtonPlayrecord()
 	{
 		strButtonText = _T("&Play"); 
 		m_AvPlayer.StopPlayBack(szDeviceID);
+
+		if (m_vecDevicePlaying.size() > 0)
+		{
+			for (vector<wstring>::iterator it = m_vecDevicePlaying.begin();
+				it != m_vecDevicePlaying.end();)
+			{
+				HWND hWndArray[16] = { 0 };
+				long nArraySize = 16;
+				int nErrorCode = m_AvPlayer.GetDeviceWindow(it->c_str(), (long *)hWndArray, &nArraySize);
+				it = m_vecDevicePlaying.erase(it);
+			}
+		}
+
 		m_bPlayRecord = false;
 	}
 	SetDlgItemText(IDC_BUTTON_PLAYRECORD, strButtonText);

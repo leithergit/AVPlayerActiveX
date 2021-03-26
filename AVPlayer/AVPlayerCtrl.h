@@ -401,53 +401,29 @@ typedef shared_ptr<Crane> CranePtr;
 
 typedef vector<OperationAssistPtr> OperationAssistArray;
 
-struct  CItemStatus;
-typedef shared_ptr<CItemStatus> ItemStatusPtr;
-struct  CItemStatus
+struct  CPlayerStatus;
+typedef shared_ptr<CPlayerStatus> PlayerStatusPtr;
+struct  CPlayerStatus
 {
 	bool bItemStatus;
 	void* pItemValue;
 private:
-	CItemStatus()
+	CPlayerStatus()
 	{
-		ZeroMemory(this, sizeof(CItemStatus));
+		ZeroMemory(this, sizeof(CPlayerStatus));
 	}
 public:
-	CItemStatus(void* hPlayHandle)
+	CPlayerStatus(void* hPlayHandle)
 	{
 		this->pItemValue = hPlayHandle;
 		bItemStatus = true;
 	}
 };
 
-class CFreeFinder
-{
-public:
-	CFreeFinder()
-	{
-	}
-	bool operator()(ItemStatusPtr & InputItem)
-	{
-		return !InputItem->bItemStatus;
-	}
-};
 
-class CItemFinder
-{
-public:
-	CItemFinder(void* hInputHandle)
-		:pItemValue(hInputHandle)
-	{
-	}
-	bool operator()(ItemStatusPtr & InputItem)
-	{
-		return (pItemValue == InputItem->pItemValue);
-	}
-	void* pItemValue;
-};
 
-typedef list<ItemStatusPtr>ItemStatusList;
-
+typedef list<PlayerStatusPtr>PlayerStatusList;
+extern int g_nTimeZone;
 struct _IPCConnection;
 typedef shared_ptr<_IPCConnection> IPCConnectionPtr;
 class CAVPlayerCtrl : public COleControl
@@ -470,6 +446,12 @@ public:
 	INT		m_nYUVFrameCacheSize = 50;
 	bool	m_bEnableCameraPostion = true;
 	bool	m_bEnableAS300 = true;
+	static int GetLocalTimeZone()
+	{
+		TIME_ZONE_INFORMATION TZ;
+		GetTimeZoneInformation(&TZ);
+		return   TZ.Bias / (-60);
+	}
 	
 	void LogManager()
 	{
@@ -818,21 +800,25 @@ protected:
 	LONG PlayBackPreview(LONG hWnd, LPCTSTR strDeviceID, LONG nStartTime, LONG nStopTime, LONG nCacheFPS, LONG nCacheTime);
 #endif
 public:
-	static CCriticalSectionAgent m_csMapDecoderPool;
-	static map<string, ItemStatusList> m_mapDecoderPool;
-
-	
+	static CCriticalSectionAgent m_csMapPlayerPool;
+	// 根据分辨率来保存的播放器句柄池
+	static map<string, PlayerStatusList> m_mapPlayerPool;
 };
 
 struct FrameBuffer
 {
 	byte *pBuffer;
 	int	 nLength;
-	FrameBuffer(byte *pData, int nLen)
+	time_t tFrame;
+	int		nFrameType;
+	FrameBuffer(byte *pData, int nLen,time_t t,int nType)
 	{
 		pBuffer = new byte[nLen];
 		memcpy(pBuffer, pData, nLen);
 		nLength = nLen;
+		tFrame = t;
+		nFrameType = nType;
+		//TraceMsgA("%s FrameTime = %I64d.\n", __FUNCTION__, t);
 	}
 	~FrameBuffer()
 	{
@@ -887,11 +873,14 @@ struct _IPCConnection
 	CHAR	m_strDeviceID[64];
 	PlayBackStatusPtr	pPlayStatus;
 	CCriticalSectionAgent csListFrame;
+	CCriticalSectionAgent csSeekIterator;
 	shared_ptr<CStat> pStat = nullptr;
 	double	dfLastStatTime = 0;
+	bool	m_bSeekIterator = false;		// 回放随机移动指针是否已初始化
 	
 	list<SimpleStream*> listSimpleStream;
 	list<FrameBufferPtr> listFrame;
+	list<FrameBufferPtr>::iterator SeekIterator ;	// 回放随机移动指针
 	shared_ptr<VSRecord_Info_t> m_pRecordInfo = nullptr;
 	
 #ifdef _DEBUG
@@ -1009,12 +998,15 @@ struct _IPCConnection
 						char szResolution[16] = { 0 };
 						sprintf_s(szResolution, 16, "%d*%d", m_nWidth, m_nHeight);
 						string strResolutoin = szResolution;
-						EnterCriticalSection(CAVPlayerCtrl::m_csMapDecoderPool.Get());
-						map<string, ItemStatusList>::iterator itFind = CAVPlayerCtrl::m_mapDecoderPool.find(strResolutoin);
-						if (itFind != CAVPlayerCtrl::m_mapDecoderPool.end())
+						LineLockAgent(CAVPlayerCtrl::m_csMapPlayerPool);
+						map<string, PlayerStatusList>::iterator itFind = CAVPlayerCtrl::m_mapPlayerPool.find(strResolutoin);
+						if (itFind != CAVPlayerCtrl::m_mapPlayerPool.end())
 						{
-							ItemStatusList &HandleList = itFind->second;
-							ItemStatusList::iterator itFind2 = find_if(HandleList.begin(), HandleList.end(), CFreeFinder());
+							PlayerStatusList &HandleList = itFind->second;
+							auto itFind2 = find_if(HandleList.begin(), HandleList.end(), [](PlayerStatusPtr &pItem)
+							{
+								return !pItem->bItemStatus;
+							});
 							if (itFind2 != HandleList.end())
 							{
 								TraceMsgA("%s Matched a ipcplay Handle for %s(%s)", __FUNCTION__, szIP, szResolution);
@@ -1032,7 +1024,7 @@ struct _IPCConnection
 								ipcplay_SetD3dShared(hTempHandle, m_bEnableHWAccel);
 								ipcplay_Start(hTempHandle, false, true, m_bEnableHWAccel);
 								ipcplay_EnableStreamParser(hTempHandle, CODEC_H264);
-								HandleList.push_back(shared_ptr<CItemStatus>(new CItemStatus(hTempHandle)));
+								HandleList.push_back(make_shared<CPlayerStatus>(hTempHandle));
 								hPlayhandle = hTempHandle;
 
 							}
@@ -1046,14 +1038,12 @@ struct _IPCConnection
 							ipcplay_SetD3dShared(hTempHandle, m_bEnableHWAccel);
 							ipcplay_Start(hTempHandle, false, true, m_bEnableHWAccel);
 							ipcplay_EnableStreamParser(hTempHandle, CODEC_H264);
-							ItemStatusList HandleList;
-							HandleList.push_back(shared_ptr<CItemStatus>(new CItemStatus(hTempHandle)));
-							CAVPlayerCtrl::m_mapDecoderPool.insert(pair<string, list<ItemStatusPtr>>(strResolutoin, HandleList));
+							PlayerStatusList HandleList;
+							HandleList.push_back(make_shared<CPlayerStatus>(hTempHandle));
+							CAVPlayerCtrl::m_mapPlayerPool.insert(pair<string, list<PlayerStatusPtr>>(strResolutoin, HandleList));
 							hPlayhandle = hTempHandle;
 						}
-						LeaveCriticalSection(CAVPlayerCtrl::m_csMapDecoderPool.Get());
 					}
-					
 
 					m_bFillHeader = true;
 					m_nFrameLength = 0;
@@ -1142,38 +1132,56 @@ struct _IPCConnection
 		//	}
 		//}
 
-		AutoLockAgent(pThis->csListFrame);
+		LineLockAgent(pThis->csListFrame);
 		if (pThis->listFrame.size())
 		{
-			FrameBufferPtr pFrame = pThis->listFrame.front();
-			pThis->listFrame.pop_front();
-			ipcplay_InputStream2(pThis->hPlayhandle, pFrame->pBuffer, pFrame->nLength);
+			LineLockAgent(pThis->csSeekIterator);
+			if (pThis->m_bSeekIterator && pThis->SeekIterator != pThis->listFrame.end())
+			{
+				FrameBufferPtr pFrame = *(pThis->SeekIterator);
+				ipcplay_InputStream2(pThis->hPlayhandle, pFrame->pBuffer, pFrame->nLength);
+				pThis->SeekIterator++;
+			}
 		}
 	}
-	time_t GetFrameUTC(DH_FRAME_INFO *pFrame)
+
+	BOOL SeekTime(time_t tSeek)
 	{
-		if (!pFrame)
-			return 0;
-		SYSTEMTIME systime;
-		systime.wYear = pFrame->nYear;
-		systime.wMonth = pFrame->nMonth;
-		systime.wDay = pFrame->nDay;
-		systime.wHour = pFrame->nHour;
-		systime.wMinute = pFrame->nMinute;
-		systime.wSecond = pFrame->nSecond;
-		time_t tUTC = 0;
-		SystemTime2UTC(&systime, (UINT64 *)&tUTC);
-		return tUTC;
+		if (!m_pRecordInfo)
+			return FALSE;
+		if (tSeek < m_pRecordInfo->startTime || tSeek > m_pRecordInfo->endTime)
+			return FALSE;
+
+		LineLockAgent(csListFrame);
+		auto dfT1 = GetPerfTime();
+		if (!listFrame.size())
+			return FALSE;
+		auto itFind = find_if(listFrame.begin(), listFrame.end(), [&tSeek](FrameBufferPtr &pFrame)
+		{
+			if (pFrame->nFrameType != DH_FRAME_TYPE_VIDEO_I_FRAME)
+				return false;
+			if (pFrame->tFrame >= tSeek)
+				return true;
+			return false;
+		});
+		auto dfTimeSpan = GetPerfTime() - dfT1;
+		TraceMsgA("%s SeekTime Span = %.3f.\n", __FUNCTION__, dfTimeSpan);
+		if (itFind == listFrame.end())
+			return FALSE;
+		LineLockAgent(csSeekIterator);
+		SeekIterator = itFind;
+		ipcplay_ClearCache(hPlayhandle);
+		return TRUE;
 	}
 	// 
 	BOOL InputStream(int nSessionId, byte *pData, int nLength)
 	{
-		if (nLength)
+		/*if (nLength)
 		{
 			LineLockAgent(csListFrame);
 			if (listFrame.size() >= 25)
 				return FALSE;
-		}
+		}*/
 		
 		DhStreamParser* pDHStreamParser = pPlayStatus->pStreamParser;
 		pDHStreamParser->InputData(pData, nLength);
@@ -1187,7 +1195,8 @@ struct _IPCConnection
 			{
 				if (pFrame->nYear)
 				{
-					time_t nNewFrameTime = GetFrameUTC(pFrame);
+					time_t nNewFrameTime = pFrame->GetFrameUTCTime();
+					
 					if (nLastPlayBackFrameTime && nLastPlayBackFrameTime > nNewFrameTime)
 					{
 						nPlayBackFps = nElapsFrames / (nNewFrameTime - nLastPlayBackFrameTime) ;
@@ -1199,6 +1208,18 @@ struct _IPCConnection
 				}
 				try
 				{
+					if (pFrame->nFrameLength > 0)
+					{
+						LineLockAgent(csListFrame);
+						listFrame.push_back(make_shared<FrameBuffer>(pFrame->pContent, pFrame->nFrameLength,pFrame->GetFrameUTCTime() - g_nTimeZone*3600,pFrame->nSubType));
+						LineLockAgent(csSeekIterator);
+						if (!m_bSeekIterator)
+						{
+							SeekIterator = listFrame.begin();
+							m_bSeekIterator = true;
+						}
+					}
+
 					if (!m_bIPCStart)
 					{
 						IPC_MEDIAINFO MediaHeader;
@@ -1214,21 +1235,8 @@ struct _IPCConnection
 						if (!nFrameRate)
 							nFrameRate = 25;
 
-						m_bIPCStart = true;
-						//if (!m_bPlayBackPrewiew)	// 非预览播放，则按预设帧率播放				
+						m_bIPCStart = true;			
 							hInputTimer = timeSetEvent(40, 10, InputTimer, DWORD_PTR(this), TIME_PERIODIC | TIME_KILL_SYNCHRONOUS | TIME_CALLBACK_FUNCTION);
-					}
-					if (pFrame->nFrameLength > 0)
-					{
-						//if (!m_bPlayBackPrewiew)
-						{
-							AutoLockAgent(csListFrame);
-							listFrame.push_back(make_shared<FrameBuffer>(pFrame->pContent, pFrame->nFrameLength));
-						}
-						/*else
-						{
-							ipcplay_InputIPCStream(hPlayhandle, pFrame->pContent, pFrame->nType == DH_FRAME_TYPE_VIDEO_I_FRAME ? IPC_IDR_FRAME : IPC_P_FRAME, pFrame->nLength, 0, GetFrameUTC(pFrame));
-						}*/
 					}
 					
 				}
@@ -1269,6 +1277,7 @@ struct _IPCConnection
 				SDK_CUStopPlayback(m_nLoginID, m_nPlaySession);
 			m_nLoginID = -1;
 			m_nPlaySession = -1;
+			listFrame.clear();
 		}
 
 		if (m_hRtspSession)
@@ -1284,17 +1293,19 @@ struct _IPCConnection
 			char szResolutation[16] = { 0 };
 			
 			sprintf_s(szResolutation, 16, "%d*%d", info.nVideoWidth, info.nVideoHeight);
-			EnterCriticalSection(CAVPlayerCtrl::m_csMapDecoderPool.Get());
-			map<string, ItemStatusList>::iterator itFind = CAVPlayerCtrl::m_mapDecoderPool.find(szResolutation);
-			if (itFind != CAVPlayerCtrl::m_mapDecoderPool.end())
+			EnterCriticalSection(CAVPlayerCtrl::m_csMapPlayerPool.Get());
+			map<string, PlayerStatusList>::iterator itFind = CAVPlayerCtrl::m_mapPlayerPool.find(szResolutation);
+			if (itFind != CAVPlayerCtrl::m_mapPlayerPool.end())
 			{
-				ItemStatusList &HandleList = itFind->second;
-				ItemStatusList::iterator itFind2 = find_if(HandleList.begin(), HandleList.end(), CItemFinder(hPlayhandle));
+				PlayerStatusList &HandleList = itFind->second;
+				//auto itFind2 = find_if(HandleList.begin(), HandleList.end(), CItemFinder(hPlayhandle));
+				auto itFind2 = find_if(HandleList.begin(), HandleList.end(), [&](PlayerStatusPtr &pItem){return (pItem->pItemValue == (void *)hPlayhandle); });
 				if (itFind2 != HandleList.end())
 					(*itFind2)->bItemStatus = false;
 			}
-			LeaveCriticalSection(CAVPlayerCtrl::m_csMapDecoderPool.Get());
-			//ipcplay_Close(hPlayhandle);
+			LeaveCriticalSection(CAVPlayerCtrl::m_csMapPlayerPool.Get());
+			
+			TraceMsgA("%s.\n", __FUNCTION__);
 		}
 			
 		if (m_pFrameBuffer)
@@ -1314,6 +1325,17 @@ struct _IPCConnection
 			it = listSimpleStream.erase(it);
 		}
 
+	}
+
+	void StopDownload()
+	{
+		if (m_nPlaySession)
+		{
+			assert(m_nLoginID != -1);
+			if (pPlayStatus)
+				SDK_CUStopPlayback(m_nLoginID, m_nPlaySession);
+			m_nPlaySession = -1;
+		}
 	}
 
 	LONG OpenAS300Session(LONG nLoginID, LPCTSTR szDeviceID)

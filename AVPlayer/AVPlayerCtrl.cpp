@@ -21,8 +21,8 @@ extern CAVPlayerApp theApp;
 volatile LONG _IPCConnection::nRefCount = 0;
 #endif
 
-CCriticalSectionAgent  CAVPlayerCtrl::m_csMapDecoderPool;
-map<string, ItemStatusList> CAVPlayerCtrl::m_mapDecoderPool;
+CCriticalSectionAgent  CAVPlayerCtrl::m_csMapPlayerPool;
+map<string, PlayerStatusList> CAVPlayerCtrl::m_mapPlayerPool;
 
 IMPLEMENT_DYNCREATE(CAVPlayerCtrl, COleControl)
 
@@ -167,11 +167,12 @@ BOOL CAVPlayerCtrl::CAVPlayerCtrlFactory::UpdateRegistry(BOOL bRegister)
 
 
 // CAVPlayerCtrl::CAVPlayerCtrl - Constructor
-
+int g_nTimeZone = CAVPlayerCtrl::GetLocalTimeZone();
 CAVPlayerCtrl::CAVPlayerCtrl()
 {
 	InitializeIIDs(&IID_DAVPlayer, &IID_DAVPlayerEvents);
 	m_nLogSaveDays = 30;
+
 // 	TraceMsgA("offsetof(nVideoCodec) = %d\r\n", offsetof(PlayerInfo, nVideoCodec));
 // 	TraceMsgA("offsetof(nAudioCodec) = %d\r\n", offsetof(PlayerInfo, nAudioCodec));
 // 	TraceMsgA("offsetof(nVideoWidth) = %d\r\n", offsetof(PlayerInfo, nVideoWidth));
@@ -1996,7 +1997,9 @@ void   CAVPlayerCtrl::OnDevStatus(char* szDevId, int nStatus)
 
 void   CAVPlayerCtrl::OnAS300LiveData(LONG nSessionId, char* pBuffer, int nLen)
 {
+	EnterCriticalSection(&m_csMapSession);
 	IPCConnectionPtr pConnection = m_MapSession[nSessionId];
+	LeaveCriticalSection(&m_csMapSession);
 	if (pConnection)
 	{
 		if (!pConnection->m_bIPCStart && (pConnection->m_nFrameLength + nLen) < pConnection->m_nBufferSize)
@@ -2108,7 +2111,9 @@ void   CAVPlayerCtrl::OnAS300LiveData(LONG nSessionId, char* pBuffer, int nLen)
 /// 返回值类型必须定义为BOOL型，若使用说明文档或函数原型定义的使用bool类型，则无法控制播放速度，操蛋！！！！
 BOOL   CAVPlayerCtrl::OnAS300PlayBack(LONG nSessionId, char* pBuffer, int nLength)
 {
+	EnterCriticalSection(&m_csMapSession);
 	IPCConnectionPtr pConnection = m_MapSession[nSessionId];
+	LeaveCriticalSection(&m_csMapSession);
 	int nResult = -1;
 
 	if (pConnection)
@@ -2135,9 +2140,11 @@ void   CAVPlayerCtrl::OnAS300PlayBackPos(int nSessionID, int nPos, int nTotal)
 		auto itFind = m_MapSession.find((long)nSessionID);
 		if (itFind != m_MapSession.end())
 			_tcscpy_s(szDeviceID, 32, _UnicodeString(itFind->second->m_strDeviceID, CP_ACP));
+		auto pConnection = itFind->second;
 		LeaveCriticalSection(&m_csMapSession);
-		if (_tcslen(szDeviceID))
-			StopPlayBack(szDeviceID);
+		pConnection->StopDownload();
+// 		if (_tcslen(szDeviceID))
+// 			StopPlayBack(szDeviceID);
 	}
 }
 
@@ -2361,20 +2368,20 @@ void CAVPlayerCtrl::OnDestroy()
 		SDK_CUClear();
 	}
 
-	EnterCriticalSection(m_csMapDecoderPool.Get());
-	for (map<string, ItemStatusList>::iterator itList = m_mapDecoderPool.begin();
-		itList != m_mapDecoderPool.end();)
+	EnterCriticalSection(m_csMapPlayerPool.Get());
+	for (map<string, PlayerStatusList>::iterator itList = m_mapPlayerPool.begin();
+		itList != m_mapPlayerPool.end();)
 	{
-		ItemStatusList &HandleList = itList->second;
-		for (ItemStatusList::iterator it = HandleList.begin();
+		PlayerStatusList &HandleList = itList->second;
+		for (PlayerStatusList::iterator it = HandleList.begin();
 			it != HandleList.end();)
 		{
 			ipcplay_Close((*it)->pItemValue);
 			it = HandleList.erase(it);
 		}
-		itList = m_mapDecoderPool.erase(itList);
+		itList = m_mapPlayerPool.erase(itList);
 	}
-	LeaveCriticalSection(m_csMapDecoderPool.Get());
+	LeaveCriticalSection(m_csMapPlayerPool.Get());
 	DeleteCriticalSection(&m_csDBConnector);
 	DeleteCriticalSection(&m_csMapConnection);
 	DeleteCriticalSection(&m_csMapSession);
@@ -2883,15 +2890,17 @@ LONG CAVPlayerCtrl::PlayBack(LONG hWnd,LPCTSTR strDeviceID, LONG nStartTime,LONG
 		pRecordArray[0].startTime = nStartTime;
 		if (nStopTime <= pRecordArray[0].endTime)
 			pRecordArray[0].endTime = nStopTime;
+		
+		if (!pConnection->m_pRecordInfo)
+			pConnection->m_pRecordInfo = make_shared<VSRecord_Info_t>();
+		memcpy(pConnection->m_pRecordInfo.get(), &pRecordArray[0], sizeof(VSRecord_Info_t));
 
-		long hPlaySession = SDK_CUPlaybackByFile(m_nLoginID, &pRecordArray[0], nTimeout, "", 0);
+		//long hPlaySession = SDK_CUPlaybackByFile(m_nLoginID, &pRecordArray[0], nTimeout, "", 0);
+		long hPlaySession = SDK_CUDownloadByFile(m_nLoginID, pConnection->m_pRecordInfo.get(), NULL, nTimeout);
 		if (hPlaySession < 0)
 			return AvError_AS300_Error ;
 
 		pConnection->m_nPlaySession = hPlaySession;
-		if (!pConnection->m_pRecordInfo)
-			pConnection->m_pRecordInfo = make_shared<VSRecord_Info_t>();
-		memcpy(pConnection->m_pRecordInfo.get(), &pRecordArray[0], sizeof(VSRecord_Info_t));
 
 		pConnection->m_nLoginID = m_nLoginID;
 		EnterCriticalSection(&m_csMapConnection);
@@ -2963,16 +2972,10 @@ LONG CAVPlayerCtrl::SeekTime(LPCTSTR strDeviceID, LONGLONG nTime)
 	
 	if (pConnection->pPlayStatus->tStartTime <= nTime && itFind->second->pPlayStatus->tStopTime >= nTime)
 	{
-		LONG nTimeout = 5;
-		SDK_CUStopPlayback(m_nLoginID, pConnection->m_nPlaySession);
-		m_nLoginID, pConnection->m_nPlaySession = -1;
-		pConnection->m_pRecordInfo->startTime = nTime;
-		long hPlaySession = SDK_CUPlaybackByFile(m_nLoginID, pConnection->m_pRecordInfo.get(), nTimeout, "", 0);
-		if (hPlaySession < 0)
-		return AvError_AS300_Error;
-		pConnection->m_nPlaySession = hPlaySession;
-		//SDK_CUSeekPlayPose(m_nLoginID, pConnection->m_nPlaySession, nTime);
-		return AvError_Succeed;
+		if (pConnection->SeekTime(nTime))
+			return AvError_Succeed;
+		else
+			return AvError_OutofPlayingRange;
 	}
 	else
 		return AvError_OutofPlayingRange;

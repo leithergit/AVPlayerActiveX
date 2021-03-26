@@ -163,14 +163,14 @@ public:
 		double dfLastTime = GetExactTime() - 0.2f;
 		while (pThis->m_bThreadSeekRun)
 		{
-			if (TimeSpanEx(dfLastTime)  >= 5.f)
+			if (TimeSpanEx(dfLastTime)  >= 1.0f)
 			{
 				if (pThis->m_tSeekOffset)
 				{
 					int nStatus = pThis->m_AvPlayer.SeekTime(pThis->m_strCurPlayBackDevice, pThis->m_tSeekOffset);
 					if (nStatus)
 						TraceMsgA("%s SeekTime(%d).\n", __FUNCTION__, nStatus);
-					pThis->m_tSeekOffset += 60;
+					pThis->m_tSeekOffset += 10;
 				}
 				dfLastTime = GetExactTime();
 			}

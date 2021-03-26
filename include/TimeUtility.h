@@ -255,7 +255,7 @@ public:
 		if ((timeGetTime() - dwTimeEnter) > 200)
 		{
 			char szText[1024] = { 0 };
-			sprintf(szText, "Wait Timeout @File:%s %d(%s) WaitTime = %d(ms).\n", szFile, nLine, szFunction, (timeGetTime() - dwTimeEnter));
+			//sprintf(szText, "Wait Timeout @File:%s %d(%s) WaitTime = %d(ms).\n", szFile, nLine, szFunction, (timeGetTime() - dwTimeEnter));
 			OutputDebugStringA(szText);
 		}
 	}
