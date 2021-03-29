@@ -83,6 +83,7 @@ enum PtzOption
 	Opt_Abstract = 1,
 	Opt_Relative = 0
 };
+
 class CAvplayerctrl : public CWnd
 {
 protected:
@@ -95,32 +96,106 @@ public:
 		return clsid;
 	}
 	virtual BOOL Create(LPCTSTR lpszClassName, LPCTSTR lpszWindowName, DWORD dwStyle,
-						const RECT& rect, CWnd* pParentWnd, UINT nID, 
-						CCreateContext* pContext = NULL)
-	{ 
-		return CreateControl(GetClsid(), lpszWindowName, dwStyle, rect, pParentWnd, nID); 
+		const RECT& rect, CWnd* pParentWnd, UINT nID,
+		CCreateContext* pContext = NULL)
+	{
+		return CreateControl(GetClsid(), lpszWindowName, dwStyle, rect, pParentWnd, nID);
 	}
 
-    BOOL Create(LPCTSTR lpszWindowName, DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, 
-				UINT nID, CFile* pPersist = NULL, BOOL bStorage = FALSE,
-				BSTR bstrLicKey = NULL)
-	{ 
+	BOOL Create(LPCTSTR lpszWindowName, DWORD dwStyle, const RECT& rect, CWnd* pParentWnd,
+		UINT nID, CFile* pPersist = NULL, BOOL bStorage = FALSE,
+		BSTR bstrLicKey = NULL)
+	{
 		return CreateControl(GetClsid(), lpszWindowName, dwStyle, rect, pParentWnd, nID,
-		pPersist, bStorage, bstrLicKey); 
+			pPersist, bStorage, bstrLicKey);
 	}
 
-// Attributes
+	// ÌØÐÔ
+public:
+	enum
+	{
+		Ptz_Center = 0,
+		Ptz_Areazoom = 1,
+		Ptz_ImageWidth = 2,
+		Ptz_ImageHeight = 3,
+		Ptz_Move = 4,
+		Ptz_Pan = 5,
+		Ptz_Tilt = 6,
+		Ptz_Zoom = 7,
+		Ptz_Focus = 8,
+		Ptz_Iris = 9,
+		Ptz_Brightness = 10,
+		Ptz_AutoFocus = 11,
+		Ptz_AutoIris = 12,
+		Ptz_ContinuousPanTiltMove = 13,
+		Ptz_ContinuousFocusMove = 14,
+		Ptz_ContinuousZoomMove = 15,
+		Ptz_ContinuousIrisMove = 16,
+		Ptz_ContinuousBrightnessMove = 17,
+		Ptz_GogoServerPresetNo = 18,
+		Ptz_Speed = 19,
+		Ptz_IrcutFilter = 20,
+		Ptz_BackLight = 21
+	}PtzCode;
+	enum
+	{
+		AvError_Succeed = 0,
+		AvError_base = -1024,
+		AvError_InvalidParameters = -1025,
+		AvError_Invalid_ServerAddress = -1026,
+		AvError_Invliad_ServerPort = -1027,
+		AvError_Invalid_AccountOrPassword = -1028,
+		AvError_ConnectServerFailed = -1029,
+		AvError_LoginFailed = -1030,
+		AvError_NotLogintoServer = -1031,
+		AvError_InvalidWindow = -1032,
+		AvError_DeviceNotExist = -1033,
+		AvError_ConnectDeviceFailed = -1034,
+		AvError_DeviceInPlaying = -1035,
+		AvError_DBException = -1036,
+		AvError_DeviceNotInPlaying = -1037,
+		AVError_BufferOverflow = -1038,
+		AvError_WindowNotPlaying = -1039,
+		AvError_InvlaidPtzCommand = -1040,
+		AvError_Invalid_PtzValue = -1041,
+		AvError_ExternalError = -1277,
+		AvError_InsufficentMemory = -1278,
+		AvError_UnknownException = -1279
+	}AVStatus;
+	enum
+	{
+		Pos_Left = 0,
+		Pos_Top = 1,
+		Pos_Right = 2,
+		Pos_Bottom = 3
+	}Position;
+	enum
+	{
+		Mov_Home = 0,
+		Mov_Up = 1,
+		Mov_Down = 2,
+		Mov_Left = 3,
+		Mov_Right = 4,
+		Mov_Upleft = 5,
+		Mov_UPright = 6,
+		Mov_Downleft = 7,
+		Mov_Downright = 8,
+		Mov_Stop = 9
+	}Ptz_MoveOption;
+	enum
+	{
+		Opt_Abstract = 1,
+		Opt_Relative = 0
+	}PtzOption;
+
+
+	// ²Ù×÷
 public:
 
+	// _DAVPlayer
 
-
-// Operations
-public:
-
-// _DAVPlayer
-
-// Functions
-//
+	// Functions
+	//
 
 	void AboutBox()
 	{
@@ -129,7 +204,7 @@ public:
 	long Login(LPCTSTR strServerIP, unsigned short nServerPort, LPCTSTR strAccount, LPCTSTR strPassword, long nUserPtr)
 	{
 		long result;
-		static BYTE parms[] = VTS_BSTR VTS_UI2 VTS_BSTR VTS_BSTR VTS_I4 ;
+		static BYTE parms[] = VTS_BSTR VTS_UI2 VTS_BSTR VTS_BSTR VTS_I4;
 		InvokeHelper(0x1, DISPATCH_METHOD, VT_I4, (void*)&result, parms, strServerIP, nServerPort, strAccount, strPassword, nUserPtr);
 		return result;
 	}
@@ -140,107 +215,187 @@ public:
 	long PlayStream(LPCTSTR strDeviceID, long hWnd, long nEnalbeHWAccel)
 	{
 		long result;
-		static BYTE parms[] = VTS_BSTR VTS_I4 VTS_I4 ;
+		static BYTE parms[] = VTS_BSTR VTS_I4 VTS_I4;
 		InvokeHelper(0x3, DISPATCH_METHOD, VT_I4, (void*)&result, parms, strDeviceID, hWnd, nEnalbeHWAccel);
 		return result;
 	}
 	long GetDeviceID(BSTR * strDeviceList, long * nDeviceCount)
 	{
 		long result;
-		static BYTE parms[] = VTS_PBSTR VTS_PI4 ;
+		static BYTE parms[] = VTS_PBSTR VTS_PI4;
 		InvokeHelper(0x4, DISPATCH_METHOD, VT_I4, (void*)&result, parms, strDeviceList, nDeviceCount);
 		return result;
 	}
 	void StopPlay(LPCTSTR strDeviceID, long hWnd)
 	{
-		static BYTE parms[] = VTS_BSTR VTS_I4 ;
+		static BYTE parms[] = VTS_BSTR VTS_I4;
 		InvokeHelper(0x5, DISPATCH_METHOD, VT_EMPTY, NULL, parms, strDeviceID, hWnd);
 	}
-	long GetErrorMessage(long nErrorCode, BSTR * strErrorMessage)
+	long GetErrorMessage(long nErrorCode, LPTSTR strErrorMessage,LONG nBufferSize)
 	{
 		long result;
-		static BYTE parms[] = VTS_I4 VTS_PBSTR ;
-		InvokeHelper(0x8, DISPATCH_METHOD, VT_I4, (void*)&result, parms, nErrorCode, strErrorMessage);
+		static BYTE parms[] = VTS_I4 VTS_PBSTR VTS_I4;
+		InvokeHelper(0x8, DISPATCH_METHOD, VT_I4, (void*)&result, parms, nErrorCode, strErrorMessage,nBufferSize);
 		return result;
 	}
 	void FreeString(BSTR * strString)
 	{
-		static BYTE parms[] = VTS_PBSTR ;
+		static BYTE parms[] = VTS_PBSTR;
 		InvokeHelper(0x9, DISPATCH_METHOD, VT_EMPTY, NULL, parms, strString);
 	}
 	long GetDeviceWindow(LPCTSTR strDeviceID, long * hWndArray, long * nArraySize)
 	{
 		long result;
-		static BYTE parms[] = VTS_BSTR VTS_PI4 VTS_PI4 ;
+		static BYTE parms[] = VTS_BSTR VTS_PI4 VTS_PI4;
 		InvokeHelper(0xa, DISPATCH_METHOD, VT_I4, (void*)&result, parms, strDeviceID, hWndArray, nArraySize);
 		return result;
 	}
 	long GetWindowDevice(long hWnd, BSTR * strDeviceID)
 	{
 		long result;
-		static BYTE parms[] = VTS_I4 VTS_PBSTR ;
+		static BYTE parms[] = VTS_I4 VTS_PBSTR;
 		InvokeHelper(0xb, DISPATCH_METHOD, VT_I4, (void*)&result, parms, hWnd, strDeviceID);
 		return result;
 	}
 	long PlayComboStream(LPCTSTR strDevice1, LPCTSTR strDevice2, long hWnd, long nEnableHWAccel, long nArangeMode)
 	{
 		long result;
-		static BYTE parms[] = VTS_BSTR VTS_BSTR VTS_I4 VTS_I4 VTS_I4 ;
+		static BYTE parms[] = VTS_BSTR VTS_BSTR VTS_I4 VTS_I4 VTS_I4;
 		InvokeHelper(0xc, DISPATCH_METHOD, VT_I4, (void*)&result, parms, strDevice1, strDevice2, hWnd, nEnableHWAccel, nArangeMode);
 		return result;
 	}
 	long SetPlayComboBorder(double dwSpreadHei)
 	{
 		long result;
-		static BYTE parms[] = VTS_R8 ;
+		static BYTE parms[] = VTS_R8;
 		InvokeHelper(0xd, DISPATCH_METHOD, VT_I4, (void*)&result, parms, dwSpreadHei);
 		return result;
 	}
 	long SetPlayComboBorderEx(LPCTSTR strDevice1, LPCTSTR strDevice2, double fSpreadHei)
 	{
 		long result;
-		static BYTE parms[] = VTS_BSTR VTS_BSTR VTS_R8 ;
+		static BYTE parms[] = VTS_BSTR VTS_BSTR VTS_R8;
 		InvokeHelper(0xe, DISPATCH_METHOD, VT_I4, (void*)&result, parms, strDevice1, strDevice2, fSpreadHei);
 		return result;
 	}
 	long SendPtzCommand(LPCTSTR strDeviceID, long nPtzCommand, long nPtzValue1, long nPtzValue2, long nOpType)
 	{
 		long result;
-		static BYTE parms[] = VTS_BSTR VTS_I4 VTS_I4 VTS_I4 VTS_I4 ;
+		static BYTE parms[] = VTS_BSTR VTS_I4 VTS_I4 VTS_I4 VTS_I4;
 		InvokeHelper(0xf, DISPATCH_METHOD, VT_I4, (void*)&result, parms, strDeviceID, nPtzCommand, nPtzValue1, nPtzValue2, nOpType);
 		return result;
 	}
-	long TestMode(__int64 llTest)
+	long EnalbeCameraPostion(long bEnalbeFlag)
 	{
 		long result;
-		static BYTE parms[] = VTS_I8 ;
-		InvokeHelper(0x10, DISPATCH_METHOD, VT_I4, (void*)&result, parms, llTest);
+		static BYTE parms[] = VTS_I4;
+		InvokeHelper(0x11, DISPATCH_METHOD, VT_I4, (void*)&result, parms, bEnalbeFlag);
+		return result;
+	}
+	long SetExternDCDraw(LPCTSTR szDeviceID, long pDCDraw, long pUserPtr)
+	{
+		long result;
+		static BYTE parms[] = VTS_BSTR VTS_I4 VTS_I4;
+		InvokeHelper(0x12, DISPATCH_METHOD, VT_I4, (void*)&result, parms, szDeviceID, pDCDraw, pUserPtr);
+		return result;
+	}
+	long PlaySrvStream(LPCTSTR strDeviceID, long hWnd, long nEnableHWAccel)
+	{
+		long result;
+		static BYTE parms[] = VTS_BSTR VTS_I4 VTS_I4;
+		InvokeHelper(0x13, DISPATCH_METHOD, VT_I4, (void*)&result, parms, strDeviceID, hWnd, nEnableHWAccel);
+		return result;
+	}
+	long EnableOperationAssist(LPCTSTR strDevice, long nEnable)
+	{
+		long result;
+		static BYTE parms[] = VTS_BSTR VTS_I4;
+		InvokeHelper(0x14, DISPATCH_METHOD, VT_I4, (void*)&result, parms, strDevice, nEnable);
+		return result;
+	}
+	long LoadOpAssistConfigure()
+	{
+		long result;
+		InvokeHelper(0x15, DISPATCH_METHOD, VT_I4, (void*)&result, NULL);
+		return result;
+	}
+	long ConfigureScreenMode()
+	{
+		long result;
+		InvokeHelper(0x17, DISPATCH_METHOD, VT_I4, (void*)&result, NULL);
+		return result;
+	}
+	long SwitchScreen(long nCraneID, long nScreenMode, long hWnd)
+	{
+		long result;
+		static BYTE parms[] = VTS_I4 VTS_I4 VTS_I4;
+		InvokeHelper(0x18, DISPATCH_METHOD, VT_I4, (void*)&result, parms, nCraneID, nScreenMode, hWnd);
+		return result;
+	}
+	long PlayBack(long hWnd, LPCTSTR strDeviceID, long nStartTime, long nStopTime,long nSeekTime, long nTimeout)
+	{
+		long result;
+		static BYTE parms[] = VTS_I4 VTS_BSTR VTS_I4 VTS_I4 VTS_I4 VTS_I4;
+		InvokeHelper(0x19, DISPATCH_METHOD, VT_I4, (void*)&result, parms, hWnd, strDeviceID, nStartTime, nStopTime, nSeekTime, nTimeout);
+		return result;
+	}
+	void StopPlayBack(LPCTSTR strDeviceID)
+	{
+		static BYTE parms[] = VTS_BSTR;
+		InvokeHelper(0x1a, DISPATCH_METHOD, VT_EMPTY, NULL, parms, strDeviceID);
+	}
+	long SeekTime(LPCTSTR strDeviceID, __int64 nTime)
+	{
+		long result;
+		static BYTE parms[] = VTS_BSTR VTS_I8;
+		InvokeHelper(0x1b, DISPATCH_METHOD, VT_I4, (void*)&result, parms, strDeviceID, nTime);
+		return result;
+	}
+	long CreateFrameWnd(long hWnd, long nWndCount, long nFrameStyle, long * pFrameHandle)
+	{
+		long result;
+		static BYTE parms[] = VTS_I4 VTS_I4 VTS_I4 VTS_PI4;
+		InvokeHelper(0x1c, DISPATCH_METHOD, VT_I4, (void*)&result, parms, hWnd, nWndCount, nFrameStyle, pFrameHandle);
+		return result;
+	}
+	long AdjustPanels(long nWndCount, long nFrameStyle)
+	{
+		long result;
+		static BYTE parms[] = VTS_I4 VTS_I4;
+		InvokeHelper(0x1d, DISPATCH_METHOD, VT_I4, (void*)&result, parms, nWndCount, nFrameStyle);
+		return result;
+	}
+	long QueryRecord(LPCTSTR szDeviceID, long nStartTime, long nStopTime, long pRecordArray, long nBufferCount, long * nRecordCount)
+	{
+		long result;
+		static BYTE parms[] = VTS_BSTR VTS_I4 VTS_I4 VTS_I4 VTS_I4 VTS_PI4;
+		InvokeHelper(0x1e, DISPATCH_METHOD, VT_I4, (void*)&result, parms, szDeviceID, nStartTime, nStopTime, pRecordArray, nBufferCount, nRecordCount);
 		return result;
 	}
 
-// Properties
-//
+	// Properties
+	//
 
-long GetRecvTimeout()
-{
-	long result;
-	GetProperty(0x6, VT_I4, (void*)&result);
-	return result;
-}
-void SetRecvTimeout(long propVal)
-{
-	SetProperty(0x6, VT_I4, propVal);
-}
-long GetReportInterval()
-{
-	long result;
-	GetProperty(0x7, VT_I4, (void*)&result);
-	return result;
-}
-void SetReportInterval(long propVal)
-{
-	SetProperty(0x7, VT_I4, propVal);
-}
+	long GetRecvTimeout()
+	{
+		long result;
+		GetProperty(0x6, VT_I4, (void*)&result);
+		return result;
+	}
+	void SetRecvTimeout(long propVal)
+	{
+		SetProperty(0x6, VT_I4, propVal);
+	}
+	long GetReportInterval()
+	{
+		long result;
+		GetProperty(0x7, VT_I4, (void*)&result);
+		return result;
+	}
+	void SetReportInterval(long propVal)
+	{
+		SetProperty(0x7, VT_I4, propVal);
+	}
 
 
 };

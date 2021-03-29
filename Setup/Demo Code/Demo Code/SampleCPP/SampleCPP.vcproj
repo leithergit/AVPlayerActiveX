@@ -45,8 +45,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;C:\Program Files (x86)\Visual Leak Detector\include&quot;;..\Include;E:\boost_1_62"
-				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG"
+				AdditionalIncludeDirectories="&quot;C:\Program Files (x86)\Visual Leak Detector\include&quot;;..\Include;&quot;C:\Program Files (x86)\BugTrap for Win32 &amp; .NET\Win32\BugTrap&quot;"
+				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG;_STD_SMARTPTR"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -69,7 +69,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="C:\Program Files (x86)\Visual Leak Detector\lib\Win32"
+				AdditionalLibraryDirectories="&quot;C:\Program Files (x86)\Visual Leak Detector\lib\Win32&quot;;&quot;C:\Program Files (x86)\BugTrap for Win32 &amp; .NET\Win32\BugTrap&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -128,7 +128,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="&quot;C:\Program Files (x86)\Visual Leak Detector\include&quot;;..\Include;E:\boost_1_62"
-				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG"
+				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG;_STD_SMARTPTR"
 				MinimalRebuild="false"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -197,6 +197,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DragListCtrl.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\OleDropTargetEx.cpp"
 				>
 			</File>
@@ -229,7 +233,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\Utility.cpp"
+				RelativePath="..\Include\Utility.cpp"
 				>
 			</File>
 		</Filter>
@@ -244,6 +248,10 @@
 			</File>
 			<File
 				RelativePath=".\DialogPTZ.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DragListCtrl.h"
 				>
 			</File>
 			<File
@@ -271,7 +279,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\Utility.h"
+				RelativePath="..\Include\Utility.h"
 				>
 			</File>
 		</Filter>

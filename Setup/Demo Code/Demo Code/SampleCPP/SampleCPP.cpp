@@ -5,12 +5,15 @@
 #include "stdafx.h"
 #include "SampleCPP.h"
 #include "SampleCPPDlg.h"
-#include "BugTrap.h"
+
 #include "Utility.h"
+#ifdef _BugTrap
+#include "BugTrap.h"
 #pragma comment(lib,"BugTrap.lib")
+#endif
 
 #ifdef _DEBUG
-#define new DEBUG_NEW
+//#define new DEBUG_NEW
 #endif
 
 
@@ -34,7 +37,7 @@ CSampleCPPApp::CSampleCPPApp()
 
 CSampleCPPApp theApp;
 
-
+#ifdef _BugTrap
 static void SetupExceptionHandler()
 {	
 	BT_SetAppName(_T("SampleCPP"));
@@ -45,6 +48,7 @@ static void SetupExceptionHandler()
 	BT_SetFlags(BTF_DETAILEDMODE /*|BTF_RESTARTAPP*/);
 	BT_InstallSehFilter();
 }
+#endif
 
 // CSampleCPPApp initialization
 

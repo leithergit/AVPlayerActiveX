@@ -238,7 +238,8 @@ void CDialogPTZ::OnBnClickedButtonCommand()
 			{
 				// nPtzValue1 X坐标，nPtzValue2 Y坐标
 				// 将摄像机的中心移至客户端视频码流的像素坐标x，y。
-				m_pAVPlayer->SendPtzCommand(szDeviceID,nCode,nPtzValue1,nPtzValue2,nPtzOption);
+				m_pAVPlayer->SendPtzCommand(szDeviceID,nCode,nPtzValue1,nPtzValue2,
+					nPtzOption);
 				break;
 			}
 		case Ptz_Areazoom:
@@ -249,7 +250,10 @@ void CDialogPTZ::OnBnClickedButtonCommand()
 				// 如果 z 小于 100，则图像缩小（例如：z = 50 时，视野放大为当前的2倍）。
 				//	注：在一些安讯士产品中，通过校准镜片偏移补偿参数，可以较大地改进
 				//	areazoom 的精确度。
-				m_pAVPlayer->SendPtzCommand(szDeviceID,nCode,MAKELONG(nPtzValue1,nPtzValue2),nPtzValue3,nPtzOption);
+				m_pAVPlayer->SendPtzCommand(szDeviceID,nCode,MAKELONG(nPtzValue1,
+										nPtzValue2),
+										nPtzValue3,
+										nPtzOption);
 				break;
 			}
 		case Ptz_ImageWidth:/*当显示的图像宽度与默认大小（该默
@@ -288,10 +292,14 @@ void CDialogPTZ::OnBnClickedButtonCommand()
 		// 以下操作皆存在绝对和相对两种模式
 		case Ptz_Pan:	// 水平转动设备到一个指定的坐标位置,绝移动取值-180…180，相对移动取值 -360…360
 		case Ptz_Tilt:	// 垂直转动设备至指定的坐标位置，绝移动取值-180…180，相对移动取值 -360…360
-		case Ptz_Zoom:	// 缩放设备n步至一个指定位置。较大的值表示放大，较小的值表示缩小,绝对移动取值1…9999,相对取值-9999…9999
-		case Ptz_Focus:	// 调节对焦n步至一个指定的置。较大的值表示长焦，较小的值表示短焦,绝对移动取值1…9999,相对取值-9999…9999
-		case Ptz_Iris:	// 调节光圈n步至一个指定的绝对位置。较大的值表示打开光圈，较小的值表示关闭光圈。绝对移动取值1…9999,相对取值-9999…9999
-		case Ptz_Brightness:// 调节亮度n步至一个指定的绝对位置。较大的值表示较明亮的图像，较小的值表示较暗的图像。绝对移动取值1…9999,相对取值-9999…9999
+		case Ptz_Zoom:	// 缩放设备n步至一个指定位置。较大的值表示放大，较小的值表示缩小,绝对移动取值1…9999,
+						// 相对取值-9999…9999
+		case Ptz_Focus:	// 调节对焦n步至一个指定的置。较大的值表示长焦，较小的值表示短焦,绝对移动取值1…9999,
+						// 相对取值-9999…9999
+		case Ptz_Iris:	// 调节光圈n步至一个指定的绝对位置。较大的值表示打开光圈，较小的值表示关闭光圈。
+						// 绝对移动取值1…9999,相对取值-9999…9999
+		case Ptz_Brightness:// 调节亮度n步至一个指定的绝对位置。较大的值表示较明亮的图像，较小的值表示较暗的图像。
+						// 绝对移动取值1…9999,相对取值-9999…9999
 			{
 				m_pAVPlayer->SendPtzCommand(szDeviceID,nCode,nPtzValue1,0,nPtzOption);
 				break;
@@ -306,7 +314,8 @@ void CDialogPTZ::OnBnClickedButtonCommand()
 			}
 		case Ptz_ContinuousPanTiltMove: // 连续水平转动/垂直转动。正值表示向右（水平转动）及向上（垂直转动）移动，
 										// 负值表示向左（水平转动）及向下（垂直转动）移动。 0,0 表示停止移动。
-										// nPtzValue1为水平转动速度，nPtzValue2为垂直转动速度,取值范围-100…100
+										// nPtzValue1为水平转动速度，nPtzValue2为垂直转动速度,
+										// 取值范围-100…100
 			{
 				m_pAVPlayer->SendPtzCommand(szDeviceID,nCode,nPtzValue1,nPtzValue2,0);
 				break;
@@ -315,7 +324,8 @@ void CDialogPTZ::OnBnClickedButtonCommand()
 										// nPtzValue1取值范围-100…100
 		case Ptz_ContinuousZoomMove:	// 连续对焦调节。正值表示缩小焦距，	负值表示放大焦距。 0 表示停止调节焦距。
 		case Ptz_ContinuousIrisMove:	// 连续光圈调节。正值表示打开光圈，负值表示关闭光圈。 0 表示停止调节光圈。
-		case Ptz_ContinuousBrightnessMove:// 连续亮度调节。正值表示增加图像亮度，负值表示降低图像亮度。 0 表示停止调节亮度。
+		case Ptz_ContinuousBrightnessMove:// 连续亮度调节。正值表示增加图像亮度，负值表示降低图像亮度。 
+										// 0 表示停止调节亮度。
 		case Ptz_GogoServerPresetNo:	// 移动至与指定预置位编号相关联的位置，取值1-6
 		case Ptz_Speed:					// 设置水平转动及垂直转动的速度。取值1-100
 		case Ptz_IrcutFilter:			// 控制红外滤光片。	
