@@ -53,6 +53,7 @@ library AVPlayerLib
 			[id(28), helpstring("method CreateFrameWnd")] LONG CreateFrameWnd(LONG hWnd,LONG nWndCount, LONG nFrameStyle, LONG* pFrameHandle);
 			[id(29), helpstring("method AdjustPanels")] LONG AdjustPanels(LONG nWndCount, LONG nFrameStyle);
 			[id(30), helpstring("method QueryRecord")] LONG QueryRecord(BSTR szDeviceID, LONG nStartTime, LONG nStopTime, LONG pRecordArray, LONG nBufferCount, LONG* nRecordCount);
+			[id(31), helpstring("method RemoveDevWnd")] LONG RemoveDevWnd(BSTR strDeviceID, LONG hDevWnd);
 	};
 
 	//  Event dispatch interface for CAVPlayerCtrl

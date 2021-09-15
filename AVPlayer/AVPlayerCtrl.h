@@ -36,36 +36,36 @@ using namespace  std;
 #define rtsp_UDP	0
 enum AVStatus
 {
-	AvError_Succeed = 0,				// ²Ù×÷³É¹¦
+	AvError_Succeed = 0,				// ï¿½ï¿½ï¿½ï¿½ï¿½É¹ï¿½
 	AvError_base = -1000,				
-	AvError_InvalidParameters			 = AvError_base - 1,		// ²ÎÊýÎÞÐ§
-	AvError_Invalid_ServerAddress		 = AvError_base - 2,		// ·þÎñÆ÷µØÖ·²»ÊÇÒ»¸öÓÐÐ§µÄIPµØÖ·	
-	AvError_Invliad_ServerPort			 = AvError_base - 3,		// ·þÎñÆ÷¶Ë¿ÚÎÞÐ§
-	AvError_Invalid_AccountOrPassword	 = AvError_base - 4,		// ÓÃ»§Ãû»òÃÜÂëÎÞÐ§
-	AvError_ConnectServerFailed			 = AvError_base - 5,		// Á¬½Ó·þÎñÆ÷Ê§°Ü
-	AvError_LoginFailed					 = AvError_base - 6,		// µÇÂ¼·þÎñÆ÷Ê§°Ü
-	AvError_NotLogintoServer			 = AvError_base - 7,		// ÉÐÎ´µÇÂ¼µ½·þÎñÆ÷
-	AvError_InvalidWindow				 = AvError_base - 8,		// ÓÃÓÚ²¥·ÅµÄ´°¿Ú¾ä±úÖ¸Ê¾µÄ²»ÊÇÒ»¸öÓÐÐ§µÄ´°¿Ú
-	AvError_DeviceNotExist				 = AvError_base - 9,		// ÇëÇóµÄÉè±¸²»´æÔÚ
-	AvError_ConnectDeviceFailed			 = AvError_base - 10,		// Á¬½ÓÉè±¸Ê§°Ü
-	AvError_DeviceInPlaying				 = AvError_base - 11,		// Éè±¸ÕýÔÚ²¥·ÅÖÐ£¬Çë´Ò¸´²¥·Å
-	AvError_DBException					 = AvError_base - 12,		// Êý¾Ý¿â·ÃÎÊÒì³£
-	AvError_DeviceNotInPlaying			 = AvError_base - 13,		// Éè±¸²»ÔÚ²¥·ÅÖÐ
-	AVError_BufferOverflow				 = AvError_base	- 14,		// »º´æÒç³ö,Ìá¹©µÄÄÚ´æ¿Õ¼ä²»×ãÒÔÈÝÄÉËùÇëÇóµÄÊý¾Ý
-	AvError_WindowNotPlaying			 = AvError_base - 15,		// ´°¿ÚÉÐÎ´²¥·ÅÈÎºÎÉè±¸	
-	AvError_InvlaidPtzCommand			 = AvError_base - 16,		// ÎÞÐ§µÄPTZÃüÁî
-	AvError_Invalid_PtzValue			 = AvError_base - 17,		// ÎÞÐ§µÄPTZÃüÁîÖµ
-	AvError_LoadAssitConfigFailed		 = AvError_base - 18,		// ¼ÓÔØ¸¨Öú²Ù×÷ÅäÖÃÎÄ¼þÊ§°Ü
-	AvError_DeivceNotConfigAssist		 = AvError_base - 19,		// ÉèÖÃÎ´ÅäÖÃÎª²Ù×÷¸¨ÖúÉè±¸
-	AvError_FailedEnableAssist			 = AvError_base - 20,		// ÆôÓÃ¸¨ÖúÉèÖÃÊ§°Ü
-	AvError_Crane_notExist				 = AvError_base - 21,		// µõ»úÉè±¸²»´æÔÚ
-	AvError_ScreenMode_notExist			 = AvError_base - 22,		// Ö¸¶¨µÄÄ£Ê½²»´æÔÚ
-	AvError_NotSingleFramePlayer		 = AvError_base - 23,		// ²»ÊÇÒ»µ¥Ö¡²¥·ÅÆ÷
-	AvError_OutofPlayingRange			 = AvError_base - 24,		// Ö¸¶¨µÄÊ±¼äµã³¬³ö²¥·ÅÆ÷µÄÊ±¼ä·¶Î§
-	AvError_AS300ServiceIsDisabled		 = AvError_base - 25,		// AS300·þÎñÉÐÎ´¿ªÆô,ÐèÐÞ¸ÄConfigure.xmlÎÄ¼þ
-	AvError_ExternalError				 = AvError_base - 253,		// ÄÚ²¿´íÎó
-	AvError_InsufficentMemory			 = AvError_base - 254,		// ÄÚ´æ²»×ã
-	AvError_UnknownException			 = AvError_base - 255,		// Î´ÖªÒì³£ 
+	AvError_InvalidParameters			 = AvError_base - 1,		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð§
+	AvError_Invalid_ServerAddress		 = AvError_base - 2,		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½Ð§ï¿½ï¿½IPï¿½ï¿½Ö·	
+	AvError_Invliad_ServerPort			 = AvError_base - 3,		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë¿ï¿½ï¿½ï¿½Ð§
+	AvError_Invalid_AccountOrPassword	 = AvError_base - 4,		// ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð§
+	AvError_ConnectServerFailed			 = AvError_base - 5,		// ï¿½ï¿½ï¿½Ó·ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½
+	AvError_LoginFailed					 = AvError_base - 6,		// ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½
+	AvError_NotLogintoServer			 = AvError_base - 7,		// ï¿½ï¿½Î´ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	AvError_InvalidWindow				 = AvError_base - 8,		// ï¿½ï¿½ï¿½Ú²ï¿½ï¿½ÅµÄ´ï¿½ï¿½Ú¾ï¿½ï¿½Ö¸Ê¾ï¿½Ä²ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½Ð§ï¿½Ä´ï¿½ï¿½ï¿½
+	AvError_DeviceNotExist				 = AvError_base - 9,		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½è±¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	AvError_ConnectDeviceFailed			 = AvError_base - 10,		// ï¿½ï¿½ï¿½ï¿½ï¿½è±¸Ê§ï¿½ï¿½
+	AvError_DeviceInPlaying				 = AvError_base - 11,		// ï¿½è±¸ï¿½ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½Ò¸ï¿½ï¿½ï¿½ï¿½ï¿½
+	AvError_DBException					 = AvError_base - 12,		// ï¿½ï¿½ï¿½Ý¿ï¿½ï¿½ï¿½ï¿½ï¿½ì³£
+	AvError_DeviceNotInPlaying			 = AvError_base - 13,		// ï¿½è±¸ï¿½ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½
+	AVError_BufferOverflow				 = AvError_base	- 14,		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½á¹©ï¿½ï¿½ï¿½Ú´ï¿½Õ¼ä²»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	AvError_WindowNotPlaying			 = AvError_base - 15,		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î´ï¿½ï¿½ï¿½ï¿½ï¿½Îºï¿½ï¿½è±¸	
+	AvError_InvlaidPtzCommand			 = AvError_base - 16,		// ï¿½ï¿½Ð§ï¿½ï¿½PTZï¿½ï¿½ï¿½ï¿½
+	AvError_Invalid_PtzValue			 = AvError_base - 17,		// ï¿½ï¿½Ð§ï¿½ï¿½PTZï¿½ï¿½ï¿½ï¿½Öµ
+	AvError_LoadAssitConfigFailed		 = AvError_base - 18,		// ï¿½ï¿½ï¿½Ø¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½ï¿½
+	AvError_DeivceNotConfigAssist		 = AvError_base - 19,		// ï¿½ï¿½ï¿½ï¿½Î´ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½è±¸
+	AvError_FailedEnableAssist			 = AvError_base - 20,		// ï¿½ï¿½ï¿½Ã¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½
+	AvError_Crane_notExist				 = AvError_base - 21,		// ï¿½ï¿½ï¿½ï¿½ï¿½è±¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	AvError_ScreenMode_notExist			 = AvError_base - 22,		// Ö¸ï¿½ï¿½ï¿½ï¿½Ä£Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	AvError_NotSingleFramePlayer		 = AvError_base - 23,		// ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Ö¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	AvError_OutofPlayingRange			 = AvError_base - 24,		// Ö¸ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ã³¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ä·¶Î§
+	AvError_AS300ServiceIsDisabled		 = AvError_base - 25,		// AS300ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î´ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½Þ¸ï¿½Configure.xmlï¿½Ä¼ï¿½
+	AvError_ExternalError				 = AvError_base - 253,		// ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½
+	AvError_InsufficentMemory			 = AvError_base - 254,		// ï¿½Ú´æ²»ï¿½ï¿½
+	AvError_UnknownException			 = AvError_base - 255,		// Î´Öªï¿½ì³£ 
 	AvError_AS300_Error = -2000
 };
 
@@ -95,9 +95,9 @@ enum PtzCode
 	Ptz_ImageWidth,
 	Ptz_ImageHeight,
 	Ptz_Move		= 4,
-	// ÒÔÏÂ²Ù×÷½Ô´æÔÚ¾ø¶ÔºÍÏà¶ÔÁ½ÖÖÄ£Ê½
-	Ptz_Pan			 = 5,	// Ë®Æ½×ª¶¯
-	Ptz_Tilt,				// ´¹Ö±×ª¶¯
+	// ï¿½ï¿½ï¿½Â²ï¿½ï¿½ï¿½ï¿½Ô´ï¿½ï¿½Ú¾ï¿½ï¿½Ôºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£Ê½
+	Ptz_Pan			 = 5,	// Ë®Æ½×ªï¿½ï¿½
+	Ptz_Tilt,				// ï¿½ï¿½Ö±×ªï¿½ï¿½
 	Ptz_Zoom,
 	Ptz_Focus,
 	Ptz_Iris,
@@ -206,7 +206,7 @@ enum Orientation
 
 struct PlayBackStatus
 {
-	long	nSeekFrame;		// ÊÇ·ñÖ§³Öµ¥²½²¥·Å
+	long	nSeekFrame;		// ï¿½Ç·ï¿½Ö§ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	time_t  tStartTime;
 	time_t  tStopTime;
 	time_t	tFrameTimeStamp;
@@ -365,7 +365,7 @@ class CAVPlayerCtrl;
 // typedef shared_ptr<ComboStream> ComboStreamPtr;
 
 // CAVPlayerCtrl : See AVPlayerCtrl.cpp for implementation.
-// ½â·¢Êý¾Ý½ÓÊÕ³¬Ê±ÏûÏ¢
+// ï¿½â·¢ï¿½ï¿½ï¿½Ý½ï¿½ï¿½Õ³ï¿½Ê±ï¿½ï¿½Ï¢
 #define WM_FIRE_RECVTIMEOUT		WM_USER + 1024
 
 struct PlayPanel
@@ -421,7 +421,6 @@ public:
 };
 
 
-
 typedef list<PlayerStatusPtr>PlayerStatusList;
 extern int g_nTimeZone;
 struct _IPCConnection;
@@ -446,33 +445,9 @@ public:
 	INT		m_nYUVFrameCacheSize = 50;
 	bool	m_bEnableCameraPostion = true;
 	bool	m_bEnableAS300 = true;
-	static int GetLocalTimeZone()
-	{
-		TIME_ZONE_INFORMATION TZ;
-		GetTimeZoneInformation(&TZ);
-		return   TZ.Bias / (-60);
-	}
 	
-	void LogManager()
-	{
-		CFileFind finder;
-		TCHAR szLogPath[1024] = {0};
-		GetAppPath(szLogPath,1024);
-		_tcscat(szLogPath,_T("\\log\\*.log"));
-		BOOL bWorking = finder.FindFile(szLogPath);
-		CTime tNow = CTime::GetCurrentTime();
-		while (bWorking)
-		{
-			bWorking = finder.FindNextFile();
-			CTime tFile;
-			finder.GetCreationTime(tFile);
-			CTimeSpan ts = tNow - tFile;
-			if (ts.GetDays() < m_nLogSaveDays)
-				continue;
-			CString strFile = finder.GetFilePath();
-			DeleteFile(strFile);
-		} 
-	}
+	
+	void LogManager();
 // Implementation
 protected:
 	~CAVPlayerCtrl();
@@ -496,6 +471,7 @@ protected:
 // Dispatch and event IDs
 public:
 	enum {
+		dispidRemoveDevWnd = 31L,
 #if 0
 		dispidPlayBackPreview = 31L,
 #endif
@@ -534,17 +510,17 @@ private:
 	CRITICAL_SECTION	m_csDBConnector;
 	shared_ptr<CMySQLConnector> m_pDBConnector;
 	
-	// Ïà»úÁ¬½Ó¼¯
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¼ï¿½
 	CRITICAL_SECTION m_csMapConnection;
 	map<string, IPCConnectionPtr> m_MapConnection;
 	CRITICAL_SECTION m_csMapSession;
 	map<long, IPCConnectionPtr> m_MapSession;
 	map<string,SimpleStreamPtr> m_mapComboStream;
 	bool LoadConfigure();
-protected:
+public:
 	CString m_strAccount;
 	CString m_strServerIP;
-	// ÆôÓÃÉãÏñ»úÎ»ÖÃÐÅÏ¢±í£¬Ä¬ÈÏ¹Ø±Õ
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½Ä¬ï¿½Ï¹Ø±ï¿½
 	bool	m_bEnalbeCameraPostion;
 	LONG Login(LPCTSTR strServerIP, USHORT nServerPort, LPCTSTR strAccount, LPCTSTR strPassword, LONG nUserPtr);
 	void Logout(void);
@@ -553,20 +529,11 @@ protected:
 	void StopPlay(LPCTSTR strDeviceID,LONG hWnd);
 	void PausePlay(LPCTSTR strDeviceID, LONG hWnd);
 	
-// 	typedef struct SubClassInfo
-// 	{
-// 		HWND hPartnerWnd;
-// 		WNDPROC	pOldProcWnd;
-// 	};
-// 	typedef shared_ptr<SubClassInfo> SubClassInfoPtr;
-// 	static CRITICAL_SECTION m_csMapSubclassWnd;
-// 	static map<HWND, SubClassInfoPtr> m_MapSubclassWnd;
-// 	static LRESULT SubClassProc(HWND, UINT, WPARAM, LPARAM);
 	shared_ptr<CRunlog> m_pRunlog;
 	//HANDLE	m_hThreadCheckRecvTime;
 	volatile bool m_bThreadCheckRecvTimeRun;
-	long  m_nRecvTimeout;			// ½ÓÊÕÊý¾Ý³¬Ê±Öµ,Ä¬ÈÏÖµÎª5000ºÁÃë
-	long  m_nReConnectInterval;		// ÖØÁ¬¼ä¸ôÊ±¼ä,Ä¬ÈÏÖµÎª5000ºÁÃë
+	long  m_nRecvTimeout;			// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý³ï¿½Ê±Öµ,Ä¬ï¿½ï¿½ÖµÎª5000ï¿½ï¿½ï¿½ï¿½
+	long  m_nReConnectInterval;		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½,Ä¬ï¿½ï¿½ÖµÎª5000ï¿½ï¿½ï¿½ï¿½
 	static  UINT _stdcall ThreadCheckRecvTime(void *p)
 	{
 		CAVPlayerCtrl *pThis = (CAVPlayerCtrl *)p;
@@ -589,44 +556,34 @@ protected:
 	void SetReportInterval(LONG newVal);
 	void FreeString(BSTR* strString);
 
-public:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
-protected:
 
-	// »ñÈ¡ÕýÔÚ²¥·ÅÉè±¸µÄ´°¿ÚÁÐ±í
-	// strDevice	Éè±¸ID
-	// hWndArray	¾ä±úÊý×é
-	// nArraySize	hWndArrayÊý×éÄÜÈÝÄÉ´°¿ÚµÄÊýÁ¿£¬²¢·µ»ØstrDeviceIDÊµ¼Ê²¥·ÅµÄ´°¿ÚÊýÁ¿
-	// ÈôÉè±¸strDeviceÕýÔÚ²¥·Å£¬Ôò·µ»ØÕýÔÚ²¥·Å¸ÃÉè±¸µÄ´°¿ÚÊýÁ¿£¬·ñÔò·µ»Ø0
+	// ï¿½ï¿½È¡ï¿½ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½è±¸ï¿½Ä´ï¿½ï¿½ï¿½ï¿½Ð±ï¿½
+	// strDevice	ï¿½è±¸ID
+	// hWndArray	ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	// nArraySize	hWndArrayï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É´ï¿½ï¿½Úµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½strDeviceIDÊµï¿½Ê²ï¿½ï¿½ÅµÄ´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	// ï¿½ï¿½ï¿½è±¸strDeviceï¿½ï¿½ï¿½Ú²ï¿½ï¿½Å£ï¿½ï¿½ò·µ»ï¿½ï¿½ï¿½ï¿½Ú²ï¿½ï¿½Å¸ï¿½ï¿½è±¸ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ò·µ»ï¿½0
 	LONG GetDeviceWindow(LPCTSTR strDeviceID, LONG* hWndArray, LONG* nArraySize);
-	// »ñÈ¡ÔÚÖ¸¶¨´°¿ÚÉÏµÄ²¥·ÅµÄÉè±¸ID£¬
-	// Èô¸Ã´°¿ÚÉÐÎ´²¥·ÅÈÎºÎÉè±¸£¬Ôò·µ»Ø0£¬·ñÔò·µ»ØAvError_Succeed£¬²¢ÇÒstrDeviceID´ø»Ø¸Ã´°¿ÚÕýÔÚ²¥·ÅµÄÉè±¸ID
+	// ï¿½ï¿½È¡ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÏµÄ²ï¿½ï¿½Åµï¿½ï¿½è±¸IDï¿½ï¿½
+	// ï¿½ï¿½Ã´ï¿½ï¿½ï¿½ï¿½ï¿½Î´ï¿½ï¿½ï¿½ï¿½ï¿½Îºï¿½ï¿½è±¸ï¿½ï¿½ï¿½ò·µ»ï¿½0ï¿½ï¿½ï¿½ï¿½ï¿½ò·µ»ï¿½AvError_Succeedï¿½ï¿½ï¿½ï¿½ï¿½ï¿½strDeviceIDï¿½ï¿½ï¿½Ø¸Ã´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú²ï¿½ï¿½Åµï¿½ï¿½è±¸ID
 	
 	LONG GetWindowDevice(LONG hWnd, BSTR* strDeviceID);
 	LONG PlayComboStream(LPCTSTR strDevice1, LPCTSTR strDevice2, LONG hWnd, LONG nEnableHWAccel,LONG nArrangeMode);
 	LONG SetPlayComboBorder(DOUBLE dwSpreadHei);
-
-public:
 	 
 	map<string, ListPos> m_mapDevPos;
 	//map<string,string> m_mapDeviceID;
-
-protected:
 	LONG SetPlayComboBorderEx(LPCTSTR strDevice1, LPCTSTR strDevice2, DOUBLE fSpreadHei);
-	// Ö´ÐÐPTZÃüÁî
-	// strDeviceID	Éè±¸ID
-	// nPtzCommand	ÃüÁî´úÂë
-	// nPtzValue	ÓëÃüÁî´úÂë¶ÔÓ¦µÄÃüÁîÖµ£¬Èç×ª¶¯½Ç¶È£¬±ä½¹ÖµµÈ
-	// nOpType		²Ù×÷ÀàÐÍ£¬0ÎªÏà¶Ô¶¯×÷£¬1Îª¾ø¶Ô¶¯×÷£¬Ä¬ÈÏÎªÏà¶Ô¶¯×÷
+	// Ö´ï¿½ï¿½PTZï¿½ï¿½ï¿½ï¿½
+	// strDeviceID	ï¿½è±¸ID
+	// nPtzCommand	ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	// nPtzValue	ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½Ç¶È£ï¿½ï¿½ä½¹Öµï¿½ï¿½
+	// nOpType		ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í£ï¿½0Îªï¿½ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ï¿½1Îªï¿½ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ï¿½Ä¬ï¿½ï¿½Îªï¿½ï¿½Ô¶ï¿½ï¿½ï¿½
 	LONG SendPtzCommand(LPCTSTR strDeviceID, LONG nPtzCommand,LONG nPtzValue1,LONG nPtzValue2,LONG nOpType);
 	
 	LONG EnalbeCameraPostion(LONG bEnalbeFlag);
-public:
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
-
-protected:
 	LONG SetExternDCDraw(LPCTSTR szDeviceID, LONG pDCDraw, LONG pUserPtr);
-public:
 	// AS300 Client SDK
 	static void CALLBACK AS300LiveCallBack(int nSessionId, char* buf, int len, void* user)
 	{
@@ -644,8 +601,8 @@ public:
 		}
 	}
 
-	/// ÕâÊÇÒ»¸ö³¬´óµÄ¿Ó
-	/// ·µ»ØÖµÀàÐÍ±ØÐë¶¨ÒåÎªBOOLÐÍ£¬ÈôÊ¹ÓÃËµÃ÷ÎÄµµ»òº¯ÊýÔ­Òò¶¨ÒåµÄÊ¹ÓÃboolÀàÐÍ£¬ÔòÎÞ·¨¿ØÖÆ²¥·ÅËÙ¶È£¬²Ùµ°£¡£¡£¡£¡
+	/// ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½
+	/// ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½Í±ï¿½ï¿½ë¶¨ï¿½ï¿½ÎªBOOLï¿½Í£ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½Ëµï¿½ï¿½ï¿½Äµï¿½ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½boolï¿½ï¿½ï¿½Í£ï¿½ï¿½ï¿½ï¿½Þ·ï¿½ï¿½ï¿½ï¿½Æ²ï¿½ï¿½ï¿½ï¿½Ù¶È£ï¿½ï¿½Ùµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	static BOOL CALLBACK AS300PlayBackCallBack(int nSessionId, char* buf, int len, void* user)
 	{
 		if (!nSessionId)
@@ -660,7 +617,7 @@ public:
 		CAVPlayerCtrl *pThis = (CAVPlayerCtrl *)user;
 		pThis->OnDevStatus(szDevId, nStatus);
 	}
-	static void CALLBACK RespondCallBack(uint32 nSequence, long res, VSParamInfo *paramInfo, void* pUser)//ÏìÓ¦½á¹û»Øµ÷
+	static void CALLBACK RespondCallBack(uint32 nSequence, long res, VSParamInfo *paramInfo, void* pUser)//ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½Øµï¿½
 	{
 		
 	}
@@ -674,7 +631,7 @@ public:
 		}
 	}
 
-	//static int CALLBACK RecordQueryCallBack(int nQueryId, int nCount, void* pUser, long res);//ÏìÓ¦½á¹û»Øµ÷
+	//static int CALLBACK RecordQueryCallBack(int nQueryId, int nCount, void* pUser, long res);//ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½Øµï¿½
 
 	void   OnRespondCallback(int nSessionId);	
 	void   OnDevStatus(char* szDevId, int nStatus);
@@ -683,13 +640,13 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	// OnAS300PlayBackPos
-	// ²ÎÊýËµÃ÷£º
-	// nSessionId 		»Ø·Å / ÏÂÔØ»á»°ID,
-	// pos		Èç¹ûÊÇ°´ÎÄ¼þ»Ø·Å¸ÃÖµÎªÒÑ²¥·ÅÎÄ¼þ´óÐ¡µ¥Î»kb
-	// 			Èç¹ûÊÇÏÂÔØ¸ÃÖµÎª×îÐÂframeµÄtimestamp£¬Èç¹ûÊÇ - 1±íÊ¾ÏÂÔØÍê³É
-	// total	Èç¹ûÊÇ°´ÎÄ¼þ»Ø·Å¸ÃÖµÎª²¥·ÅÎÄ¼þ×Ü´óÐ¡µ¥Î»kb
-	//			Èç¹ûÊÇÏÂÔØ¸ÃÖµÎª - 1
-	// pUser		ÓÃ»§Êý¾Ý
+	// ï¿½ï¿½ï¿½ï¿½Ëµï¿½ï¿½ï¿½ï¿½
+	// nSessionId 		ï¿½Ø·ï¿½ / ï¿½ï¿½ï¿½Ø»á»°ID,
+	// pos		ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½Ä¼ï¿½ï¿½Ø·Å¸ï¿½ÖµÎªï¿½Ñ²ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½Î»kb
+	// 			ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø¸ï¿½ÖµÎªï¿½ï¿½ï¿½ï¿½frameï¿½ï¿½timestampï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ - 1ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	// total	ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½Ä¼ï¿½ï¿½Ø·Å¸ï¿½ÖµÎªï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½Ü´ï¿½Ð¡ï¿½ï¿½Î»kb
+	//			ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø¸ï¿½ÖµÎª - 1
+	// pUser		ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½
 	//////////////////////////////////////////////////////////////////////////
 	void   OnAS300PlayBackPos(int nSessionID, int nPos, int nTotal);
 	void   OnAS300Event(long nEventType, char* szId, int nParam1, int nParam2);
@@ -733,8 +690,6 @@ public:
 	}
 
 	LONG   PlaySrvStream(LPCTSTR strDeviceID, LONG hWnd, LONG nEnableHWAccel);
-	
-public:
 	afx_msg void OnDestroy();
 
 	LONG EnableOperationAssist(LPCTSTR strDevice, LONG nEnable);
@@ -753,55 +708,24 @@ public:
 	map<LONG, CVideoFrame *> m_mapVideoFrame;
 	int m_nLastPanel = -1;
 	RECT m_rtClip;
-// 	LRESULT OnFrameLButtonDown(WPARAM W, LPARAM L)
-// 	{
-// 		RECT rtNewClicp;
-// 		m_nLastPanel = m_pVideoFrame->GetCurPanel();
-// 		m_pVideoFrame->SetCapture();
-// 		m_pVideoFrame->GetWindowRect(&rtNewClicp);
-// 		GetClipCursor(&m_rtClip);
-// 		ClipCursor(&rtNewClicp);
-// 
-// 		return 0;
-// 	}
-
-// 	LRESULT OnFrameLButtonUp(WPARAM W, LPARAM lParam)
-// 	{
-// 		int nCurPanel = m_pVideoFrame->GetCurPanel();
-// 		if (nCurPanel != -1 &&
-// 			m_nLastPanel != -1 &&
-// 			nCurPanel != m_nLastPanel)
-// 		{
-// 			HWND hCurWnd = m_pVideoFrame->GetPanelWnd(nCurPanel);
-// 			m_pVideoFrame->SwapPanel(nCurPanel, m_nLastPanel);
-// 			::InvalidateRect(hCurWnd, nullptr, TRUE);
-// 			m_pVideoFrame->RefreshSelectedPanel();
-// 		}
-// 		TraceMsgA("%s\tnCurPanel = %d.\n", __FUNCTION__, nCurPanel);
-// 		ClipCursor(&m_rtClip);
-// 		ReleaseCapture();
-// 		return 0;
-// 	}
-
-public:
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	afx_msg int OnMouseActivate(CWnd* pDesktopWnd, UINT nHitTest, UINT message);
 	LONG PlayBack(LONG hWnd, LPCTSTR strDeviceID,LONG nStartTime, LONG nStopTime,LONG nSeekFrame, LONG nTimeout);
 	void StopPlayBack(LPCTSTR strDeviceID);
-	// ÒÆ¶¯µ½Ö¸¶¨Î»ÖÃºó£¬ÖØÐÂ²¥·Å
+	// ï¿½Æ¶ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½Î»ï¿½Ãºï¿½ï¿½ï¿½ï¿½Â²ï¿½ï¿½ï¿½
 	LONG SeekTime(LPCTSTR strDeviceID, LONGLONG nTime);
-protected:
 	LONG CreateFrameWnd(LONG hWnd,LONG nWndCount, LONG nFrameStyle, LONG* pFrameHandle);
+	LONG RemoveDevWnd(LPCTSTR strDeviceID, LONG hDevWnd);
 	LONG AdjustPanels(LONG nWndCount, LONG nFrameStyle);
 	LONG QueryRecord(LPCTSTR szDeviceID, LONG nStartTime, LONG nStopTime, LONG pRecordArray,LONG nBufferCount, LONG* nRecordCount);
 	LONG GetErrorMessage(LONG nErrorCode, LPCTSTR strErrorMessage, LONG nBufferSize);
 #if 0
 	LONG PlayBackPreview(LONG hWnd, LPCTSTR strDeviceID, LONG nStartTime, LONG nStopTime, LONG nCacheFPS, LONG nCacheTime);
 #endif
-public:
+
 	static CCriticalSectionAgent m_csMapPlayerPool;
-	// ¸ù¾Ý·Ö±æÂÊÀ´±£´æµÄ²¥·ÅÆ÷¾ä±ú³Ø
+	// ï¿½ï¿½ï¿½Ý·Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	static map<string, PlayerStatusList> m_mapPlayerPool;
 };
 
@@ -813,12 +737,20 @@ struct FrameBuffer
 	int		nFrameType;
 	FrameBuffer(byte *pData, int nLen,time_t t,int nType)
 	{
-		pBuffer = new byte[nLen];
-		memcpy(pBuffer, pData, nLen);
-		nLength = nLen;
 		tFrame = t;
 		nFrameType = nType;
-		//TraceMsgA("%s FrameTime = %I64d.\n", __FUNCTION__, t);
+		if (pData && nLen)
+		{
+			pBuffer = new byte[nLen];
+			memcpy(pBuffer, pData, nLen);
+			nLength = nLen;
+			//TraceMsgA("%s FrameTime = %I64d.\n", __FUNCTION__, t);
+		}
+		else
+		{
+			pBuffer = nullptr;
+			nLen = 0;
+		}
 	}
 	~FrameBuffer()
 	{
@@ -830,7 +762,9 @@ struct FrameBuffer
 		}
 	}
 };
+
 typedef shared_ptr<FrameBuffer> FrameBufferPtr;
+
 struct _IPCConnection
 {
 	IPC_PLAYHANDLE hPlayhandle;
@@ -858,7 +792,7 @@ struct _IPCConnection
 	long	nReConnectInterval;
 	shared_ptr<CRunlog> pRunlog;
 	HANDLE	hThread;
-	// AS300×ª·¢±äÁ¿
+	// AS300×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	bool	m_bIPCStart;
 	
 	MMRESULT hInputTimer = 0;
@@ -867,8 +801,8 @@ struct _IPCConnection
 	int		nElapsFrames = 0;
 	DWORD	nTimeStart = 0;
 	
-	long	m_nPlaySession;		// »Ø·ÅºÍ×ª·¢²¥·ÅµÄsession
-	bool	m_bPlayBackPrewiew;	// »Ø·ÅÔ¤ÀÀ£¬¿Éµ¥Ö¡²é¿´
+	long	m_nPlaySession;		// ï¿½Ø·Åºï¿½×ªï¿½ï¿½ï¿½ï¿½ï¿½Åµï¿½session
+	bool	m_bPlaySessionValid;		// ï¿½Ø·ï¿½sessionï¿½Ç·ï¿½ï¿½ï¿½Ð§
 	long	m_nLoginID;
 	CHAR	m_strDeviceID[64];
 	PlayBackStatusPtr	pPlayStatus;
@@ -876,11 +810,12 @@ struct _IPCConnection
 	CCriticalSectionAgent csSeekIterator;
 	shared_ptr<CStat> pStat = nullptr;
 	double	dfLastStatTime = 0;
-	bool	m_bSeekIterator = false;		// »Ø·ÅËæ»úÒÆ¶¯Ö¸ÕëÊÇ·ñÒÑ³õÊ¼»¯
+	bool	m_bSeekIterator = false;		// ï¿½Ø·ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½Ö¸ï¿½ï¿½ï¿½Ç·ï¿½ï¿½Ñ³ï¿½Ê¼ï¿½ï¿½
 	
 	list<SimpleStream*> listSimpleStream;
-	list<FrameBufferPtr> listFrame;
-	list<FrameBufferPtr>::iterator SeekIterator ;	// »Ø·ÅËæ»úÒÆ¶¯Ö¸Õë
+	vector<FrameBufferPtr> vecFrame;
+	//vector<FrameBufferPtr>::iterator SeekIterator ;	// ï¿½Ø·ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½Ö¸ï¿½ï¿½
+	int		m_nSeekOffset = 0;
 	shared_ptr<VSRecord_Info_t> m_pRecordInfo = nullptr;
 	
 #ifdef _DEBUG
@@ -898,10 +833,17 @@ struct _IPCConnection
 		dfReConnectTime = 0.0f;
 		m_nLoginID = -1;
 		nPlayBackFps = 25;
+		m_nPlaySession = -1;
+		m_bPlaySessionValid = false;
 #ifdef _DEBUG
 		InterlockedIncrement(&nRefCount);
 #endif
+	}
 
+	void SetCacheSize(int nTimeSeriod)
+	{
+		LineLockAgent(csListFrame);
+		vecFrame.reserve(nTimeSeriod * 30);
 	}
 
 	int SetExternDCDraw(void *pCallBack, void *pUserPtr)
@@ -922,6 +864,8 @@ struct _IPCConnection
 		dfReConnectTime = 0.0f;
 		nRecvTimeout = 15000;
 		nReConnectInterval = 15000;
+		m_nPlaySession = -1;
+		m_bPlaySessionValid = false;
 		m_pSimpleStream = new SimpleStream((HWND)hParent, strDevice, nPos);
 		if (m_pSimpleStream)
 			m_hWnd = m_pSimpleStream->GetSimpleWnd();
@@ -1133,14 +1077,15 @@ struct _IPCConnection
 		//}
 
 		LineLockAgent(pThis->csListFrame);
-		if (pThis->listFrame.size())
+		if (pThis->vecFrame.size())
 		{
 			LineLockAgent(pThis->csSeekIterator);
-			if (pThis->m_bSeekIterator && pThis->SeekIterator != pThis->listFrame.end())
+			if (pThis->m_bSeekIterator && 
+				pThis->m_nSeekOffset >=0 && pThis->m_nSeekOffset < pThis->vecFrame.size())
 			{
-				FrameBufferPtr pFrame = *(pThis->SeekIterator);
+				FrameBufferPtr &pFrame = pThis->vecFrame[pThis->m_nSeekOffset];
 				ipcplay_InputStream2(pThis->hPlayhandle, pFrame->pBuffer, pFrame->nLength);
-				pThis->SeekIterator++;
+				pThis->m_nSeekOffset++;
 			}
 		}
 	}
@@ -1154,24 +1099,31 @@ struct _IPCConnection
 
 		LineLockAgent(csListFrame);
 		auto dfT1 = GetPerfTime();
-		if (!listFrame.size())
+		if (!vecFrame.size())
 			return FALSE;
-		auto itFind = find_if(listFrame.begin(), listFrame.end(), [&tSeek](FrameBufferPtr &pFrame)
+		FrameBufferPtr pFrameFind = make_shared<FrameBuffer>(nullptr, 0, tSeek,DH_FRAME_TYPE_VIDEO_I_FRAME);
+		auto itFind = upper_bound(vecFrame.begin(), vecFrame.end(), pFrameFind, [](const FrameBufferPtr &pFrame1, const FrameBufferPtr &pFrame2)
 		{
-			if (pFrame->nFrameType != DH_FRAME_TYPE_VIDEO_I_FRAME)
+			if (pFrame1->nFrameType != DH_FRAME_TYPE_VIDEO_I_FRAME)
 				return false;
-			if (pFrame->tFrame >= tSeek)
-				return true;
-			return false;
+			return pFrame1->tFrame < pFrame2->tFrame;
 		});
+		
 		auto dfTimeSpan = GetPerfTime() - dfT1;
 		TraceMsgA("%s SeekTime Span = %.3f.\n", __FUNCTION__, dfTimeSpan);
-		if (itFind == listFrame.end())
+		if (itFind == vecFrame.end())
 			return FALSE;
-		LineLockAgent(csSeekIterator);
-		SeekIterator = itFind;
 		ipcplay_ClearCache(hPlayhandle);
+		LineLockAgent(csSeekIterator);
+		m_nSeekOffset = itFind - vecFrame.begin();
+		
 		return TRUE;
+	}
+
+	time_t GetDHFrameUTC(DH_FRAME_INFO *pFrame)
+	{
+		CTime tFrame(pFrame->nYear, pFrame->nMonth, pFrame->nDay, pFrame->nHour, pFrame->nMinute, pFrame->nSecond);
+		return tFrame.GetTime();
 	}
 	// 
 	BOOL InputStream(int nSessionId, byte *pData, int nLength)
@@ -1195,7 +1147,7 @@ struct _IPCConnection
 			{
 				if (pFrame->nYear)
 				{
-					time_t nNewFrameTime = pFrame->GetFrameUTCTime();
+					time_t nNewFrameTime = GetDHFrameUTC(pFrame);
 					
 					if (nLastPlayBackFrameTime && nLastPlayBackFrameTime > nNewFrameTime)
 					{
@@ -1211,11 +1163,11 @@ struct _IPCConnection
 					if (pFrame->nFrameLength > 0)
 					{
 						LineLockAgent(csListFrame);
-						listFrame.push_back(make_shared<FrameBuffer>(pFrame->pContent, pFrame->nFrameLength,pFrame->GetFrameUTCTime() - g_nTimeZone*3600,pFrame->nSubType));
+						vecFrame.push_back(make_shared<FrameBuffer>(pFrame->pContent, pFrame->nFrameLength, GetDHFrameUTC(pFrame), pFrame->nSubType));
 						LineLockAgent(csSeekIterator);
 						if (!m_bSeekIterator)
 						{
-							SeekIterator = listFrame.begin();
+							m_nSeekOffset = 0;
 							m_bSeekIterator = true;
 						}
 					}
@@ -1268,16 +1220,18 @@ struct _IPCConnection
 			hThread = NULL;
 		}
 
-		if (m_nPlaySession)
+		if (m_nPlaySession != -1)
 		{
 			assert(m_nLoginID != -1);
 			if (!pPlayStatus)
 				SDK_CUStopVideoRequest(m_nLoginID, (CHAR *)m_strDeviceID);
-			else
+			else if (m_bPlaySessionValid)
 				SDK_CUStopPlayback(m_nLoginID, m_nPlaySession);
 			m_nLoginID = -1;
 			m_nPlaySession = -1;
-			listFrame.clear();
+			m_bPlaySessionValid = false;
+			LineLockAgent(csListFrame);
+			vecFrame.clear();
 		}
 
 		if (m_hRtspSession)
@@ -1334,7 +1288,8 @@ struct _IPCConnection
 			assert(m_nLoginID != -1);
 			if (pPlayStatus)
 				SDK_CUStopPlayback(m_nLoginID, m_nPlaySession);
-			m_nPlaySession = -1;
+			m_bPlaySessionValid = false;
+			//m_nPlaySession = -1; ï¿½ï¿½ï¿½Ë²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã£ï¿½ï¿½ï¿½ï¿½æ»¹ï¿½ï¿½Òªï¿½Ãµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		}
 	}
 
@@ -1417,9 +1372,9 @@ struct _IPCConnection
 		{
 			if (TimeSpanEx(dfTFirst) >= 1.000f)
 			{
-				// ÉÏÒ»´ÎµÄ»î¶¯Ê±¼äÓëµ±Ç°µÄÊ±¼ä²î³¬¹ým_nRecvTimeOut
+				// ï¿½ï¿½Ò»ï¿½ÎµÄ»î¶¯Ê±ï¿½ï¿½ï¿½ëµ±Ç°ï¿½ï¿½Ê±ï¿½ï¿½î³¬ï¿½ï¿½m_nRecvTimeOut
 				if ((TimeSpanEx(pConnection->dfLastActiveTime) * 1000) > pConnection->nRecvTimeout &&
-					// ÈôÉÐÎ´±¨¸æ¶ÏÏß»òÕßÀëÉÏÏß±¨¸æÊ±¼ä³¬¹ý
+					// ï¿½ï¿½ï¿½ï¿½Î´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß±ï¿½ï¿½ï¿½Ê±ï¿½ä³¬ï¿½ï¿½
 					(pConnection->dfReConnectTime == 0.0f || (TimeSpanEx(pConnection->dfReConnectTime) * 1000) > pConnection->nReConnectInterval))
 				{
 					if (pConnection->pRunlog)
@@ -1445,4 +1400,3 @@ struct _IPCConnection
 		return 0;
 	}
 };
-

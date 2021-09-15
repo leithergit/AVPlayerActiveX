@@ -40,8 +40,6 @@ BEGIN_MESSAGE_MAP(CAVPlayerCtrl, COleControl)
 	ON_WM_MOUSEACTIVATE()
 END_MESSAGE_MAP()
 
-
-
 // Dispatch map
 // #define DISP_FUNCTION_ID(theClass, szExternalName, dispid, pfnMember, vtRetVal, vtsParams)\
 // 	{ _T(szExternalName), dispid, vtsParams, vtRetVal, (AFX_PMSG)(void (theClass::*)(void))&pfnMember, (AFX_PMSG)0, 0, afxDispCustom }, 
@@ -62,14 +60,12 @@ BEGIN_DISPATCH_MAP(CAVPlayerCtrl, COleControl)
 	DISP_FUNCTION_ID(CAVPlayerCtrl, "PlayComboStream", dispidPlayComboStream, PlayComboStream, VT_I4, VTS_BSTR VTS_BSTR VTS_I4 VTS_I4 VTS_I4)
 	DISP_FUNCTION_ID(CAVPlayerCtrl, "SetPlayComboBorder", dispidSetPlayComboBorder, SetPlayComboBorder, VT_I4, VTS_R8)
 	DISP_FUNCTION_ID(CAVPlayerCtrl, "SetPlayComboBorderEx", dispidSetPlayComboBorderEx, SetPlayComboBorderEx, VT_I4, VTS_BSTR VTS_BSTR VTS_R8)
-	DISP_FUNCTION_ID(CAVPlayerCtrl, "SendPtzCommand", dispidSendPtzCommand, SendPtzCommand, VT_I4, VTS_BSTR VTS_I4 VTS_I4 VTS_I4 VTS_I4)
-	
+	DISP_FUNCTION_ID(CAVPlayerCtrl, "SendPtzCommand", dispidSendPtzCommand, SendPtzCommand, VT_I4, VTS_BSTR VTS_I4 VTS_I4 VTS_I4 VTS_I4)	
 	DISP_FUNCTION_ID(CAVPlayerCtrl, "EnalbeCameraPostion", dispidEnalbeCameraPostion, EnalbeCameraPostion, VT_I4, VTS_I4)
 	DISP_FUNCTION_ID(CAVPlayerCtrl, "SetExternDCDraw", dispidSetExternDCDraw, SetExternDCDraw, VT_I4, VTS_BSTR VTS_I4 VTS_I4)
 	DISP_FUNCTION_ID(CAVPlayerCtrl, "PlaySrvStream", dispidPlaySrvStream, PlaySrvStream, VT_I4, VTS_BSTR VTS_I4 VTS_I4)
 	DISP_FUNCTION_ID(CAVPlayerCtrl, "EnableOperationAssist", dispidEnableOperationAssist, EnableOperationAssist, VT_I4, VTS_BSTR VTS_I4)
 	DISP_FUNCTION_ID(CAVPlayerCtrl, "LoadOpAssistConfigure", dispidLoadOpAssistConfigure, LoadOpAssistConfigure, VT_I4, VTS_NONE)
-
 	DISP_FUNCTION_ID(CAVPlayerCtrl, "ConfigureScreenMode", dispidConfigureScreenMode, ConfigureScreenMode, VT_I4, VTS_NONE)
 	DISP_FUNCTION_ID(CAVPlayerCtrl, "SwitchScreen", dispidSwitchScreen, SwitchScreen, VT_I4, VTS_I4 VTS_I4 VTS_I4)
 	DISP_FUNCTION_ID(CAVPlayerCtrl, "PlayBack", dispidPlayBack, PlayBack, VT_I4, VTS_I4 VTS_BSTR VTS_I4 VTS_I4 VTS_I4 VTS_I4)
@@ -82,6 +78,7 @@ BEGIN_DISPATCH_MAP(CAVPlayerCtrl, COleControl)
 #if 0
 	DISP_FUNCTION_ID(CAVPlayerCtrl, "PlayBackPreview", dispidPlayBackPreview, PlayBackPreview, VT_I4, VTS_I4 VTS_BSTR VTS_I4 VTS_I4 VTS_I4 VTS_I4)
 #endif
+	DISP_FUNCTION_ID(CAVPlayerCtrl, "RemoveDevWnd", dispidRemoveDevWnd, RemoveDevWnd, VT_I4, VTS_BSTR VTS_I4)
 END_DISPATCH_MAP()
 
 
@@ -91,28 +88,17 @@ BEGIN_EVENT_MAP(CAVPlayerCtrl, COleControl)
 	EVENT_CUSTOM_ID("RecvTimeout", eventidRecvTimeout, RecvTimeout, VTS_BSTR VTS_I4)
 END_EVENT_MAP()
 
-
-
 // Property pages
-
-// TODO: Add more property pages as needed.  Remember to increase the count!
 BEGIN_PROPPAGEIDS(CAVPlayerCtrl, 1)
 	PROPPAGEID(CAVPlayerPropPage::guid)
 END_PROPPAGEIDS(CAVPlayerCtrl)
 
-
-
 // Initialize class factory and guid
-
 IMPLEMENT_OLECREATE_EX(CAVPlayerCtrl, "AVPLAYER.AVPlayerCtrl.1",
 	0x7cb0d592, 0x1870, 0x4608, 0x81, 0x3b, 0x8d, 0xbb, 0xcd, 0x3d, 0xab, 0x57)
 
-
-
 // Type library ID and version
-
 IMPLEMENT_OLETYPELIB(CAVPlayerCtrl, _tlid, _wVerMajor, _wVerMinor)
-
 
 
 // Interface IDs
@@ -121,8 +107,6 @@ const IID BASED_CODE IID_DAVPlayer =
 		{ 0x7FA42197, 0x3260, 0x4BBB, { 0x99, 0xF9, 0x28, 0x36, 0xE5, 0x3B, 0xB0, 0x3B } };
 const IID BASED_CODE IID_DAVPlayerEvents =
 		{ 0x789C77B5, 0x9570, 0x491B, { 0x9A, 0x70, 0x6B, 0xC7, 0x69, 0x71, 0xB5, 0x30 } };
-
-
 
 // Control type information
 
@@ -134,7 +118,6 @@ static const DWORD BASED_CODE _dwAVPlayerOleMisc =
 	OLEMISC_RECOMPOSEONRESIZE;
 
 IMPLEMENT_OLECTLTYPE(CAVPlayerCtrl, IDS_AVPLAYER, _dwAVPlayerOleMisc)
-
 
 
 // CAVPlayerCtrl::CAVPlayerCtrlFactory::UpdateRegistry -
@@ -164,10 +147,7 @@ BOOL CAVPlayerCtrl::CAVPlayerCtrlFactory::UpdateRegistry(BOOL bRegister)
 		return AfxOleUnregisterClass(m_clsid, m_lpszProgID);
 }
 
-
-
 // CAVPlayerCtrl::CAVPlayerCtrl - Constructor
-int g_nTimeZone = CAVPlayerCtrl::GetLocalTimeZone();
 CAVPlayerCtrl::CAVPlayerCtrl()
 {
 	InitializeIIDs(&IID_DAVPlayer, &IID_DAVPlayerEvents);
@@ -194,7 +174,6 @@ CAVPlayerCtrl::CAVPlayerCtrl()
 // 	TraceMsgA("offsetof(nReserver1) = %d\r\n", offsetof(PlayerInfo, nReserver1));
 // 	TraceMsgA("offsetof(nReserver2) = %d\r\n", offsetof(PlayerInfo, nReserver2));
 }
-
 
 void StartCGI(char *szURL,char *szIP,WORD nPort,CHAR *szUser,char *szPassword)
 {
@@ -266,22 +245,21 @@ void StartCGI(char *szURL,char *szIP,WORD nPort,CHAR *szUser,char *szPassword)
 }
 
 // CAVPlayerCtrl::~CAVPlayerCtrl - Destructor
-
 CAVPlayerCtrl::~CAVPlayerCtrl()
 {
 // 	if (m_hThreadCheckRecvTime)
 // 	{
 // 		m_bThreadCheckRecvTimeRun = false;
 // 		if (m_pRunlog)
-// 			m_pRunlog->Runlog(_T("%s ×¼±¸½áÊøÏß³ÌThreadCheckRecvTime.\n"),__FUNCTIONW__);
+// 			m_pRunlog->Runlog(_T("%s å‡†å¤‡ç»“æŸçº¿ç¨‹ThreadCheckRecvTime.\n"),__FUNCTIONW__);
 // 		if (WaitForSingleObject(m_hThreadCheckRecvTime,5000) == WAIT_TIMEOUT)
 // 		{
 // 			DWORD dwThreadExitCode;
 // 			GetExitCodeThread(m_hThreadCheckRecvTime, &dwThreadExitCode);
-// 			if (dwThreadExitCode == STILL_ACTIVE)		// Ïß³ÌÈÔÔÚÔËĞĞ
+// 			if (dwThreadExitCode == STILL_ACTIVE)		// çº¿ç¨‹ä»åœ¨è¿è¡Œ
 // 			{
 // 				if (m_pRunlog)
-// 					m_pRunlog->Runlog(_T("%s Ïß³ÌThreadCheckRecvTimeÈÔÔÚÔËĞĞ,ĞèÒªÇ¿ÖÆ½áÊø.\n"),__FUNCTIONW__);
+// 					m_pRunlog->Runlog(_T("%s çº¿ç¨‹ThreadCheckRecvTimeä»åœ¨è¿è¡Œ,éœ€è¦å¼ºåˆ¶ç»“æŸ.\n"),__FUNCTIONW__);
 // 				TerminateThread(m_hThreadCheckRecvTime,0);
 // 			}
 // 		}
@@ -289,9 +267,7 @@ CAVPlayerCtrl::~CAVPlayerCtrl()
 
 }
 
-
 // CAVPlayerCtrl::OnDraw - Drawing function
-
 void CAVPlayerCtrl::OnDraw(	CDC* pdc, const CRect& rcBounds, const CRect& rcInvalid)
 {
 	if (!pdc)
@@ -315,10 +291,7 @@ void CAVPlayerCtrl::OnDraw(	CDC* pdc, const CRect& rcBounds, const CRect& rcInva
 // 	pdc->Ellipse(rcBounds);
 }
 
-
-
 // CAVPlayerCtrl::DoPropExchange - Persistence support
-
 void CAVPlayerCtrl::DoPropExchange(CPropExchange* pPX)
 {
 	ExchangeVersion(pPX, MAKELONG(_wVerMinor, _wVerMajor));
@@ -326,10 +299,7 @@ void CAVPlayerCtrl::DoPropExchange(CPropExchange* pPX)
 
 }
 
-
-
 // CAVPlayerCtrl::OnResetState - Reset control to default state
-
 void CAVPlayerCtrl::OnResetState()
 {
 	COleControl::OnResetState();  // Resets defaults found in DoPropExchange
@@ -337,27 +307,42 @@ void CAVPlayerCtrl::OnResetState()
 	// TODO: Reset any other control state here.
 }
 
-
-
 // CAVPlayerCtrl::AboutBox - Display an "About" box to the user
-
 void CAVPlayerCtrl::AboutBox()
 {
 	CDialog dlgAbout(IDD_ABOUTBOX_AVPLAYER);
 	dlgAbout.DoModal();
 }
 
-
-
 // CAVPlayerCtrl message handlers
 LRESULT CAVPlayerCtrl::OnFireRecvTimeout(WPARAM w,LPARAM l)
 {
-	// ²»ÔÙ·¢ËÍÊÂ¼ş£¬ÓÉ¿Ø¼şÄÚ²¿´¦ÀíÖØÁ¬ÊÂ¼ş
+	// ä¸å†å‘é€äº‹ä»¶ï¼Œç”±æ§ä»¶å†…éƒ¨å¤„ç†é‡è¿äº‹ä»¶
 	//FireEvent(eventidRecvTimeout, EVENT_PARAM(VTS_BSTR VTS_I4), szDeviceW, l);
 	//FireEvent(eventidRecvTimeout, EVENT_PARAM(VTS_I4 VTS_BSTR), l, szDeviceW);
 	return 0;
 }
 
+void CAVPlayerCtrl::LogManager()
+{
+	CFileFind finder;
+	TCHAR szLogPath[1024] = { 0 };
+	GetAppPath(szLogPath, 1024);
+	_tcscat(szLogPath, _T("\\log\\*.log"));
+	BOOL bWorking = finder.FindFile(szLogPath);
+	CTime tNow = CTime::GetCurrentTime();
+	while (bWorking)
+	{
+		bWorking = finder.FindNextFile();
+		CTime tFile;
+		finder.GetCreationTime(tFile);
+		CTimeSpan ts = tNow - tFile;
+		if (ts.GetDays() < m_nLogSaveDays)
+			continue;
+		CString strFile = finder.GetFilePath();
+		DeleteFile(strFile);
+	}
+}
 
 LONG CAVPlayerCtrl::Login(LPCTSTR strServerIP, USHORT nServerPort, LPCTSTR strAccount, LPCTSTR strPassword, LONG nUserPtr)
 {
@@ -385,7 +370,7 @@ LONG CAVPlayerCtrl::Login(LPCTSTR strServerIP, USHORT nServerPort, LPCTSTR strAc
 	}
 	else
 	{
-		// ÔİÍ£Êı¾İ¿â·ÃÎÊ£¬ÏÈ½âËø
+		// æš‚åœæ•°æ®åº“è®¿é—®ï¼Œå…ˆè§£é”
 		LeaveCriticalSection(&m_csDBConnector);
 		try
 		{
@@ -396,8 +381,8 @@ LONG CAVPlayerCtrl::Login(LPCTSTR strServerIP, USHORT nServerPort, LPCTSTR strAc
 				if (nStatus == 0)
 				{
 					SDK_CUSetRealPlayCallBack(m_nLoginID, AS300LiveCallBack, this);
-					/// ÕâÊÇÒ»¸ö³¬´óµÄ¿Ó
-					/// AS300PlayBackCallBack»Øµ÷º¯Êı·µ»ØÖµÀàĞÍ±ØĞë¶¨ÒåÎªBOOLĞÍ£¬ÈôÊ¹ÓÃËµÃ÷ÎÄµµ»òº¯ÊıPlayBackCallbackÔ­ĞÍ¶¨ÒåµÄÊ¹ÓÃboolÀàĞÍ£¬ÔòÎŞ·¨¿ØÖÆ²¥·ÅËÙ¶È£¬²Ùµ°£¡£¡£¡£¡
+					/// è¿™æ˜¯ä¸€ä¸ªè¶…å¤§çš„å‘
+					/// AS300PlayBackCallBackå›è°ƒå‡½æ•°è¿”å›å€¼ç±»å‹å¿…é¡»å®šä¹‰ä¸ºBOOLå‹ï¼Œè‹¥ä½¿ç”¨è¯´æ˜æ–‡æ¡£æˆ–å‡½æ•°PlayBackCallbackåŸå‹å®šä¹‰çš„ä½¿ç”¨boolç±»å‹ï¼Œåˆ™æ— æ³•æ§åˆ¶æ’­æ”¾é€Ÿåº¦ï¼Œæ“è›‹ï¼ï¼ï¼ï¼
 					SDK_CUSetPlaybackCallBack(m_nLoginID, (PlayBackCallback)AS300PlayBackCallBack, this);
 					SDK_CUSetPlaybackPos(m_nLoginID, PlayBackPosCallBack, this);
 					//SDK_CUSetResCallback(m_nLoginID, RespondCallBack, this);
@@ -411,7 +396,7 @@ LONG CAVPlayerCtrl::Login(LPCTSTR strServerIP, USHORT nServerPort, LPCTSTR strAc
 			}
 			m_strAccount = strAccount;
 			m_strServerIP = strServerIP;
-			// Á¬½ÓÊı¾İ¿â£¬ÖØĞÂÉÏËø
+			// è¿æ¥æ•°æ®åº“ï¼Œé‡æ–°ä¸Šé”
 			CAutoLock dblock(&m_csDBConnector);
 			m_pDBConnector = shared_ptr<CMySQLConnector>( new CMySQLConnector());
 			if (!m_pDBConnector->Connect(_AnsiString(strServerIP, CP_ACP), "root", "password", "vms", 3406))
@@ -429,13 +414,13 @@ LONG CAVPlayerCtrl::Login(LPCTSTR strServerIP, USHORT nServerPort, LPCTSTR strAc
 					m_pRunlog->Runlog(_T("%s Invalid account or password,login failed.\n"),__FUNCTIONW__);
 				return 	AvError_LoginFailed;
 			}
-			// Êı¾İ¿â·ÃÎÊÍê³É£¬½âËø
+			// æ•°æ®åº“è®¿é—®å®Œæˆï¼Œè§£é”
 			dblock.Unlock();
 			LoadScreenMode();
 			LoadOPAssistXConfigure();
 			TCHAR szPath[MAX_PATH] = { 0 };
 			TCHAR szTempPath[MAX_PATH] = {0};
-			// È¡µÃ¿Ø¼ş¼ÓÔØÂ·¾¶
+			// å–å¾—æ§ä»¶åŠ è½½è·¯å¾„
 			GetModuleFileName(theApp.m_hInstance,szTempPath,MAX_PATH);
 			int nPos = _tcsReserverFind(szTempPath,_T('\\'));
 			_tcsncpy_s(szPath,MAX_PATH,szTempPath,nPos);
@@ -443,7 +428,7 @@ LONG CAVPlayerCtrl::Login(LPCTSTR strServerIP, USHORT nServerPort, LPCTSTR strAc
 			CMarkup xml;
 			if (PathFileExists(szPath) &&  xml.Load(szPath))
 			{
-				// ÅäÖÃÎÄ¼şµÄ¸ñÊ½
+				// é…ç½®æ–‡ä»¶çš„æ ¼å¼
 				/*
 				<?xml version="1.0" encoding="utf-8"?>
 				<Configuration >
@@ -510,8 +495,8 @@ LONG CAVPlayerCtrl::Login(LPCTSTR strServerIP, USHORT nServerPort, LPCTSTR strAc
 					}
 				}
 				if (bEnable)
-				{// Ö»ÓĞÆôÓÃÎ»ÖÃÑ¡Ïîºó,²Å²éÑ¯Êı¾İ¿â
-					//	·ÃÎÊÊı¾İ¿â£¬ÖØĞÂ¼ÓËø
+				{// åªæœ‰å¯ç”¨ä½ç½®é€‰é¡¹å,æ‰æŸ¥è¯¢æ•°æ®åº“
+					//	è®¿é—®æ•°æ®åº“ï¼Œé‡æ–°åŠ é”
 					dblock.Lock();
 					res = m_pDBConnector->Query("select DISTINCT cameraID from screencut_position");
 					if (res.RowCount() < 1)
@@ -568,7 +553,7 @@ LONG CAVPlayerCtrl::Login(LPCTSTR strServerIP, USHORT nServerPort, LPCTSTR strAc
 		{
 			if (m_pRunlog) 
 				m_pRunlog->Runlog(_T("%s A DB Exception occured:\n\t%s.\n"),__FUNCTIONW__,e.whatW());
-			// ·¢ÉúÒì³£ºó±àÒëÆ÷»á×Ô¶¯»ØÊÕ¶ÔÏóËùÕ¼ÄÚ´æ£¬Òò´Ë¶ÔÏóÖ¸Õë¿ÉÖÃ¿Õ
+			// å‘ç”Ÿå¼‚å¸¸åç¼–è¯‘å™¨ä¼šè‡ªåŠ¨å›æ”¶å¯¹è±¡æ‰€å å†…å­˜ï¼Œå› æ­¤å¯¹è±¡æŒ‡é’ˆå¯ç½®ç©º
 			CAutoLock lock(&m_csDBConnector);
 			m_pDBConnector.reset();
 			return AvError_DBException;
@@ -622,7 +607,6 @@ void CAVPlayerCtrl::Logout(void)
 	}
 }
 
-
 UINT CAVPlayerCtrl::ThreadCheckRecvTimeRun()
 {
 	double dfTFirst = GetExactTime();
@@ -636,24 +620,24 @@ UINT CAVPlayerCtrl::ThreadCheckRecvTimeRun()
 				it++)
 			{
 				IPCConnectionPtr pConnection = it->second;
-				// ÉÏÒ»´ÎµÄ»î¶¯Ê±¼äÓëµ±Ç°µÄÊ±¼ä²î³¬¹ım_nRecvTimeOut
+				// ä¸Šä¸€æ¬¡çš„æ´»åŠ¨æ—¶é—´ä¸å½“å‰çš„æ—¶é—´å·®è¶…è¿‡m_nRecvTimeOut
 				if ((TimeSpanEx(pConnection->dfLastActiveTime) * 1000) > m_nRecvTimeout &&
-					// ÈôÉĞÎ´±¨¸æ¶ÏÏß»òÕßÀëÉÏÏß±¨¸æÊ±¼ä³¬¹ı
+					// è‹¥å°šæœªæŠ¥å‘Šæ–­çº¿æˆ–è€…ç¦»ä¸Šçº¿æŠ¥å‘Šæ—¶é—´è¶…è¿‡
 					(pConnection->dfReConnectTime == 0.0f || (TimeSpanEx(pConnection->dfReConnectTime) * 1000) > m_nReConnectInterval))
 				{
 					if (m_pRunlog)
-						m_pRunlog->Runlog(_T("%s Éè±¸ %s(IP:%s)µôÏß,³¢ÊÔÖØÁ¬!\n"), __FUNCTIONW__, _UnicodeString(it->first.c_str(), CP_ACP), _UnicodeString(pConnection->szIP, CP_ACP));
+						m_pRunlog->Runlog(_T("%s è®¾å¤‡ %s(IP:%s)æ‰çº¿,å°è¯•é‡è¿!\n"), __FUNCTIONW__, _UnicodeString(it->first.c_str(), CP_ACP), _UnicodeString(pConnection->szIP, CP_ACP));
 
 					if (pConnection->Reconnect() == AvError_Succeed)
 					{
 						if (m_pRunlog)
-							m_pRunlog->Runlog(_T("%s Éè±¸ %s(IP:%s)ÖØÁ¬³É¹¦!\n"), __FUNCTIONW__, _UnicodeString(it->first.c_str(), CP_ACP), _UnicodeString(pConnection->szIP, CP_ACP));
+							m_pRunlog->Runlog(_T("%s è®¾å¤‡ %s(IP:%s)é‡è¿æˆåŠŸ!\n"), __FUNCTIONW__, _UnicodeString(it->first.c_str(), CP_ACP), _UnicodeString(pConnection->szIP, CP_ACP));
 						pConnection->dfReConnectTime = GetExactTime();
 					}
 					else
 					{
 						if (m_pRunlog)
-							m_pRunlog->Runlog(_T("%s Éè±¸ %s(IP:%s)ÖØÁ¬Ê§°Ü,%dÃëºóÖØÊÔ!\n"), __FUNCTIONW__, _UnicodeString(it->first.c_str(), CP_ACP), _UnicodeString(pConnection->szIP, CP_ACP), m_nReConnectInterval);
+							m_pRunlog->Runlog(_T("%s è®¾å¤‡ %s(IP:%s)é‡è¿å¤±è´¥,%dç§’åé‡è¯•!\n"), __FUNCTIONW__, _UnicodeString(it->first.c_str(), CP_ACP), _UnicodeString(pConnection->szIP, CP_ACP), m_nReConnectInterval);
 					}
 				}
 			}
@@ -706,7 +690,7 @@ LONG CAVPlayerCtrl::PlayStream(LPCTSTR strDeviceID, LONG hWnd,LONG nEnalbeHWAcce
 		return AvError_NotLogintoServer;
 
 	dblock.Unlock();
-	// ´ÓÊı¾İ¿â»ñÈ¡Ïà»úµÄIP£¬¶Ë¿Ú£¬ÕÊºÅ£¬ÃÜÂë
+	// ä»æ•°æ®åº“è·å–ç›¸æœºçš„IPï¼Œç«¯å£ï¼Œå¸å·ï¼Œå¯†ç 
 	try
 	{
 		// 330106 100 0052
@@ -761,7 +745,7 @@ LONG CAVPlayerCtrl::PlayStream(LPCTSTR strDeviceID, LONG hWnd,LONG nEnalbeHWAcce
 		WORD nPort	 = res["port"];
 		char *szUser = res["loginname"];
 		char *szPass = res["loginpasswd"];
-		// ²»ÔÙ·ÃÎÊÊı¾İ¿â£¬ÊÖ¶¯½âËø
+		// ä¸å†è®¿é—®æ•°æ®åº“ï¼Œæ‰‹åŠ¨è§£é”
 		dblock.Unlock();
 		
 		IPCConnectionPtr pConnection = shared_ptr<_IPCConnection>(new _IPCConnection());
@@ -810,6 +794,51 @@ LONG CAVPlayerCtrl::PlayStream(LPCTSTR strDeviceID, LONG hWnd,LONG nEnalbeHWAcce
 	return 0;
 }
 
+LONG CAVPlayerCtrl::RemoveDevWnd(LPCTSTR strDeviceID, LONG hDevWnd)
+{
+	AFX_MANAGE_STATE(AfxGetStaticModuleState());
+	if (!strDeviceID )
+		return AvError_InvalidParameters;
+
+	char szDeviceID[32] = { 0 };
+	W2AHelper(strDeviceID, szDeviceID, 32);
+	CAutoLock lock(&m_csMapConnection);
+	map<string, IPCConnectionPtr>::iterator itFind = m_MapConnection.find(szDeviceID);
+	if (itFind != m_MapConnection.end())
+	{
+		IPC_PLAYHANDLE  hPlayer = itFind->second->hPlayhandle;
+		if (hPlayer)
+		{
+			if (hDevWnd)
+			{
+				ipcplay_RemoveWindow(hPlayer, (HWND)hDevWnd);
+				::InvalidateRect((HWND)hDevWnd, NULL, true);
+			}
+			else
+			{
+				int nWndCount = 16;
+				HWND hWndArray[16] = { 0 };
+				int nStatus = ipcplay_GetRenderWindows(hPlayer, hWndArray, nWndCount);
+				if (nStatus == IPC_Succeed  &&
+					nWndCount > 0)
+				{
+					for (int i = 0; i < nWndCount; i++)
+					{
+						ipcplay_RemoveWindow(hPlayer, hWndArray[i]);
+						::InvalidateRect(hWndArray[i], NULL, true);
+					}
+				}
+			}
+		}
+	}
+	else if (m_pRunlog)
+	{
+		m_pRunlog->Runlog(_T("%s device %s Is not playing.\n"), __FUNCTIONW__, strDeviceID);
+		m_pRunlog->Runlog(_T("%s MapConnection size = %d.\n"), __FUNCTIONW__, m_MapConnection.size());
+	}
+	return 0;
+}
+
 LONG CAVPlayerCtrl::PlayComboStream(LPCTSTR szDevice1, LPCTSTR szDevice2, LONG hWnd, LONG nEnableHWAccel,LONG nArrangeMode)
 {
 	TraceFunction();
@@ -832,15 +861,15 @@ LONG CAVPlayerCtrl::PlayComboStream(LPCTSTR szDevice1, LPCTSTR szDevice2, LONG h
 	//m_mapDeviceID.insert(make_pair<string,string>(strDev1,strDev1));
 	//m_mapDeviceID.insert(make_pair<string,string>(strDev2,strDev2));
 	
-	// ´ÓÊı¾İ¿â»ñÈ¡Ïà»úµÄIP£¬¶Ë¿Ú£¬ÕÊºÅ£¬ÃÜÂë
-	RECT rtBorderLR[2] = {{0,0,50,0},{50,0,0,0}};		// ×óÓÒÅÅÁĞµÄ³ß´ç
-	RECT rtBorderTB[2] = {{0,0,0,50},{0,50,0,0}};		// ÉÏÏÂÅÅÁĞµÄ³ß´ç
+	// ä»æ•°æ®åº“è·å–ç›¸æœºçš„IPï¼Œç«¯å£ï¼Œå¸å·ï¼Œå¯†ç 
+	RECT rtBorderLR[2] = {{0,0,50,0},{50,0,0,0}};		// å·¦å³æ’åˆ—çš„å°ºå¯¸
+	RECT rtBorderTB[2] = {{0,0,0,50},{0,50,0,0}};		// ä¸Šä¸‹æ’åˆ—çš„å°ºå¯¸
 	LPCTSTR szDeviceArray[2] = {szDevice1,szDevice2};
-	Position posArrayLR[2] = {Pos_Left,Pos_Right};		// ×óÓÒÅÅÁĞµÄÎ»ÖÃ
-	Position posArrayTB[2] = {Pos_Top,Pos_Bottom};		// ÉÏÏÂÅÅÁĞµÄÎ»ÖÃ
+	Position posArrayLR[2] = {Pos_Left,Pos_Right};		// å·¦å³æ’åˆ—çš„ä½ç½®
+	Position posArrayTB[2] = {Pos_Top,Pos_Bottom};		// ä¸Šä¸‹æ’åˆ—çš„ä½ç½®
 	RECT *pBorder = nullptr;
 	Position *pPosition = nullptr;
-	if (nArrangeMode == 1)								// nArrangeMode¼´ÅÅÁĞ·½Ê½Îª1Ê±£¬ÔòÎªÉÏÏÂÅÅÁĞ,Îª0Ê±Ôò×óÓÒÅÅÁĞ
+	if (nArrangeMode == 1)								// nArrangeModeå³æ’åˆ—æ–¹å¼ä¸º1æ—¶ï¼Œåˆ™ä¸ºä¸Šä¸‹æ’åˆ—,ä¸º0æ—¶åˆ™å·¦å³æ’åˆ—
 	{
 		pBorder = rtBorderTB;
 		pPosition = posArrayTB;
@@ -974,7 +1003,7 @@ LONG CAVPlayerCtrl::PlaySrvStream(LPCTSTR strDeviceID, LONG hWnd, LONG nEnableHW
 		
 	if (m_nLoginID == -1)
 		return AvError_NotLogintoServer;
-	// ´ÓÊı¾İ¿â»ñÈ¡Ïà»úµÄIP£¬¶Ë¿Ú£¬ÕÊºÅ£¬ÃÜÂë
+	// ä»æ•°æ®åº“è·å–ç›¸æœºçš„IPï¼Œç«¯å£ï¼Œå¸å·ï¼Œå¯†ç 
 	try
 	{
 		// 330106 100 0052
@@ -1097,7 +1126,7 @@ bool CAVPlayerCtrl::LoadConfigure()
 {
 	TCHAR szPath[MAX_PATH] = { 0 };
 	TCHAR szTempPath[MAX_PATH] = { 0 };
-	// È¡µÃ¿Ø¼ş¼ÓÔØÂ·¾¶
+	// å–å¾—æ§ä»¶åŠ è½½è·¯å¾„
 	GetModuleFileName(theApp.m_hInstance, szTempPath, MAX_PATH);
 	int nPos = _tcsReserverFind(szTempPath, _T('\\'));
 	_tcsncpy_s(szPath, MAX_PATH, szTempPath, nPos);
@@ -1105,7 +1134,7 @@ bool CAVPlayerCtrl::LoadConfigure()
 	CMarkup xml;
 	if (PathFileExists(szPath) && xml.Load(szPath))
 	{
-		// ÅäÖÃÎÄ¼şµÄ¸ñÊ½
+		// é…ç½®æ–‡ä»¶çš„æ ¼å¼
 		/*
 		<?xml version="1.0" encoding="utf-8"?>
 		<Configuration AS300="true">
@@ -1193,7 +1222,7 @@ void CAVPlayerCtrl::PausePlay(LPCTSTR strDeviceID, LONG hWnd)
 	if (itFind != m_MapConnection.end())
 	{
 		IPC_PLAYHANDLE  hPlayer = itFind->second->hPlayhandle;
-// 		if (!hWnd)			// Í£Ö¹ËùÓĞ´°¿ÚÏÔÊ¾, ¹Ø±Õ²¥·ÅÆ÷
+// 		if (!hWnd)			// åœæ­¢æ‰€æœ‰çª—å£æ˜¾ç¤º, å…³é—­æ’­æ”¾å™¨
 // 		{
 // 			EnterCriticalSection(&m_csMapConnection);
 // 			m_MapSession.erase(itFind->second->m_nPlaySession);
@@ -1255,11 +1284,15 @@ void CAVPlayerCtrl::StopPlay(LPCTSTR strDeviceID,LONG hWnd)
 		IPC_PLAYHANDLE  hPlayer = itFind->second->hPlayhandle;
 		if (hPlayer)
 		{
-			if (!hWnd)			// Í£Ö¹ËùÓĞ´°¿ÚÏÔÊ¾, ¹Ø±Õ²¥·ÅÆ÷
+			if (!hWnd)			// åœæ­¢æ‰€æœ‰çª—å£æ˜¾ç¤º, å…³é—­æ’­æ”¾å™¨
 			{
 				EnterCriticalSection(&m_csMapSession);
 				m_MapSession.erase(itFind->second->m_nPlaySession);
+#ifdef _DEBUG
+				IPCConnectionPtr pConnection = itFind->second;
+#endif
 				LeaveCriticalSection(&m_csMapSession);
+
 				itFind->second.reset();
 				m_MapConnection.erase(itFind);
 				if (m_pRunlog)
@@ -1416,10 +1449,10 @@ LONG CAVPlayerCtrl::GetErrorMessage(LONG nErrorCode, LPCTSTR strErrorMessage, LO
 			strErrMsg = L"The device is not in playing.";
 			break;
 		case AVError_BufferOverflow:
-			strErrMsg = L"Buffer over flow." ;// »º´æÒç³ö,Ìá¹©µÄÄÚ´æ¿Õ¼ä²»×ãÒÔÈİÄÉËùÇëÇóµÄÊı¾İ";
+			strErrMsg = L"Buffer over flow." ;// ç¼“å­˜æº¢å‡º,æä¾›çš„å†…å­˜ç©ºé—´ä¸è¶³ä»¥å®¹çº³æ‰€è¯·æ±‚çš„æ•°æ®";
 			break;
 		case AvError_WindowNotPlaying:
-			strErrMsg = L"There is no any devices been played on the windows."; //´°¿ÚÉĞÎ´²¥·ÅÈÎºÎÉè±¸";
+			strErrMsg = L"There is no any devices been played on the windows."; //çª—å£å°šæœªæ’­æ”¾ä»»ä½•è®¾å¤‡";
 			break;
 		case AvError_InvlaidPtzCommand:
 			strErrMsg = L"Invalid PTZ Command.";
@@ -1498,13 +1531,13 @@ int CAVPlayerCtrl::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	//m_pRunlog = make_shared<CRunlog>(_T("AvPlayer"));
 	m_pRunlog = shared_ptr<CRunlog>(new CRunlog(szLog));
 	int nSize = m_MapConnection.size();
-	// ÇåÀíÈÕÖ¾£¬Ä¬ÈÏÖ»±£´æ30ÌìÈÕÖ¾
+	// æ¸…ç†æ—¥å¿—ï¼Œé»˜è®¤åªä¿å­˜30å¤©æ—¥å¿—
 	LogManager();
 	LoadConfigure();
 #ifndef _DEBUG
 	m_nRecvTimeout = 15000;
 	m_nReConnectInterval = 15000;
-	// Ã¿6Ğ¡Ê±¼ì²éÒ»´ÎÈÕÖ¾
+	// æ¯6å°æ—¶æ£€æŸ¥ä¸€æ¬¡æ—¥å¿—
 	SetTimer(ID_TIMER_DELETEFILE,6*3600*1000,NULL);
 	
 #else
@@ -1520,7 +1553,7 @@ int CAVPlayerCtrl::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	ShowWindow(SW_SHOW);
 	
-	// ³õÊ¼»¯AS300¿Í»§¶ËSDK
+	// åˆå§‹åŒ–AS300å®¢æˆ·ç«¯SDK
 	if (m_bEnableAS300)
 	{
 		SDK_CUInit();
@@ -1804,8 +1837,8 @@ LONG CAVPlayerCtrl::SendPtzCommand(LPCTSTR strDeviceID, LONG nPtzCommand,LONG nP
 				return AvError_Invalid_PtzValue;
 			break;
 		}
-	// ÒÔÏÂ²Ù×÷½Ô´æÔÚ¾ø¶ÔºÍÏà¶ÔÁ½ÖÖÄ£Ê½
-	case Ptz_Pan:	// Ë®Æ½×ª¶¯
+	// ä»¥ä¸‹æ“ä½œçš†å­˜åœ¨ç»å¯¹å’Œç›¸å¯¹ä¸¤ç§æ¨¡å¼
+	case Ptz_Pan:	// æ°´å¹³è½¬åŠ¨
 		{
 			if (nOpType == Opt_Relative)
 				strcpy(szOperation,"rpan");
@@ -1814,7 +1847,7 @@ LONG CAVPlayerCtrl::SendPtzCommand(LPCTSTR strDeviceID, LONG nPtzCommand,LONG nP
 			sprintf_s(szValue,"%d",nPtzValue1);
 			break;
 		}
-	case Ptz_Tilt:	// ´¹Ö±×ª¶¯
+	case Ptz_Tilt:	// å‚ç›´è½¬åŠ¨
 		{
 			if (nOpType == Opt_Relative)
 				strcpy(szOperation,"rtilt");
@@ -2106,9 +2139,8 @@ void   CAVPlayerCtrl::OnAS300LiveData(LONG nSessionId, char* pBuffer, int nLen)
 //	}
 //	return (IPC_Succeed ==nResult);
 //}
-
-/// ÕâÊÇÒ»¸ö³¬´óµÄ¿Ó
-/// ·µ»ØÖµÀàĞÍ±ØĞë¶¨ÒåÎªBOOLĞÍ£¬ÈôÊ¹ÓÃËµÃ÷ÎÄµµ»òº¯ÊıÔ­ĞÍ¶¨ÒåµÄÊ¹ÓÃboolÀàĞÍ£¬ÔòÎŞ·¨¿ØÖÆ²¥·ÅËÙ¶È£¬²Ùµ°£¡£¡£¡£¡
+/// è¿™æ˜¯ä¸€ä¸ªè¶…å¤§çš„å‘
+/// è¿”å›å€¼ç±»å‹å¿…é¡»å®šä¹‰ä¸ºBOOLå‹ï¼Œè‹¥ä½¿ç”¨è¯´æ˜æ–‡æ¡£æˆ–å‡½æ•°åŸå‹å®šä¹‰çš„ä½¿ç”¨boolç±»å‹ï¼Œåˆ™æ— æ³•æ§åˆ¶æ’­æ”¾é€Ÿåº¦ï¼Œæ“è›‹ï¼ï¼ï¼ï¼
 BOOL   CAVPlayerCtrl::OnAS300PlayBack(LONG nSessionId, char* pBuffer, int nLength)
 {
 	EnterCriticalSection(&m_csMapSession);
@@ -2153,13 +2185,13 @@ void   CAVPlayerCtrl::OnAS300Event(long nEventType, char* szId, int nParam1, int
 	EventCallbackType nType = (EventCallbackType)nEventType;
 	switch (nType)
 	{
-	case EVENT_CMS_DISCONNECTED:	//·şÎñÆ÷¶ÏÏß£¬´ËÊ±Ó¦¸ÃÇå³ıËùÓĞµÄÉè±¸ĞÅÏ¢£¬ÖØĞÂµÇÂ¼·şÎñÆ÷Ê±£¬»áÍ¨ÖªÍâ²¿ÖØĞÂ»ñÈ¡Éè±¸ÁĞ±í
+	case EVENT_CMS_DISCONNECTED:	//æœåŠ¡å™¨æ–­çº¿ï¼Œæ­¤æ—¶åº”è¯¥æ¸…é™¤æ‰€æœ‰çš„è®¾å¤‡ä¿¡æ¯ï¼Œé‡æ–°ç™»å½•æœåŠ¡å™¨æ—¶ï¼Œä¼šé€šçŸ¥å¤–éƒ¨é‡æ–°è·å–è®¾å¤‡åˆ—è¡¨
 	{
 		if (m_pRunlog)
 			m_pRunlog->Runlog(_T("%s EVENT_CMS_DISCONNECTED:cms disconnected!\n"),__FUNCTIONW__);
 		EnumCmsDisconnected nsubType = (EnumCmsDisconnected)nParam1;
 		
-		if (nsubType == Disconnect_usererror)//ÓÃ»§±»É¾³ı»òÕßËø¶¨£¬Èç¹ûÏëµÇÂ½300·şÎñÆ÷£¬Ğè¸ü»»ÓÃ»§ÖØĞÂµÇÂ¼¡£
+		if (nsubType == Disconnect_usererror)//ç”¨æˆ·è¢«åˆ é™¤æˆ–è€…é”å®šï¼Œå¦‚æœæƒ³ç™»é™†300æœåŠ¡å™¨ï¼Œéœ€æ›´æ¢ç”¨æˆ·é‡æ–°ç™»å½•ã€‚
 		{
 			if (m_pRunlog)
 				m_pRunlog->Runlog(_T("%s EVENT_CMS_DISCONNECTED:The user is locked or deleted!\n"), __FUNCTIONW__);
@@ -2169,7 +2201,7 @@ void   CAVPlayerCtrl::OnAS300Event(long nEventType, char* szId, int nParam1, int
 	case EVENT_CMS_RECONNECT:
 	{
 		int nResult = nParam1;
-		if (nParam1 == 0)	//·şÎñÆ÷ÖØÁ¬Ê§°Ü
+		if (nParam1 == 0)	//æœåŠ¡å™¨é‡è¿å¤±è´¥
 		{
 			if (m_pRunlog)
 				m_pRunlog->Runlog(_T("%s EVENT_CMS_RECONNECT:The relogin server error!\n"), __FUNCTIONW__);
@@ -2181,20 +2213,20 @@ void   CAVPlayerCtrl::OnAS300Event(long nEventType, char* szId, int nParam1, int
 		}
 	}
 	break;
-	case EVENT_RELOAD_DEVICE://ÔÚ·şÎñÆ÷¸ü¸Ä×éÈ¨ÏŞÖ®ÀàµÄ²Ù×÷Ö®ºó£¬ĞèÒª½«Éè±¸ÖØĞÂ»ñÈ¡¡£
+	case EVENT_RELOAD_DEVICE://åœ¨æœåŠ¡å™¨æ›´æ”¹ç»„æƒé™ä¹‹ç±»çš„æ“ä½œä¹‹åï¼Œéœ€è¦å°†è®¾å¤‡é‡æ–°è·å–ã€‚
 	{
 		if (m_pRunlog)
 			m_pRunlog->Runlog(_T("%s EVENT_RELOAD_DEVICE:reload device!\n"), __FUNCTIONW__);
 	}
 	break;
-	case EVENT_DEL_DEVICE:	//É¾³ıÉè±¸
+	case EVENT_DEL_DEVICE:	//åˆ é™¤è®¾å¤‡
 	{
 		if (m_pRunlog)
 			m_pRunlog->Runlog(_T("%s EVENT_RELOAD_DEVICE:del device!\n"), __FUNCTIONW__);
-			//Õâ±ßÖ»ĞèÒªÍ£Ö¹½âÂë£¬SDKÄÚ²¿×Ô¼º»áÏú»ÙËùÓĞµÄÁ´½Ó
+			//è¿™è¾¹åªéœ€è¦åœæ­¢è§£ç ï¼ŒSDKå†…éƒ¨è‡ªå·±ä¼šé”€æ¯æ‰€æœ‰çš„é“¾æ¥
 	}
 	break;
-	case EVENT_VIDEO_EXCEPTION:	//ÊÓÆµÒì³£Ê±
+	case EVENT_VIDEO_EXCEPTION:	//è§†é¢‘å¼‚å¸¸æ—¶
 	{
 		if (m_pRunlog)
 			m_pRunlog->Runlog(_T("%s EVENT_VIDEO_EXCEPTION!\n"),__FUNCTIONW__);
@@ -2202,91 +2234,91 @@ void   CAVPlayerCtrl::OnAS300Event(long nEventType, char* szId, int nParam1, int
 		CString strErrorMsg;
 		switch (nParam2)
 		{
-		case SDK_Error_Video_Opened:	// _EC(20) ÊÓÆµÒÑ´ò¿ª
+		case SDK_Error_Video_Opened:	// _EC(20) è§†é¢‘å·²æ‰“å¼€
 			strErrorMsg = _T("The video has been opened.");
 			break;
-		case SDK_Error_Rtsp_Connect_Failed:	// _EC(21) ½¨Á¢RTSPÁ¬½ÓÊ§°Ü
+		case SDK_Error_Rtsp_Connect_Failed:	// _EC(21) å»ºç«‹RTSPè¿æ¥å¤±è´¥
 			strErrorMsg = _T("RTSP Connect fail.");
 			break;
-		case SDK_Error_Rtsp_Ack_Failed:		// _EC(22) RTSPÓ¦´ğÊ§°Ü
+		case SDK_Error_Rtsp_Ack_Failed:		// _EC(22) RTSPåº”ç­”å¤±è´¥
 			strErrorMsg = _T("RTSP Respond fail.");
 			break;
-		case SDK_Error_Rtp_Listen_Failed:	// _EC(23) RTP½¨Á¢ÕìÌıÊ§°Ü
+		case SDK_Error_Rtp_Listen_Failed:	// _EC(23) RTPå»ºç«‹ä¾¦å¬å¤±è´¥
 			strErrorMsg = _T("RTP Listen fail.");
 			break;
-		case SDK_Error_Rtp_Connect_Failed:	// _EC(24) ½¨Á¢RTPÁ¬½ÓÊ§°Ü
+		case SDK_Error_Rtp_Connect_Failed:	// _EC(24) å»ºç«‹RTPè¿æ¥å¤±è´¥
 			strErrorMsg = _T("RTP Connect fail.");
 			break;
-		case SDK_Error_Player_Port_UseOut:	// _EC(25) ½âÂë¶Ë¿ÚÓÃÍê
+		case SDK_Error_Player_Port_UseOut:	// _EC(25) è§£ç ç«¯å£ç”¨å®Œ
 			strErrorMsg = _T("Player port is run out.");
 			break;
-		case SDK_Error_No_Right:			// _EC(26) ÎŞÈ¨ÏŞ
+		case SDK_Error_No_Right:			// _EC(26) æ— æƒé™
 			strErrorMsg = _T("Access denied.");
 			break;
-		case SDK_Error_Not_Found_Device:	// _EC(27) ÕÒ²»µ½¶ÔÓ¦µÄÉè±¸
+		case SDK_Error_Not_Found_Device:	// _EC(27) æ‰¾ä¸åˆ°å¯¹åº”çš„è®¾å¤‡
 			strErrorMsg = _T("The device is not exist.");
 			break;
-		case SDK_Error_Device_Offline:		// _EC(28) Éè±¸ÀëÏß
+		case SDK_Error_Device_Offline:		// _EC(28) è®¾å¤‡ç¦»çº¿
 			strErrorMsg = _T("The device is offline.");
 			break;
-		case SDK_Error_LoginDev_Failed:		// _EC(29) Éè±¸µÇÂ¼Ê§°Ü
+		case SDK_Error_LoginDev_Failed:		// _EC(29) è®¾å¤‡ç™»å½•å¤±è´¥
 			strErrorMsg = _T("Failed in login device.");
 			break;
-		case SDK_Error_No_DevVisitorRight:	// _EC(30) Ã»ÓĞÖ±Á¬È¨ÏŞ
+		case SDK_Error_No_DevVisitorRight:	// _EC(30) æ²¡æœ‰ç›´è¿æƒé™
 			strErrorMsg = _T("No Device access right.");
 			break;
-		case SDK_Error_CMS_No_MTS_To_Use:	// _EC(32) Ã»ÓĞMTS¿ÉÓÃ
+		case SDK_Error_CMS_No_MTS_To_Use:	// _EC(32) æ²¡æœ‰MTSå¯ç”¨
 			strErrorMsg = _T("There is not any available MTS Server.");
 			break;
-		case SDK_Error_CMS_No_Device:		// _EC(33) ÕÒ²»µ½Éè±¸
+		case SDK_Error_CMS_No_Device:		// _EC(33) æ‰¾ä¸åˆ°è®¾å¤‡
 			strErrorMsg = _T("There is no device in CMS Server.");
 			break;
-		case SDK_Error_CMS_Media_Session_Exist:// _EC(34) Ã½Ìå»á»°ÒÑ´æÔÚ
+		case SDK_Error_CMS_Media_Session_Exist:// _EC(34) åª’ä½“ä¼šè¯å·²å­˜åœ¨
 			strErrorMsg = _T("There is already a media session of device in CMS .");
 			break;
-		case SDK_Error_CMS_Server_Reconnect:	// _EC(35) ¹¦ÄÜ·şÎñÕıÔÚÖØÁ¬
+		case SDK_Error_CMS_Server_Reconnect:	// _EC(35) åŠŸèƒ½æœåŠ¡æ­£åœ¨é‡è¿
 			strErrorMsg = _T("The CMS Server is reconnecting.");
 			break;
-		case SDK_Error_CMS_No_Right:			// _EC(36) ÎŞÈ¨ÏŞ
+		case SDK_Error_CMS_No_Right:			// _EC(36) æ— æƒé™
 			strErrorMsg = _T("Access denied by CMS.");
 			break;
-		case SDK_Error_CMS_Not_Find_Child_Domain:// _EC(37) Ã»ÓĞÕÒµ½ÏÂ¼¶Óò
+		case SDK_Error_CMS_Not_Find_Child_Domain:// _EC(37) æ²¡æœ‰æ‰¾åˆ°ä¸‹çº§åŸŸ
 			strErrorMsg = _T("CMS can't find the child domain.");
 			break;
-		case SDK_Error_CMS_Not_Login_Child_Domain:	// _EC(38) Î´µÇÂ½ÏÂ¼¶Óò
+		case SDK_Error_CMS_Not_Login_Child_Domain:	// _EC(38) æœªç™»é™†ä¸‹çº§åŸŸ
 			strErrorMsg = _T("CMS not login the child domain.");
 			break;
-		case SDK_Error_CMS_Child_Domain_Exception:	// _EC(39) ÏÂ¼¶ÓòÒì³£
+		case SDK_Error_CMS_Child_Domain_Exception:	// _EC(39) ä¸‹çº§åŸŸå¼‚å¸¸
 			strErrorMsg = _T("There is a exeception in CMS child domain.");
 			break;
 		case SDK_Error_CMS_Reach_System_Limit:		//
 			strErrorMsg = _T("The connections of CMS is out ot range.");
 			break;
-		case SDK_Error_Chan:					//	 EC(41)			//Í¨µÀÊı²»ÕıÈ·(³¬³ö·¶Î§)
+		case SDK_Error_Chan:					//	 EC(41)			//é€šé“æ•°ä¸æ­£ç¡®(è¶…å‡ºèŒƒå›´)
 			strErrorMsg = _T("Channel is out of range.");
 			break;
-		case SDK_Error_Playback_Opened:			//	_EC(42)			//»Ø·ÅÒÑ´ò¿ª
+		case SDK_Error_Playback_Opened:			//	_EC(42)			//å›æ”¾å·²æ‰“å¼€
 			strErrorMsg = _T("Playback is opened.");
 			break;
-		case SDK_Error_Open_File_Failed:		//	_EC(43)			//´ò¿ªÎÄ¼şÊ§°Ü
+		case SDK_Error_Open_File_Failed:		//	_EC(43)			//æ‰“å¼€æ–‡ä»¶å¤±è´¥
 			strErrorMsg = _T("Open File failed.");
 			break;
-		case SDK_Error_No_SS_To_Use:			//	_EC(44)			//Ã»ÓĞSS
+		case SDK_Error_No_SS_To_Use:			//	_EC(44)			//æ²¡æœ‰SS
 			strErrorMsg = _T("There is no available Storage Server");
 			break;
-		case SDK_Error_Playback_Limit:			//  _EC(45)			//´ïµ½»Ø·ÅÏŞÖÆ
+		case SDK_Error_Playback_Limit:			//  _EC(45)			//è¾¾åˆ°å›æ”¾é™åˆ¶
 			strErrorMsg = _T("Reached the playback upper limit.");
 			break;
-		case SDK_Error_OtherUser_Playback:		//  _EC(46)			//ÆäËûÓÃ»§ÕıÔÚ»Ø·Å
+		case SDK_Error_OtherUser_Playback:		//  _EC(46)			//å…¶ä»–ç”¨æˆ·æ­£åœ¨å›æ”¾
 			strErrorMsg = _T("Other user is playback.");
 			break;
-		case SDK_Error_SSPlayback_Failed:		//	_EC(47)			//»Ø·ÅÊ§°Ü
+		case SDK_Error_SSPlayback_Failed:		//	_EC(47)			//å›æ”¾å¤±è´¥
 			strErrorMsg = _T("Playback failed.");
 			break;
-		//case SDK_Error_Rtsp_Over_Capability:	//	_EC(48)			//×ª·¢·şÎñÆ÷³¬¹ıÂ·Êı
+		//case SDK_Error_Rtsp_Over_Capability:	//	_EC(48)			//è½¬å‘æœåŠ¡å™¨è¶…è¿‡è·¯æ•°
 		//	strErrorMsg = _T("The connections of MTS is out of ranage.");
 		//	break;
-		//case SDK_Error_Rtsp_Be_Kicked:			//	_EC(49)			//±»¸ßÈ¨ÏŞÓÃ»§Õ¼ÓÃ
+		//case SDK_Error_Rtsp_Be_Kicked:			//	_EC(49)			//è¢«é«˜æƒé™ç”¨æˆ·å ç”¨
 		//	strErrorMsg = _T("Kicked by other use who owned higher privilege.");
 		//	break;
 		default:
@@ -2297,7 +2329,7 @@ void   CAVPlayerCtrl::OnAS300Event(long nEventType, char* szId, int nParam1, int
 			m_pRunlog->Runlog(_T("%s EVENT_VIDEO_EXCEPTION:%s\n"), __FUNCTIONW__, strErrorMsg);
 		if (nParam2 < 0)
 		{
-			//Õâ±ßÖ»ĞèÒªÍ£Ö¹½âÂë£¬SDKÄÚ²¿×Ô¼º»áÏú»ÙËùÓĞµÄÁ´½Ó
+			//è¿™è¾¹åªéœ€è¦åœæ­¢è§£ç ï¼ŒSDKå†…éƒ¨è‡ªå·±ä¼šé”€æ¯æ‰€æœ‰çš„é“¾æ¥
 		}
 	}
 	break;
@@ -2306,28 +2338,28 @@ void   CAVPlayerCtrl::OnAS300Event(long nEventType, char* szId, int nParam1, int
 		EnumPlaybackStatus playStatus = (EnumPlaybackStatus)nParam2;
 		switch (playStatus)
 		{
-		case Playback_SS_Unregistered:	//´æ´¢·şÎñÆ÷¶ÏÏß
+		case Playback_SS_Unregistered:	//å­˜å‚¨æœåŠ¡å™¨æ–­çº¿
 		{
 
 		}
 		break;
-		case Playback_Right_Canceled://È¨ÏŞ±»É¾³ı
+		case Playback_Right_Canceled://æƒé™è¢«åˆ é™¤
 		{
 
 		}
 		break;
-		case Playback_Dev_Removed:	//Éè±¸±»É¾³ı
+		case Playback_Dev_Removed:	//è®¾å¤‡è¢«åˆ é™¤
 		{
 
 		}
 		break;
-		case Playback_SessionRemoved:	//»á»°±»É¾³ı£¬»òÕß»á»°ÓĞÒì³£
+		case Playback_SessionRemoved:	//ä¼šè¯è¢«åˆ é™¤ï¼Œæˆ–è€…ä¼šè¯æœ‰å¼‚å¸¸
 		case Playback_SessionAbnormal:
 		{
 
 		}
 		break;
-		case Playback_Finished:		//»Ø·Å½áÊø
+		case Playback_Finished:		//å›æ”¾ç»“æŸ
 		{
 			
 		}
@@ -2335,12 +2367,12 @@ void   CAVPlayerCtrl::OnAS300Event(long nEventType, char* szId, int nParam1, int
 		}
 	}
 	break;
-	case EVENT_TALK_EXCEPTION:	//¶Ô½²Òì³££¬SDKÄÚ²¿»áÊÕ»Ø¶Ô½²Ïà¹ØÄÚ´æ£¬´Ë´¦Ó¦ÓÃ²ãĞèÒª½«¶Ô½²µÄ×ÊÔ´Ò²»ØÊÕ
+	case EVENT_TALK_EXCEPTION:	//å¯¹è®²å¼‚å¸¸ï¼ŒSDKå†…éƒ¨ä¼šæ”¶å›å¯¹è®²ç›¸å…³å†…å­˜ï¼Œæ­¤å¤„åº”ç”¨å±‚éœ€è¦å°†å¯¹è®²çš„èµ„æºä¹Ÿå›æ”¶
 	{
 		// char* szId, int nParam1, int nParam2
-		// szId´ú±í¶Ô½²Éè±¸ID£¬
-		// nParam1Îª EnumTalkException ¶Ô½²Òì³£¾ßÌåÀàĞÍ
-		// nParam2Îª lsessionId£¬¶Ô½²µÄ¾ä±ú
+		// szIdä»£è¡¨å¯¹è®²è®¾å¤‡IDï¼Œ
+		// nParam1ä¸º EnumTalkException å¯¹è®²å¼‚å¸¸å…·ä½“ç±»å‹
+		// nParam2ä¸º lsessionIdï¼Œå¯¹è®²çš„å¥æŸ„
 	}
 	break;
 	}
@@ -2476,7 +2508,7 @@ bool CAVPlayerCtrl::LoadOPAssistXConfigure()
 {
 	TCHAR szPath[MAX_PATH] = { 0 };
 	TCHAR szTempPath[MAX_PATH] = { 0 };
-	// È¡µÃ¿Ø¼ş¼ÓÔØÂ·¾¶
+	// å–å¾—æ§ä»¶åŠ è½½è·¯å¾„
 	GetModuleFileName(theApp.m_hInstance, szTempPath, MAX_PATH);
 	int nPos = _tcsReserverFind(szTempPath, _T('\\'));
 	_tcsncpy_s(szPath, MAX_PATH, szTempPath, nPos);
@@ -2484,20 +2516,20 @@ bool CAVPlayerCtrl::LoadOPAssistXConfigure()
 	CMarkup xml;
 	if (PathFileExists(szPath) && xml.Load(szPath))
 	{
-		// ÅäÖÃÎÄ¼şµÄ¸ñÊ½
+		// é…ç½®æ–‡ä»¶çš„æ ¼å¼
 		/*
 		<?xml version="1.0" encoding="gbk"?>
 		<Configuration >
-		<!-- ÅäÖÃËµÃ÷£¬ÇëÎğÉ¾³ı -->
+		<!-- é…ç½®è¯´æ˜ï¼Œè¯·å‹¿åˆ é™¤ -->
 		<!--  -->
 		<DeviceList>
-		<!-- ID				ÎªÉè±¸ID  -->
-		<!-- Orientation	Îª·½Î»£¬¾ö¶¨ÏÔÊ¾¸¨Öú½âµÄ·½Ïò-->
-		<!-- StartX 		ÆğÊ¼µãX×ø±ê£¬¸Ã×ø±êÎªÍ¼Ïñ×ø±ê-->
-		<!-- Width 			¿í¶È -->
-		<!-- Height 		¸ß¶È -->
-		<!-- ThickVerical	´¹Ö±·½Ïòºñ¶È -->
-		<!-- ThickHorizontal Ë®Æ½·½Ïòºñ¶È -->
+		<!-- ID				ä¸ºè®¾å¤‡ID  -->
+		<!-- Orientation	ä¸ºæ–¹ä½ï¼Œå†³å®šæ˜¾ç¤ºè¾…åŠ©è§£çš„æ–¹å‘-->
+		<!-- StartX 		èµ·å§‹ç‚¹Xåæ ‡ï¼Œè¯¥åæ ‡ä¸ºå›¾åƒåæ ‡-->
+		<!-- Width 			å®½åº¦ -->
+		<!-- Height 		é«˜åº¦ -->
+		<!-- ThickVerical	å‚ç›´æ–¹å‘åšåº¦ -->
+		<!-- ThickHorizontal æ°´å¹³æ–¹å‘åšåº¦ -->
 		<Device ID = "33011234" Orientation = "LeftTop"  StartX = "100" StartY = "100" Width = "200" Height ="150" ThickVerical="10" ThickHorizontal = "12" />
 		<Device ID = "33011234" Orientation = "RightTop"  StartX = "100" StartY = "100" Width = "200" Height ="150" ThickVerical="10" ThickHorizontal = "12" />
 		<Device ID = "33011234" Orientation = "LeftBottom"  StartX = "100" StartY = "100" Width = "200" Height ="150" ThickVerical="10" ThickHorizontal = "12" />
@@ -2587,7 +2619,7 @@ bool CAVPlayerCtrl::LoadScreenMode()
 {
 	TCHAR szPath[MAX_PATH] = { 0 };
 	TCHAR szTempPath[MAX_PATH] = { 0 };
-	// È¡µÃ¿Ø¼ş¼ÓÔØÂ·¾¶
+	// å–å¾—æ§ä»¶åŠ è½½è·¯å¾„
 	GetModuleFileName(theApp.m_hInstance, szTempPath, MAX_PATH);
 	int nPos = _tcsReserverFind(szTempPath, _T('\\'));
 	_tcsncpy_s(szPath, MAX_PATH, szTempPath, nPos);
@@ -2596,12 +2628,12 @@ bool CAVPlayerCtrl::LoadScreenMode()
 	if (PathFileExists(szPath) && xml.Load(szPath))
 	{
 		m_mapCrane.clear();
-		// ÅäÖÃÎÄ¼şµÄ¸ñÊ½
+		// é…ç½®æ–‡ä»¶çš„æ ¼å¼
 		/*
 		<?xml version="1.0" encoding="gbk"?>
 		<Configuration >
 		<ModeList CraneID = "1">
-		<!-- ID ÆÁÄ»¶¨Òå,¶ÔÓ¦ÏàÓ¦µÄÆÁÄ»±àºÅ,Öµ±ØĞëÎ¨Ò»-->
+		<!-- ID å±å¹•å®šä¹‰,å¯¹åº”ç›¸åº”çš„å±å¹•ç¼–å·,å€¼å¿…é¡»å”¯ä¸€-->
 			<Mode ID="1" Camera1="3301061000002"/>
 			<Mode ID="2" Camera1="3301061000003" Camera2="3301061000005"/>
 			<Mode ID="3" Camera1="3301061000007" Camera2="3301061000009" Camera3="3301061000010"/>
@@ -2610,7 +2642,7 @@ bool CAVPlayerCtrl::LoadScreenMode()
 			<Mode ID="6" Camera1="3301061000003" Camera2="3301061000002" Camera3="3301061000005" Camera4="3301061000007" Camera5="3301061000009" Camera6="33010610000010" Camera7="3301061000020" Camera8="3301061000033" Camera9="3301061000034"/>
 		</ModeList>
 		<ModeList CraneID = "2">
-		<!-- ID ÆÁÄ»¶¨Òå,¶ÔÓ¦ÏàÓ¦µÄÆÁÄ»±àºÅ,Öµ±ØĞëÎ¨Ò»-->
+		<!-- ID å±å¹•å®šä¹‰,å¯¹åº”ç›¸åº”çš„å±å¹•ç¼–å·,å€¼å¿…é¡»å”¯ä¸€-->
 		<Mode ID="1" Camera1="3301061000003"/>
 		<Mode ID="2" Camera1="3301061000002" Camera2="3301061000005"/>
 		<Mode ID="3" Camera1="3301061000007" Camera2="3301061000009" Camera3="3301061000010"/>
@@ -2657,7 +2689,7 @@ bool CAVPlayerCtrl::LoadScreenMode()
 						pCrane->ScreenMode.insert(pair<long, DisplayModePtr>(nModeID, ModePtr));
 					}
 					else
-					{// ·¢ÏÖÖØ¸´µÄÄ£Ê½Öµ,ĞèÒª±¨´í
+					{// å‘ç°é‡å¤çš„æ¨¡å¼å€¼,éœ€è¦æŠ¥é”™
 						ModePtr = itFindMode->second;
 					}
 					while (true)
@@ -2731,8 +2763,8 @@ LONG CAVPlayerCtrl::SwitchScreen(LONG nCraneID, LONG nScreenMode,LONG hWnd)
 	map<long, DisplayModePtr>::iterator itLastMode;
 	bool bLastMode = false;
 	if (m_nCurrentCrane > 0 && m_nCurrentMode >= 0)
-	{// ĞèÒª¹Ø±ÕÉÏÒ»¸öÄ£Ê½µÄÍ¼Ïñ
-		// ĞèÒªÒÔÒì²½·½Ê½¹Ø±ÕÖ®Ç°µÄÍ¼Ïñ£¬Í¬Ê±ĞèÒª×¼±¸Á½¸öVideoFrame£»
+	{// éœ€è¦å…³é—­ä¸Šä¸€ä¸ªæ¨¡å¼çš„å›¾åƒ
+		// éœ€è¦ä»¥å¼‚æ­¥æ–¹å¼å…³é—­ä¹‹å‰çš„å›¾åƒï¼ŒåŒæ—¶éœ€è¦å‡†å¤‡ä¸¤ä¸ªVideoFrameï¼›
 		auto itLastCrane = m_mapCrane.find(m_nCurrentCrane);
 		if (itLastCrane != m_mapCrane.end())
 		{
@@ -2872,13 +2904,11 @@ LONG CAVPlayerCtrl::PlayBack(LONG hWnd,LPCTSTR strDeviceID, LONG nStartTime,LONG
 		if (nResult< 0)
 			return (AvError_AS300_Error + nResult);
 
-
 		IPCConnectionPtr pConnection = make_shared<_IPCConnection>();
 		pConnection->pRunlog = m_pRunlog;
 		pConnection->m_hWnd = (HWND)hWnd;
 
 		PlayBackStatusPtr pPlayStatus = make_shared<PlayBackStatus>();
-		//pPlayStatus->nSeekFrame = nSeekFrame;
 		pPlayStatus->tStartTime = (time_t)nStartTime ;
 		pPlayStatus->tStopTime = (time_t)nStopTime ;
 
@@ -2894,13 +2924,17 @@ LONG CAVPlayerCtrl::PlayBack(LONG hWnd,LPCTSTR strDeviceID, LONG nStartTime,LONG
 		if (!pConnection->m_pRecordInfo)
 			pConnection->m_pRecordInfo = make_shared<VSRecord_Info_t>();
 		memcpy(pConnection->m_pRecordInfo.get(), &pRecordArray[0], sizeof(VSRecord_Info_t));
-
-		//long hPlaySession = SDK_CUPlaybackByFile(m_nLoginID, &pRecordArray[0], nTimeout, "", 0);
+		
+		pConnection->m_pRecordInfo->bDownloadByTime = true;
+		//long hPlaySession = SDK_CUPlaybackByFile(m_nLoginID, pConnection->m_pRecordInfo.get(), 5000,"", nTimeout);
 		long hPlaySession = SDK_CUDownloadByFile(m_nLoginID, pConnection->m_pRecordInfo.get(), NULL, nTimeout);
 		if (hPlaySession < 0)
 			return AvError_AS300_Error ;
 
+		pConnection->SetCacheSize(nStopTime - nStartTime);
+
 		pConnection->m_nPlaySession = hPlaySession;
+		pConnection->m_bPlaySessionValid = true;
 
 		pConnection->m_nLoginID = m_nLoginID;
 		EnterCriticalSection(&m_csMapConnection);
@@ -2935,7 +2969,6 @@ LONG CAVPlayerCtrl::PlayBack(LONG hWnd,LPCTSTR strDeviceID, LONG nStartTime,LONG
 	return 0;
 }
 
-
 void CAVPlayerCtrl::StopPlayBack(LPCTSTR strDeviceID)
 {
 	AFX_MANAGE_STATE(AfxGetStaticModuleState());
@@ -2947,7 +2980,6 @@ void CAVPlayerCtrl::StopPlayBack(LPCTSTR strDeviceID)
 	_tcscat_s(szDeviceID, 64, _T("01"));
 	StopPlay(szDeviceID, 0);
 }
-
 
 LONG CAVPlayerCtrl::SeekTime(LPCTSTR strDeviceID, LONGLONG nTime)
 {
@@ -2981,7 +3013,6 @@ LONG CAVPlayerCtrl::SeekTime(LPCTSTR strDeviceID, LONGLONG nTime)
 		return AvError_OutofPlayingRange;
 }
 
-
 LONG CAVPlayerCtrl::CreateFrameWnd(LONG hWnd,LONG nWndCount, LONG nFrameStyle, LONG* pFrameHandle)
 {
 	AFX_MANAGE_STATE(AfxGetStaticModuleState());
@@ -2989,14 +3020,12 @@ LONG CAVPlayerCtrl::CreateFrameWnd(LONG hWnd,LONG nWndCount, LONG nFrameStyle, L
 	return 0;
 }
 
-
 LONG CAVPlayerCtrl::AdjustPanels(LONG nWndCount, LONG nFrameStyle)
 {
 	AFX_MANAGE_STATE(AfxGetStaticModuleState());
 
 	return 0;
 }
-
 
 LONG CAVPlayerCtrl::QueryRecord(LPCTSTR strDeviceID, LONG nStartTime, LONG nStopTime, LONG pRecordArray, LONG nBufferCount, LONG* pRecordCount)
 {
