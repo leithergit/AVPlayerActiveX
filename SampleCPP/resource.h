@@ -53,6 +53,8 @@
 #define IDC_EDIT_PTZVALUE1              1029
 #define IDC_BUTTON_PLAYRECORD2          1029
 #define IDC_BUTTON_SEEKRECORD           1029
+#define IDC_BUTTON_PLAYCOMBO2           1029
+#define IDC_BUTTON_HIDEPLAY             1029
 #define IDC_EDIT_PTZVALUE2              1030
 #define IDC_EDIT_PTZVALUE3              1031
 #define IDC_RADIO_RELATVIE              1032
@@ -82,6 +84,8 @@
 #define IDC_STATIC_Server               1055
 #define IDC_CHECK4                      1056
 #define IDC_CHECK_SEEKFRAME             1056
+#define IDC_TIMEPICKERPLAY1             1057
+#define IDC_TIMEPICKERPLAY2             1058
 #define IDC_EDIT_CAMERAID               1071
 #define IDC_BUTTON_UP                   1072
 #define IDC_BUTTON_RESET                1073

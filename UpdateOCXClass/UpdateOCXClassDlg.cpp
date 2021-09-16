@@ -56,7 +56,7 @@ CUpdateOCXClassDlg::CUpdateOCXClassDlg(CWnd* pParent /*=NULL*/)
 void CUpdateOCXClassDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_AVPLAYERCTRL, m_avplayer);
+	DDX_Control(pDX, IDC_AVPLAYERCTRL1, AA);
 }
 
 BEGIN_MESSAGE_MAP(CUpdateOCXClassDlg, CDialogEx)

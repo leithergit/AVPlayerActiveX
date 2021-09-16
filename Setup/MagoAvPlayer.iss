@@ -2,8 +2,8 @@
 ; 有关创建 Inno Setup 脚本文件的详细资料请查阅帮助文档！
 
 #define MyAppName "迈高视频播放控件"
-#define MyAppVersion "1.0.2.9"
-#define PackageName "MagoAvPlayer.ver1.0.2.9"
+#define MyAppVersion "1.0.3.2"
+#define PackageName "MagoAvPlayer.ver1.0.3.2"
 #define MyAppPublisher "上海迈高网络技术有限公司"
 #define MyAppURL "http://www.shmgwl.com/"
 
@@ -18,6 +18,7 @@
 AppId={{8B1264B2-FB4D-44F6-886B-C3671B2E173D}
 AppName={cm:MyAppName}
 AppVersion={#MyAppVersion}
+;FileVersion={#MyAppVersion}
 ;AppVerName={#MyAppName} {#MyAppVersion}
 AppPublisher={cm:MyAppPublisher}
 AppPublisherURL={#MyAppURL}

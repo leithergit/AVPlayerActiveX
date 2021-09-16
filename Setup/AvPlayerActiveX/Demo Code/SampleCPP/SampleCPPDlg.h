@@ -10,6 +10,8 @@
 #include "VideoFrame.h"
 #include "WndSizeManager.h"
 #include "afxdtctl.h"
+#include "TimeUtility.h"
+#include "Runlog.h"
 using namespace std;
 
 #define ID_BASE		WM_USER + 100
@@ -64,6 +66,7 @@ public:
 	CVideoFrame *m_pVideoFrame;
 	CWndSizeManger m_WndSizeManager;
 	CSampleCPPDlg(CWnd* pParent = NULL);	// standard constructor
+	CRunlog*	m_pRunlog;
 
 // Dialog Data
 	enum { IDD = IDD_SAMPLECPP_DIALOG };
@@ -78,6 +81,7 @@ protected:
 
 	// Generated message map functions
 	virtual BOOL OnInitDialog();
+	bool UpdateServer();
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
@@ -92,6 +96,7 @@ public:
 	CDragListCtrl m_ctlDeviceList;
 	CListCtrl  m_listRecord;
 	vector<wstring>m_vecDevicePlaying;
+	vector<int> m_vecIndex;
 	afx_msg void OnBnClickedButtonStartswitch();
 	afx_msg void OnBnClickedButtonStopswitch();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
@@ -150,15 +155,45 @@ public:
 	CDateTimeCtrl m_StopTime;
 	time_t	m_tSeekOffset = 0;			// 单帧播放时间点
 	CString m_strCurPlayBackDevice;
+	bool m_bThreadSeekRun = false;
+	HANDLE m_hThreadSeek = nullptr;
+	static UINT __stdcall  ThreadSeek(void *p)
+	{
+		CSampleCPPDlg* pThis = (CSampleCPPDlg *)p;
+		double dfLastTime = GetExactTime() - 0.2f;
+		while (pThis->m_bThreadSeekRun)
+		{
+			if (TimeSpanEx(dfLastTime)  >= 1.0f)
+			{
+				if (pThis->m_tSeekOffset)
+				{
+					int nStatus = pThis->m_AvPlayer.SeekTime(pThis->m_strCurPlayBackDevice, pThis->m_tSeekOffset);
+					if (nStatus)
+						TraceMsgA("%s SeekTime(%d).\n", __FUNCTION__, nStatus);
+					pThis->m_tSeekOffset += 10;
+				}
+				dfLastTime = GetExactTime();
+			}
+			Sleep(20);
+		}
+		return 0;	
+	}
+
 	static void  MMTIMECALLBACK(UINT uTimerID, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2)
 	{
 		CSampleCPPDlg* pThis = (CSampleCPPDlg *)dwUser;
 		if (pThis->m_tSeekOffset)
 		{
 			int nStatus = pThis->m_AvPlayer.SeekTime(pThis->m_strCurPlayBackDevice, pThis->m_tSeekOffset);
-			if (nStatus)
-				TraceMsgA("%s SeekTime(%d).\n", __FUNCTION__, nStatus);
+ 			if (nStatus)
+ 				TraceMsgA("%s SeekTime(%d).\n", __FUNCTION__, nStatus);
 			pThis->m_tSeekOffset += 200;
 		}
 	}
+	afx_msg void OnClose();
+	//afx_msg void OnBnClickedButtonSeekrecord();
+	afx_msg void OnNMClickListRecord(NMHDR *pNMHDR, LRESULT *pResult);
+	CDateTimeCtrl m_ctlTimeStart;
+	CDateTimeCtrl m_ctlTimeEnd;
+	afx_msg void OnBnClickedButtonHideplay();
 };

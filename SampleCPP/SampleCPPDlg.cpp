@@ -63,6 +63,8 @@ void CSampleCPPDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_DATEPICKER, m_Date);
 	DDX_Control(pDX, IDC_TIMEPICKER1, m_StartTime);
 	DDX_Control(pDX, IDC_TIMEPICKER2, m_StopTime);
+	DDX_Control(pDX, IDC_TIMEPICKERPLAY1, m_ctlTimeStart);
+	DDX_Control(pDX, IDC_TIMEPICKERPLAY2, m_ctlTimeEnd);
 }
 
 BEGIN_MESSAGE_MAP(CSampleCPPDlg, CDialog)
@@ -105,7 +107,9 @@ BEGIN_MESSAGE_MAP(CSampleCPPDlg, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_QUERYRECORD, &CSampleCPPDlg::OnBnClickedButtonQueryrecord)
 	ON_BN_CLICKED(IDC_BUTTON_PLAYRECORD, &CSampleCPPDlg::OnBnClickedButtonPlayrecord)
 	ON_WM_CLOSE()
-	ON_BN_CLICKED(IDC_BUTTON_SEEKRECORD, &CSampleCPPDlg::OnBnClickedButtonSeekrecord)
+	//ON_BN_CLICKED(IDC_BUTTON_SEEKRECORD, &CSampleCPPDlg::OnBnClickedButtonSeekrecord)
+	ON_NOTIFY(NM_CLICK, IDC_LIST_RECORD, &CSampleCPPDlg::OnNMClickListRecord)
+	ON_BN_CLICKED(IDC_BUTTON_HIDEPLAY, &CSampleCPPDlg::OnBnClickedButtonHideplay)
 END_MESSAGE_MAP()
 
 struct HotKeyInfo
@@ -353,6 +357,7 @@ void CSampleCPPDlg::OnBnClickedButtonLogin()
 		 GetDlgItem(IDC_BUTTON_STOPSWITCH)->EnableWindow(TRUE);
 		 GetDlgItem(IDC_BUTTON_SWITCH)->EnableWindow(TRUE);
 		 GetDlgItem(IDC_BUTTON_PLAYCOMBO)->EnableWindow(TRUE);
+		
 		 m_AvPlayer.FreeString(&strDevice);
 		   
 		 //GetDlgItem(IDC_BUTTON_STOP)->EnableWindow(TRUE);
@@ -426,7 +431,12 @@ void CSampleCPPDlg::OnBnClickedButtonPlay()
 		}
 	}
 	if (m_vecDevicePlaying.size() > 0)
+	{
 		GetDlgItem(IDC_BUTTON_STOP)->EnableWindow(TRUE);
+		GetDlgItem(IDC_BUTTON_HIDEPLAY)->EnableWindow(TRUE);
+		
+	}
+		
 }
 
 void CSampleCPPDlg::OnBnClickedButtonStop()
@@ -1545,8 +1555,6 @@ void CSampleCPPDlg::OnBnClickedButtonPlayrecord()
 	CString strButtonText;
 	if (!m_bPlayRecord)
 	{
-		
-		
 		if (!hVideoWnd)
 		{
 			AfxMessageBox(_T("Please Select a Window to Play."));
@@ -1573,7 +1581,11 @@ void CSampleCPPDlg::OnBnClickedButtonPlayrecord()
 		if (IsDlgButtonChecked(IDC_CHECK_SEEKFRAME) == BST_CHECKED)
 			nSeekFrame = 1;
 		//pRec->startTime = pRec->endTime - 30;
-		if (m_AvPlayer.PlayBack((long)hVideoWnd, szDeviceID, pRec->startTime , pRec->endTime, nSeekFrame, 5000) == 0)
+		CTime tStart(pRec->startTime), tEnd(pRec->endTime);
+		m_ctlTimeStart.GetTime(tStart);
+		m_ctlTimeEnd.GetTime(tEnd);
+		CString strStart = tStart.Format(_T("%H:%M:%S"));
+		if (m_AvPlayer.PlayBack((long)hVideoWnd, szDeviceID, tStart.GetTime(), tEnd.GetTime(), nSeekFrame, 5000) == 0)
 		{
 			HWND hWndArray[16] = { 0 };
 			long nArraySize = 16;
@@ -1584,7 +1596,7 @@ void CSampleCPPDlg::OnBnClickedButtonPlayrecord()
 		// 通过定时器来调整单帧播放的位置
 		if (nSeekFrame)
 		{
-			m_tSeekOffset = pRec->startTime; // 使用起始时间作为第一个播放点，每个100毫秒调整一次，每调整一次，时间增加200毫秒
+			m_tSeekOffset = tStart.GetTime();	// 使用起始时间作为第一个播放点，每个100毫秒调整一次，每调整一次，时间增加200毫秒
 			//m_tSeekOffset *= 1000;			 // 时间放大1000倍
 			//m_nTimeEvent = timeSetEvent(100, 1, (LPTIMECALLBACK)MMTIMECALLBACK, (DWORD_PTR)this, TIME_PERIODIC | TIME_CALLBACK_FUNCTION);
 			m_bThreadSeekRun = true;
@@ -1596,6 +1608,8 @@ void CSampleCPPDlg::OnBnClickedButtonPlayrecord()
 	}
 	else
 	{
+		CWaitCursor wait;
+		m_bThreadSeekRun = false;
 		strButtonText = _T("&Play"); 
 		m_AvPlayer.StopPlayBack(szDeviceID);
 
@@ -1610,7 +1624,9 @@ void CSampleCPPDlg::OnBnClickedButtonPlayrecord()
 				it = m_vecDevicePlaying.erase(it);
 			}
 		}
-
+		WaitForSingleObject(m_hThreadSeek, 5000);
+		CloseHandle(m_hThreadSeek);
+		m_hThreadSeek = nullptr;
 		m_bPlayRecord = false;
 	}
 	SetDlgItemText(IDC_BUTTON_PLAYRECORD, strButtonText);
@@ -1629,7 +1645,44 @@ void CSampleCPPDlg::OnClose()
 }
 
 
-void CSampleCPPDlg::OnBnClickedButtonSeekrecord()
+//void CSampleCPPDlg::OnBnClickedButtonSeekrecord()
+//{
+//	
+//}
+
+
+void CSampleCPPDlg::OnNMClickListRecord(NMHDR *pNMHDR, LRESULT *pResult)
 {
+	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	if (pNMItemActivate->iItem != -1)
+	{
+		Record_Info *pRec = (Record_Info *)m_listRecord.GetItemData(pNMItemActivate->iItem);
+		CTime tStart(pRec->startTime);
+		CTime tEnd(pRec->endTime);
+		m_ctlTimeStart.SetTime(&tStart);
+		m_ctlTimeEnd.SetTime(&tEnd);
+	}
 	
+	*pResult = 0;
+}
+
+
+void CSampleCPPDlg::OnBnClickedButtonHideplay()
+{
+	if (m_vecDevicePlaying.size() > 0)
+	{
+		for (vector<wstring>::iterator it = m_vecDevicePlaying.begin();
+			it != m_vecDevicePlaying.end();it++)
+		{
+			HWND hWndArray[16] = { 0 };
+			long nArraySize = 16;
+			int nErrorCode = m_AvPlayer.GetDeviceWindow(it->c_str(), (long *)hWndArray, &nArraySize);
+
+			m_AvPlayer.RemoveDevWnd(it->c_str(), NULL);
+		}
+	}
+	ZeroMemory(m_bFrameused, sizeof(m_bFrameused));
+
+	GetDlgItem(IDC_BUTTON_PLAY)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON_STOP)->EnableWindow(FALSE);
 }

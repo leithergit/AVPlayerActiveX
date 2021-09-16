@@ -1,5 +1,11 @@
 ﻿namespace SampleCS
 {
+    struct PlayWndInfo
+    {
+        public System.Windows.Forms.PictureBox PlayWnd;
+        public bool bPlaying;
+        public int hPlayHandle;
+    }
     partial class Form1
     {
         /// <summary>
@@ -42,18 +48,12 @@
             this.pictureBox2 = new System.Windows.Forms.PictureBox();
             this.pictureBox3 = new System.Windows.Forms.PictureBox();
             this.pictureBox4 = new System.Windows.Forms.PictureBox();
-            this.checkBox1 = new System.Windows.Forms.CheckBox();
-            this.checkBox2 = new System.Windows.Forms.CheckBox();
-            this.checkBox3 = new System.Windows.Forms.CheckBox();
             this.Setting = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.textbox_RecvTimeout = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
             this.textbox_ReportInterval = new System.Windows.Forms.TextBox();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
-            this.checkBox4 = new System.Windows.Forms.CheckBox();
-            this.checkBox5 = new System.Windows.Forms.CheckBox();
-            this.checkBox6 = new System.Windows.Forms.CheckBox();
             this.ComboPlay = new System.Windows.Forms.Button();
             this.CheckBox_ExternDraw = new System.Windows.Forms.CheckBox();
             this.CheckBox_Transmit = new System.Windows.Forms.CheckBox();
@@ -65,12 +65,27 @@
             this.PlayRecord = new System.Windows.Forms.Button();
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             this.axAVPlayer1 = new AxAVPlayerLib.AxAVPlayer();
+            this.pictureBox6 = new System.Windows.Forms.PictureBox();
+            this.pictureBox7 = new System.Windows.Forms.PictureBox();
+            this.pictureBox8 = new System.Windows.Forms.PictureBox();
+            this.pictureBox9 = new System.Windows.Forms.PictureBox();
+            this.pictureBox10 = new System.Windows.Forms.PictureBox();
+            this.pictureBox11 = new System.Windows.Forms.PictureBox();
+            this.pictureBox12 = new System.Windows.Forms.PictureBox();
+            this.checkBox_HACCEL = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox4)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox5)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.axAVPlayer1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox6)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox7)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox8)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox9)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox10)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox11)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox12)).BeginInit();
             this.SuspendLayout();
             // 
             // button_Stop
@@ -135,9 +150,9 @@
             // listView_CameraID
             // 
             this.listView_CameraID.CheckBoxes = true;
-            this.listView_CameraID.Location = new System.Drawing.Point(900, 55);
+            this.listView_CameraID.Location = new System.Drawing.Point(919, 55);
             this.listView_CameraID.Name = "listView_CameraID";
-            this.listView_CameraID.Size = new System.Drawing.Size(246, 567);
+            this.listView_CameraID.Size = new System.Drawing.Size(227, 550);
             this.listView_CameraID.TabIndex = 14;
             this.listView_CameraID.UseCompatibleStateImageBehavior = false;
             this.listView_CameraID.View = System.Windows.Forms.View.Details;
@@ -145,82 +160,50 @@
             // pictureBox1
             // 
             this.pictureBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pictureBox1.Location = new System.Drawing.Point(1, 60);
+            this.pictureBox1.Location = new System.Drawing.Point(7, 62);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(449, 282);
+            this.pictureBox1.Size = new System.Drawing.Size(224, 181);
             this.pictureBox1.TabIndex = 13;
             this.pictureBox1.TabStop = false;
+            this.pictureBox1.Click += new System.EventHandler(this.pictureBox1_Click);
             // 
             // textBox_msg
             // 
-            this.textBox_msg.Location = new System.Drawing.Point(3, 628);
+            this.textBox_msg.Location = new System.Drawing.Point(3, 611);
             this.textBox_msg.Multiline = true;
             this.textBox_msg.Name = "textBox_msg";
-            this.textBox_msg.Size = new System.Drawing.Size(1142, 172);
+            this.textBox_msg.Size = new System.Drawing.Size(1142, 189);
             this.textBox_msg.TabIndex = 22;
             // 
             // pictureBox2
             // 
             this.pictureBox2.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pictureBox2.Location = new System.Drawing.Point(450, 60);
+            this.pictureBox2.Location = new System.Drawing.Point(232, 62);
             this.pictureBox2.Name = "pictureBox2";
-            this.pictureBox2.Size = new System.Drawing.Size(449, 282);
+            this.pictureBox2.Size = new System.Drawing.Size(224, 181);
             this.pictureBox2.TabIndex = 13;
             this.pictureBox2.TabStop = false;
+            this.pictureBox2.Click += new System.EventHandler(this.pictureBox2_Click);
             // 
             // pictureBox3
             // 
             this.pictureBox3.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pictureBox3.Location = new System.Drawing.Point(1, 342);
+            this.pictureBox3.Location = new System.Drawing.Point(457, 62);
             this.pictureBox3.Name = "pictureBox3";
-            this.pictureBox3.Size = new System.Drawing.Size(449, 282);
+            this.pictureBox3.Size = new System.Drawing.Size(224, 181);
             this.pictureBox3.TabIndex = 13;
             this.pictureBox3.TabStop = false;
+            this.pictureBox3.Click += new System.EventHandler(this.pictureBox3_Click);
             // 
             // pictureBox4
             // 
             this.pictureBox4.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pictureBox4.Location = new System.Drawing.Point(450, 342);
+            this.pictureBox4.Location = new System.Drawing.Point(682, 62);
             this.pictureBox4.Name = "pictureBox4";
-            this.pictureBox4.Size = new System.Drawing.Size(449, 282);
+            this.pictureBox4.Size = new System.Drawing.Size(224, 181);
             this.pictureBox4.TabIndex = 13;
             this.pictureBox4.TabStop = false;
-            // 
-            // checkBox1
-            // 
-            this.checkBox1.AutoSize = true;
-            this.checkBox1.Enabled = false;
-            this.checkBox1.Location = new System.Drawing.Point(538, 6);
-            this.checkBox1.Name = "checkBox1";
-            this.checkBox1.Size = new System.Drawing.Size(96, 16);
-            this.checkBox1.TabIndex = 23;
-            this.checkBox1.Text = "Extend Play1";
-            this.checkBox1.UseVisualStyleBackColor = true;
-            this.checkBox1.CheckedChanged += new System.EventHandler(this.checkBox1_CheckedChanged);
-            // 
-            // checkBox2
-            // 
-            this.checkBox2.AutoSize = true;
-            this.checkBox2.Enabled = false;
-            this.checkBox2.Location = new System.Drawing.Point(641, 6);
-            this.checkBox2.Name = "checkBox2";
-            this.checkBox2.Size = new System.Drawing.Size(96, 16);
-            this.checkBox2.TabIndex = 23;
-            this.checkBox2.Text = "Extend Play2";
-            this.checkBox2.UseVisualStyleBackColor = true;
-            this.checkBox2.CheckedChanged += new System.EventHandler(this.checkBox2_CheckedChanged);
-            // 
-            // checkBox3
-            // 
-            this.checkBox3.AutoSize = true;
-            this.checkBox3.Enabled = false;
-            this.checkBox3.Location = new System.Drawing.Point(740, 6);
-            this.checkBox3.Name = "checkBox3";
-            this.checkBox3.Size = new System.Drawing.Size(96, 16);
-            this.checkBox3.TabIndex = 23;
-            this.checkBox3.Text = "Extend Play3";
-            this.checkBox3.UseVisualStyleBackColor = true;
-            this.checkBox3.CheckedChanged += new System.EventHandler(this.checkBox3_CheckedChanged);
+            this.pictureBox4.Click += new System.EventHandler(this.pictureBox4_Click);
             // 
             // Setting
             // 
@@ -263,39 +246,6 @@
             this.textbox_ReportInterval.Name = "textbox_ReportInterval";
             this.textbox_ReportInterval.Size = new System.Drawing.Size(70, 21);
             this.textbox_ReportInterval.TabIndex = 26;
-            // 
-            // checkBox4
-            // 
-            this.checkBox4.AutoSize = true;
-            this.checkBox4.Location = new System.Drawing.Point(538, 21);
-            this.checkBox4.Name = "checkBox4";
-            this.checkBox4.Size = new System.Drawing.Size(84, 16);
-            this.checkBox4.TabIndex = 23;
-            this.checkBox4.Text = "Hide Play1";
-            this.checkBox4.UseVisualStyleBackColor = true;
-            this.checkBox4.CheckedChanged += new System.EventHandler(this.checkBox4_CheckedChanged);
-            // 
-            // checkBox5
-            // 
-            this.checkBox5.AutoSize = true;
-            this.checkBox5.Location = new System.Drawing.Point(641, 21);
-            this.checkBox5.Name = "checkBox5";
-            this.checkBox5.Size = new System.Drawing.Size(84, 16);
-            this.checkBox5.TabIndex = 23;
-            this.checkBox5.Text = "Hide Play2";
-            this.checkBox5.UseVisualStyleBackColor = true;
-            this.checkBox5.CheckedChanged += new System.EventHandler(this.checkBox5_CheckedChanged);
-            // 
-            // checkBox6
-            // 
-            this.checkBox6.AutoSize = true;
-            this.checkBox6.Location = new System.Drawing.Point(740, 21);
-            this.checkBox6.Name = "checkBox6";
-            this.checkBox6.Size = new System.Drawing.Size(84, 16);
-            this.checkBox6.TabIndex = 23;
-            this.checkBox6.Text = "Hide Play3";
-            this.checkBox6.UseVisualStyleBackColor = true;
-            this.checkBox6.CheckedChanged += new System.EventHandler(this.checkBox6_CheckedChanged);
             // 
             // ComboPlay
             // 
@@ -369,9 +319,9 @@
             // pictureBox5
             // 
             this.pictureBox5.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pictureBox5.Location = new System.Drawing.Point(1080, 40);
+            this.pictureBox5.Location = new System.Drawing.Point(7, 244);
             this.pictureBox5.Name = "pictureBox5";
-            this.pictureBox5.Size = new System.Drawing.Size(41, 34);
+            this.pictureBox5.Size = new System.Drawing.Size(224, 181);
             this.pictureBox5.TabIndex = 13;
             this.pictureBox5.TabStop = false;
             // 
@@ -402,18 +352,106 @@
             // axAVPlayer1
             // 
             this.axAVPlayer1.Enabled = true;
-            this.axAVPlayer1.Location = new System.Drawing.Point(999, 35);
+            this.axAVPlayer1.Location = new System.Drawing.Point(796, 7);
             this.axAVPlayer1.Name = "axAVPlayer1";
             this.axAVPlayer1.OcxState = ((System.Windows.Forms.AxHost.State)(resources.GetObject("axAVPlayer1.OcxState")));
             this.axAVPlayer1.Size = new System.Drawing.Size(48, 48);
             this.axAVPlayer1.TabIndex = 35;
             this.axAVPlayer1.Visible = false;
             // 
+            // pictureBox6
+            // 
+            this.pictureBox6.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pictureBox6.Location = new System.Drawing.Point(232, 244);
+            this.pictureBox6.Name = "pictureBox6";
+            this.pictureBox6.Size = new System.Drawing.Size(224, 181);
+            this.pictureBox6.TabIndex = 36;
+            this.pictureBox6.TabStop = false;
+            this.pictureBox6.Click += new System.EventHandler(this.pictureBox5_Click);
+            // 
+            // pictureBox7
+            // 
+            this.pictureBox7.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pictureBox7.Location = new System.Drawing.Point(457, 244);
+            this.pictureBox7.Name = "pictureBox7";
+            this.pictureBox7.Size = new System.Drawing.Size(224, 181);
+            this.pictureBox7.TabIndex = 37;
+            this.pictureBox7.TabStop = false;
+            this.pictureBox7.Click += new System.EventHandler(this.pictureBox6_Click);
+            // 
+            // pictureBox8
+            // 
+            this.pictureBox8.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pictureBox8.Location = new System.Drawing.Point(682, 244);
+            this.pictureBox8.Name = "pictureBox8";
+            this.pictureBox8.Size = new System.Drawing.Size(224, 181);
+            this.pictureBox8.TabIndex = 38;
+            this.pictureBox8.TabStop = false;
+            this.pictureBox8.Click += new System.EventHandler(this.pictureBox7_Click);
+            // 
+            // pictureBox9
+            // 
+            this.pictureBox9.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pictureBox9.Location = new System.Drawing.Point(7, 426);
+            this.pictureBox9.Name = "pictureBox9";
+            this.pictureBox9.Size = new System.Drawing.Size(224, 181);
+            this.pictureBox9.TabIndex = 39;
+            this.pictureBox9.TabStop = false;
+            this.pictureBox9.Click += new System.EventHandler(this.pictureBox8_Click);
+            // 
+            // pictureBox10
+            // 
+            this.pictureBox10.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pictureBox10.Location = new System.Drawing.Point(457, 426);
+            this.pictureBox10.Name = "pictureBox10";
+            this.pictureBox10.Size = new System.Drawing.Size(224, 181);
+            this.pictureBox10.TabIndex = 40;
+            this.pictureBox10.TabStop = false;
+            this.pictureBox10.Click += new System.EventHandler(this.pictureBox9_Click);
+            // 
+            // pictureBox11
+            // 
+            this.pictureBox11.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pictureBox11.Location = new System.Drawing.Point(232, 426);
+            this.pictureBox11.Name = "pictureBox11";
+            this.pictureBox11.Size = new System.Drawing.Size(224, 181);
+            this.pictureBox11.TabIndex = 41;
+            this.pictureBox11.TabStop = false;
+            this.pictureBox11.Click += new System.EventHandler(this.pictureBox10_Click);
+            // 
+            // pictureBox12
+            // 
+            this.pictureBox12.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pictureBox12.Location = new System.Drawing.Point(682, 426);
+            this.pictureBox12.Name = "pictureBox12";
+            this.pictureBox12.Size = new System.Drawing.Size(224, 181);
+            this.pictureBox12.TabIndex = 42;
+            this.pictureBox12.TabStop = false;
+            this.pictureBox12.Click += new System.EventHandler(this.pictureBox11_Click);
+            // 
+            // checkBox_HACCEL
+            // 
+            this.checkBox_HACCEL.AutoSize = true;
+            this.checkBox_HACCEL.Location = new System.Drawing.Point(538, 6);
+            this.checkBox_HACCEL.Name = "checkBox_HACCEL";
+            this.checkBox_HACCEL.Size = new System.Drawing.Size(162, 16);
+            this.checkBox_HACCEL.TabIndex = 23;
+            this.checkBox_HACCEL.Text = "Hardware Acceleratetion";
+            this.checkBox_HACCEL.UseVisualStyleBackColor = true;
+            this.checkBox_HACCEL.CheckedChanged += new System.EventHandler(this.CheckBox_ExternDraw_CheckedChanged);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1147, 799);
+            this.Controls.Add(this.pictureBox10);
+            this.Controls.Add(this.pictureBox11);
+            this.Controls.Add(this.pictureBox12);
+            this.Controls.Add(this.pictureBox6);
+            this.Controls.Add(this.pictureBox7);
+            this.Controls.Add(this.pictureBox8);
+            this.Controls.Add(this.pictureBox9);
             this.Controls.Add(this.axAVPlayer1);
             this.Controls.Add(this.PlayRecord);
             this.Controls.Add(this.QueryRecord);
@@ -425,14 +463,9 @@
             this.Controls.Add(this.textbox_RecvTimeout);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.Setting);
-            this.Controls.Add(this.checkBox6);
-            this.Controls.Add(this.checkBox5);
-            this.Controls.Add(this.checkBox3);
             this.Controls.Add(this.CheckBox_Transmit);
+            this.Controls.Add(this.checkBox_HACCEL);
             this.Controls.Add(this.CheckBox_ExternDraw);
-            this.Controls.Add(this.checkBox4);
-            this.Controls.Add(this.checkBox2);
-            this.Controls.Add(this.checkBox1);
             this.Controls.Add(this.textBox_msg);
             this.Controls.Add(this.ComboPlay);
             this.Controls.Add(this.button_Stop);
@@ -456,6 +489,13 @@
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox4)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox5)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.axAVPlayer1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox6)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox7)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox8)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox9)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox10)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox11)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox12)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -470,23 +510,14 @@
         private System.Windows.Forms.TextBox textBox_ServerIP;
         private System.Windows.Forms.Label label_ServerIP;
         private System.Windows.Forms.ListView listView_CameraID;
-        private System.Windows.Forms.PictureBox pictureBox1;
+
         private System.Windows.Forms.TextBox textBox_msg;
-        private System.Windows.Forms.PictureBox pictureBox2;
-        private System.Windows.Forms.PictureBox pictureBox3;
-        private System.Windows.Forms.PictureBox pictureBox4;
-        private System.Windows.Forms.CheckBox checkBox1;
-        private System.Windows.Forms.CheckBox checkBox2;
-        private System.Windows.Forms.CheckBox checkBox3;
         private System.Windows.Forms.Button Setting;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TextBox textbox_RecvTimeout;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.TextBox textbox_ReportInterval;
         private System.Windows.Forms.Timer timer1;
-        private System.Windows.Forms.CheckBox checkBox4;
-        private System.Windows.Forms.CheckBox checkBox5;
-        private System.Windows.Forms.CheckBox checkBox6;
         private System.Windows.Forms.Button ComboPlay;
         private System.Windows.Forms.CheckBox CheckBox_ExternDraw;
         private System.Windows.Forms.CheckBox CheckBox_Transmit;
@@ -500,6 +531,21 @@
         private System.Windows.Forms.Button PlayRecord;
         private System.Windows.Forms.OpenFileDialog openFileDialog1;
         private AxAVPlayerLib.AxAVPlayer axAVPlayer1;
+        
+        private System.Windows.Forms.PictureBox pictureBox1;
+        private System.Windows.Forms.PictureBox pictureBox2;
+        private System.Windows.Forms.PictureBox pictureBox3;
+        private System.Windows.Forms.PictureBox pictureBox4;
+        private System.Windows.Forms.PictureBox pictureBox6;
+        private System.Windows.Forms.PictureBox pictureBox7;
+        private System.Windows.Forms.PictureBox pictureBox8;
+        private System.Windows.Forms.PictureBox pictureBox9;
+        private System.Windows.Forms.PictureBox pictureBox10;
+        private System.Windows.Forms.PictureBox pictureBox11;
+        private System.Windows.Forms.PictureBox pictureBox12;
+
+        private PlayWndInfo[] PlayWndArray;
+        private System.Windows.Forms.CheckBox checkBox_HACCEL;
     }
 }
 

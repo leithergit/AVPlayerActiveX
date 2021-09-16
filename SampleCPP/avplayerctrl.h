@@ -373,6 +373,13 @@ public:
 		return result;
 	}
 
+	long RemoveDevWnd(LPCTSTR strDeviceID, long hDevWnd)
+	{
+		long result;
+		static BYTE parms[] = VTS_BSTR VTS_I4;
+		InvokeHelper(0x1f, DISPATCH_METHOD, VT_I4, (void*)&result, parms, strDeviceID, hDevWnd);
+		return result;
+	}
 	// Properties
 	//
 

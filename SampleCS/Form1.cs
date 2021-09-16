@@ -106,9 +106,11 @@ namespace SampleCS
     };
     struct DevicePlay
     {
-        public  string  strDevice;
-        public  int     hWnd;
-        public  double  nTime;
+        public string  strDevice;
+        public int hWnd;
+        public double nTime;
+        public bool bPlaying;
+        
     }
      public struct RECT
     {
@@ -124,8 +126,7 @@ namespace SampleCS
      // public delegate void ExternDCDrawDelegate(long pUserPtr, RECT rtDC, long hDc, long hWnd);
     public  delegate void ExternDCDrawDelegate(int hWnd, int hDc, RECT rtDC, int pUserPtr); 
    
-   
-
+    
     public partial class Form1 : Form
     {
         List<DevicePlay> m_PlayList = new List<DevicePlay>();
@@ -134,6 +135,8 @@ namespace SampleCS
         public ExternDCDrawDelegate ExternDCDrawEvent;
 
         public CDrawInfo []m_ExternDraw;
+
+        int nCurPictureIndex = 0;
 
         public string ipcplay_GetErrorMessage(int nErrorCode)
         {
@@ -331,6 +334,29 @@ namespace SampleCS
         public Form1()
         {
             InitializeComponent();
+            PlayWndArray = new PlayWndInfo[12];            
+            PlayWndArray[0].PlayWnd = pictureBox1;
+            PlayWndArray[1].PlayWnd = pictureBox2;
+            PlayWndArray[2].PlayWnd = pictureBox3;
+            PlayWndArray[3].PlayWnd = pictureBox4;
+            PlayWndArray[4].PlayWnd = pictureBox5;
+            PlayWndArray[5].PlayWnd = pictureBox6;
+            PlayWndArray[6].PlayWnd = pictureBox7;
+            PlayWndArray[7].PlayWnd = pictureBox8;
+            PlayWndArray[8].PlayWnd = pictureBox9;
+            PlayWndArray[9].PlayWnd = pictureBox10;
+            PlayWndArray[10].PlayWnd = pictureBox11;
+            PlayWndArray[11].PlayWnd = pictureBox12;
+
+            for (int i = 0; i < 12; i++)
+            {
+                PlayWndArray[i].bPlaying = false;
+                PlayWndArray[i].hPlayHandle = 0;
+            }
+                nCurPictureIndex = 0;
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.Fixed3D;
+           
+
             sw.Start();
             listView_CameraID.Columns.Add("NO.");
             listView_CameraID.Columns.Add("DeviceID");
@@ -391,9 +417,6 @@ namespace SampleCS
                 button_Play.Enabled = true;
                 ComboPlay.Enabled = true;
                 button_Stop.Enabled = false;
-                checkBox1.Enabled = true;
-                checkBox2.Enabled = true;
-                checkBox3.Enabled = true;
 
             } 
         }
@@ -406,12 +429,7 @@ namespace SampleCS
             button_Play.Enabled = false;
             button_Stop.Enabled = false;
             // 扩展显示视频选项更新为未选中
-            checkBox1.Checked = false;
-            checkBox2.Checked = false;
-            checkBox3.Checked = false;
-            checkBox1.Enabled = false;
-            checkBox2.Enabled = false;
-            checkBox3.Enabled = false;
+            
         }
 
         private void button_Play_Click(object sender, EventArgs e)
@@ -421,18 +439,17 @@ namespace SampleCS
                 MessageBox.Show("Plz select a device to play.");
                 return;
             }
-            IntPtr[] HandleArray = new IntPtr[4];
-            HandleArray[0] = pictureBox1.Handle;
-            HandleArray[1] = pictureBox2.Handle;
-            HandleArray[2] = pictureBox3.Handle;
-            HandleArray[3] = pictureBox4.Handle;
+           
+            int nEnalbeHWAccel = 0;     // 禁用硬解码
+            if (checkBox_HACCEL.Checked)
+                nEnalbeHWAccel = 1;
             for(int i = 0;i < listView_CameraID.CheckedItems.Count;i ++)
             {
                 string strDeviceID = listView_CameraID.CheckedItems[i].SubItems[1].Text;
-                int nEnalbeHWAccel = 1;     // 禁用硬解码
+               
                 int nErrorCode = 0;         
                 
-                nErrorCode = axAVPlayer1.PlayStream(strDeviceID, (int)HandleArray[i], nEnalbeHWAccel);
+                nErrorCode = axAVPlayer1.PlayStream(strDeviceID, PlayWndArray[i].PlayWnd.Handle.ToInt32(), nEnalbeHWAccel);
                 if (nErrorCode != (int)AVStatus.AvError_Succeed)
                 {
                     textBox_msg.Text += GetErrorMessage(nErrorCode);
@@ -440,21 +457,11 @@ namespace SampleCS
                     return;
                 }
                 DevicePlay pDev = new DevicePlay();
-                pDev.hWnd = (int)HandleArray[i];
                 pDev.strDevice = strDeviceID;
                 m_PlayList.Add(pDev);
                 button_Play.Enabled = false;
                 button_Stop.Enabled = true;
-                // 获取设备正在播放的窗口句柄
-//                 int[] hWndArray = new int[16];
-//                 int nArraySize = 16;
-//                 nErrorCode = axAVPlayer1.GetDeviceWindow(strDeviceID,ref hWndArray[0],ref nArraySize);
-//                 if (nErrorCode != (int)AVStatus.AvError_Succeed)
-//                 {
-//                     textBox_msg.Text += GetErrorMessage(nErrorCode);
-//                     textBox_msg.Text += "\r\n";
-//                     return;
-//                 }
+
             }            
         }
 
@@ -498,24 +505,15 @@ namespace SampleCS
         private void button_Stop_Click(object sender, EventArgs e)
         {
             int nCount = listView_CameraID.CheckedItems.Count;
-            for (int i = 0; i < nCount; i++)
-            {
-                string strDeviceID = listView_CameraID.CheckedItems[i].SubItems[1].Text;
-                // 终止所有窗口的播放
-                // StopPlay的第二个参数为窗口句柄，关闭在指定窗口显示的视频
-                // 若该参数为0，则关闭所有窗口的句柄
-                axAVPlayer1.StopPlay(strDeviceID,0);
-            }
+                       
             foreach(var dev in m_PlayList)
             {
+                
                 axAVPlayer1.StopPlay(dev.strDevice,0);
             }
             m_PlayList.Clear();
 
-            // 扩展显示视频选项更新为未选中
-            checkBox1.Checked = false;
-            checkBox2.Checked = false;
-            checkBox3.Checked = false;
+        
 
             button_Play.Enabled = true;
             button_Stop.Enabled = false;
@@ -524,7 +522,7 @@ namespace SampleCS
 
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
         {
-            if (checkBox1.Checked == true)
+            //if (checkBox1.Checked == true)
             {
                 if (listView_CameraID.SelectedItems.Count == 0)
                 {
@@ -555,7 +553,7 @@ namespace SampleCS
                 textBox_msg.Text += (strDeviceID + "已在 " + nArraySize.ToString() + " 个窗口上播放.\r\n");
                
             }
-            else 
+            //else 
             {
                 string strDeviceID = "";
                 //  直接从播放图像的窗口句柄获取设备ID
@@ -573,7 +571,7 @@ namespace SampleCS
 
         private void checkBox2_CheckedChanged(object sender, EventArgs e)
         {
-            if (checkBox2.Checked == true)
+            //if (checkBox2.Checked == true)
             {
                 if (listView_CameraID.SelectedItems.Count == 0)
                 {
@@ -603,7 +601,7 @@ namespace SampleCS
                 }
                 textBox_msg.Text += (strDeviceID + "已在 " + nArraySize.ToString() + " 个窗口上播放.\r\n");
             }
-            else
+            //else
             {
                 string strDeviceID = "";
                 //  直接从播放图像的窗口句柄获取设备ID
@@ -622,7 +620,7 @@ namespace SampleCS
 
         private void checkBox3_CheckedChanged(object sender, EventArgs e)
         {
-            if (checkBox3.Checked == true)
+            //if (checkBox3.Checked == true)
             {
                 if (listView_CameraID.SelectedItems.Count == 0)
                 {
@@ -652,7 +650,7 @@ namespace SampleCS
                 }
                 textBox_msg.Text += (strDeviceID + "已在 " + nArraySize.ToString() + " 个窗口上播放.\r\n");
             }
-            else
+            //else
             {
                 string strDeviceID = "";
                 //  直接从播放图像的窗口句柄获取设备ID
@@ -726,27 +724,27 @@ namespace SampleCS
         */
         private void checkBox4_CheckedChanged(object sender, EventArgs e)
         {
-            if (checkBox4.Checked == true)
-                pictureBox2.Hide();
-            else
-                pictureBox2.Show();
+            //if (checkBox4.Checked == true)
+            //    pictureBox2.Hide();
+            //else
+            //    pictureBox2.Show();
 
         }
 
         private void checkBox5_CheckedChanged(object sender, EventArgs e)
         {
-            if (checkBox5.Checked == true)
-                pictureBox3.Hide();
-            else
-                pictureBox3.Show();
+            //if (checkBox5.Checked == true)
+            //    pictureBox3.Hide();
+            //else
+            //    pictureBox3.Show();
         }
 
         private void checkBox6_CheckedChanged(object sender, EventArgs e)
         {
-            if (checkBox6.Checked == true)
-                pictureBox4.Hide();
-            else
-                pictureBox4.Show();
+            //if (checkBox6.Checked == true)
+            //    pictureBox4.Hide();
+            //else
+            //    pictureBox4.Show();
         }
 
         private void CheckBox_ExternDraw_CheckedChanged(object sender, EventArgs e)
@@ -946,7 +944,7 @@ namespace SampleCS
             //axAVPlayer1.SwitchScreen(nCrane, nMode);
             m_bFitFrame = true;     
 
-        }
+        }    
 
         private void QueryRecord_Click(object sender, EventArgs e)
         {
@@ -956,6 +954,115 @@ namespace SampleCS
         private void PlayRecord_Click(object sender, EventArgs e)
         {
 
+        }
+
+        private void pictureBox4_Click(object sender, EventArgs e)
+        {
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.FixedSingle;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
+            nCurPictureIndex = 3;
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.Fixed3D;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
+        }
+
+        private void pictureBox3_Click(object sender, EventArgs e)
+        {
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.FixedSingle;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
+            nCurPictureIndex = 2;
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.Fixed3D;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
+           
+        }
+
+        private void pictureBox2_Click(object sender, EventArgs e)
+        {
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.FixedSingle;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
+            nCurPictureIndex = 1;
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.Fixed3D;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
+        }
+
+        private void pictureBox1_Click(object sender, EventArgs e)
+        {
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.FixedSingle;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
+            nCurPictureIndex = 0;
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.Fixed3D;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
+        }
+
+        private void pictureBox9_Click(object sender, EventArgs e)
+        {
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.FixedSingle;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
+            nCurPictureIndex = 8;
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.Fixed3D;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
+        }
+
+        private void pictureBox8_Click(object sender, EventArgs e)
+        {
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.FixedSingle;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
+            nCurPictureIndex = 7;
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.Fixed3D;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
+        }
+
+        private void pictureBox7_Click(object sender, EventArgs e)
+        {
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.FixedSingle;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
+            nCurPictureIndex = 6;
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.Fixed3D;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
+        }
+
+        private void pictureBox6_Click(object sender, EventArgs e)
+        {
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.FixedSingle;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
+            nCurPictureIndex = 5;
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.Fixed3D;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
+        }   
+
+        private void pictureBox12_Click(object sender, EventArgs e)
+        {
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.FixedSingle;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
+            nCurPictureIndex = 11;
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.Fixed3D;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
+        }
+
+        private void pictureBox11_Click(object sender, EventArgs e)
+        {
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.FixedSingle;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
+            nCurPictureIndex = 10;
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.Fixed3D;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
+        }
+
+        private void pictureBox10_Click(object sender, EventArgs e)
+        {
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.FixedSingle;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
+            nCurPictureIndex = 9;
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.Fixed3D;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
+        }
+
+        private void pictureBox5_Click(object sender, EventArgs e)
+        {
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.FixedSingle;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
+            nCurPictureIndex = 4;
+            PlayWndArray[nCurPictureIndex].PlayWnd.BorderStyle = BorderStyle.Fixed3D;
+            PlayWndArray[nCurPictureIndex].PlayWnd.Refresh();
         }
     };
     public class CDrawInfo

@@ -260,3 +260,6 @@ public:
 		}
 	}
 };
+
+// 获限本地时区
+int GetLocalTimeZone();

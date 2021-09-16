@@ -3,7 +3,7 @@
 //
 
 #pragma once
-#include "avplayerctrl.h"
+#include "avplayerctrl1.h"
 
 
 // CUpdateOCXClassDlg dialog
@@ -31,5 +31,5 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 public:
-	CAvplayerctrl m_avplayer;
+	CAvplayerctrl AA;
 };

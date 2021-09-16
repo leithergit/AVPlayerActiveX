@@ -145,17 +145,17 @@ LPCSTR DateTimeA()
 //一天的秒数
 #define		__Day_Sec                      86400				
 //大月的秒数
-#define		__Long_Month_Sec               2678400
+#define		__Long_Month_Sec               2678400	// 31*86400
 //小月的秒数
-#define		__Short_Month_Sec              2592000
+#define		__Short_Month_Sec              2592000	// 30*86400
 //闰二月的秒数
-#define		__Long_Feb_Sec                 2505600
+#define		__Long_Feb_Sec                 2505600	// 29*86400
 //二月的秒数
-#define		__Short_Feb_Sec                2419200
+#define		__Short_Feb_Sec                2419200	// 28*86400
 //闰年的秒数
-#define		__Leap_Year_Sec                31622400
+#define		__Leap_Year_Sec                31622400	// 366*86400
 //一年的秒数
-#define		__Year_Sec                     31536000
+#define		__Year_Sec                     31536000	// 365*86400
 //四年的秒数
 #define		__T4_Year_Sec				126230400	//(__Year_Sec*3 + __Leap_Year_Sec)
 //100年的秒数
@@ -246,6 +246,43 @@ BOOL SystemTime2UTC(SYSTEMTIME *pSystemTime,UINT64 *pTime)
 
 	BOOL bLeapYear = IsLeapYear(pSystemTime->wYear);
 
+	static int MonthSeconds[12] =
+	{
+		__Long_Month_Sec,		// 1
+		__Short_Feb_Sec,		// 2
+		__Long_Month_Sec,		// 3
+		__Short_Month_Sec,		// 4
+		__Long_Month_Sec,		// 5
+		__Short_Month_Sec,		// 6
+		__Long_Month_Sec,		// 7
+		__Long_Month_Sec,		// 8
+		__Short_Month_Sec,		// 9
+		__Long_Month_Sec,		// 10
+		__Short_Month_Sec,		// 11
+		__Long_Month_Sec		// 12
+	};
+
+	static int MonthDays[12] =
+	{
+		31,		// 1
+		28,		// 2
+		31,		// 3
+		30,		// 4
+		31,		// 5
+		30,		// 6
+		31,		// 7
+		31,		// 8
+		30,		// 9
+		31,		// 10
+		30,		// 11
+		31		// 12
+	};
+
+	if (bLeapYear)
+	{
+		MonthSeconds[1] = __Long_Feb_Sec;		// 闰年 2月有29天
+		MonthDays[1] = 29;
+	}
 	int nYears = pSystemTime->wYear - 1970;
 	int nBaseLeapYears = (1970/400)*97 + (1970%400)/4 - (1970%400)/100;
 	int nLeapYeas = (pSystemTime->wYear/400)*97 + (pSystemTime->wYear%400)/4 - (pSystemTime->wYear%400)/100 - nBaseLeapYears ;
@@ -253,49 +290,16 @@ BOOL SystemTime2UTC(SYSTEMTIME *pSystemTime,UINT64 *pTime)
 		nLeapYeas --;	
 	UINT64 nYearTime = (UINT64)nYears*__Year_Sec + (UINT64)nLeapYeas*__Day_Sec;
 	UINT64 nMonthTime = 0;
-
-	for (int nLoop = 1;nLoop < pSystemTime->wMonth;nLoop ++)
+			
+	if (pSystemTime->wDay > MonthDays[pSystemTime->wMonth - 1])
+		return FALSE;
+	int nMonth = 1;
+	while (nMonth < pSystemTime->wMonth)
 	{
-		switch(nLoop)
-		{
-		case 1:
-		case 3:
-		case 5:
-		case 7:
-		case 8:
-		case 10:
-		case 12:				
-			nMonthTime += __Long_Month_Sec	;
-			break;
-		case 2:
-			if (bLeapYear)
-			{
-				if (pSystemTime->wDay >29)
-					return FALSE;
-				nMonthTime += __Long_Feb_Sec;
-			}
-			else
-			{
-				if (pSystemTime->wDay >28)
-					return FALSE;
-				nMonthTime += __Short_Feb_Sec;
-			}
-			break;		
-		case 4:			
-		case 6:
-		case 9:		
-		case 11:
-			{
-				if (pSystemTime->wDay >30)
-					return FALSE;
-				nMonthTime += __Short_Month_Sec;
-			}
-
-			break;
-		default:
-			break;
-		}
+		nMonthTime += MonthDays[nMonth - 1];
+		nMonth++;
 	}
+		
 	UINT64 nDayTime = (pSystemTime->wDay - 1)*__Day_Sec;
 	UINT64 nHourTime = pSystemTime->wHour*3600;
 	UINT64 nMinuteTime = pSystemTime->wMinute*60;
@@ -304,6 +308,13 @@ BOOL SystemTime2UTC(SYSTEMTIME *pSystemTime,UINT64 *pTime)
 	*pTime = nTotalTime;
 	return TRUE;
 
+}
+
+int GetLocalTimeZone()
+{
+	TIME_ZONE_INFORMATION TZ;
+	GetTimeZoneInformation(&TZ);
+	return   TZ.Bias / (-60);
 }
 
 BOOL UTC2SystemTime(UINT64 *pTime,SYSTEMTIME *pSystemTime)

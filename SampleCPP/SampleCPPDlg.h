@@ -191,5 +191,9 @@ public:
 		}
 	}
 	afx_msg void OnClose();
-	afx_msg void OnBnClickedButtonSeekrecord();
+	//afx_msg void OnBnClickedButtonSeekrecord();
+	afx_msg void OnNMClickListRecord(NMHDR *pNMHDR, LRESULT *pResult);
+	CDateTimeCtrl m_ctlTimeStart;
+	CDateTimeCtrl m_ctlTimeEnd;
+	afx_msg void OnBnClickedButtonHideplay();
 };

@@ -33,7 +33,7 @@
     <ClInclude Include="Resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="avplayerctrl.h">
+    <ClInclude Include="avplayerctrl1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -47,7 +47,7 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="avplayerctrl.cpp">
+    <ClCompile Include="avplayerctrl1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

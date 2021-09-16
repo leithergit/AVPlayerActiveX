@@ -231,11 +231,11 @@ public:
 		static BYTE parms[] = VTS_BSTR VTS_I4;
 		InvokeHelper(0x5, DISPATCH_METHOD, VT_EMPTY, NULL, parms, strDeviceID, hWnd);
 	}
-	long GetErrorMessage(long nErrorCode, BSTR * strErrorMessage)
+	long GetErrorMessage(long nErrorCode, LPTSTR strErrorMessage,LONG nBufferSize)
 	{
 		long result;
-		static BYTE parms[] = VTS_I4 VTS_PBSTR;
-		InvokeHelper(0x8, DISPATCH_METHOD, VT_I4, (void*)&result, parms, nErrorCode, strErrorMessage);
+		static BYTE parms[] = VTS_I4 VTS_PBSTR VTS_I4;
+		InvokeHelper(0x8, DISPATCH_METHOD, VT_I4, (void*)&result, parms, nErrorCode, strErrorMessage,nBufferSize);
 		return result;
 	}
 	void FreeString(BSTR * strString)
@@ -373,6 +373,13 @@ public:
 		return result;
 	}
 
+	long RemoveDevWnd(LPCTSTR strDeviceID, long hDevWnd)
+	{
+		long result;
+		static BYTE parms[] = VTS_BSTR VTS_I4;
+		InvokeHelper(0x1f, DISPATCH_METHOD, VT_I4, (void*)&result, parms, strDeviceID, hDevWnd);
+		return result;
+	}
 	// Properties
 	//
 
